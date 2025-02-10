@@ -1,6 +1,4 @@
 import SwiftUI
-import Combine
-import AVKit
 
 struct ICOISettingsView: View {
     @EnvironmentObject var settings: Settings

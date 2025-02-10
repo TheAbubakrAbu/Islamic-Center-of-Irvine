@@ -42,20 +42,8 @@ struct ICOIPrayerCountdown: View {
     }
     
     private func setupTimer() {
-        self.timer.upstream.connect().cancel()
-
-        if let nextPrayer = settings.nextPrayerICOI {
-            let now = Date()
-            let remainingInterval = nextPrayer.time.timeIntervalSince(now)
-            
-            if remainingInterval > 0 {
-                self.timer = Timer.publish(every: remainingInterval, on: .main, in: .common).autoconnect()
-            }
-        }
-
         progressToNextPrayer = calculateProgress()
     }
-
     
     var body: some View {
         if let currentPrayer = settings.currentPrayerICOI, let nextPrayer = settings.nextPrayerICOI {
@@ -141,6 +129,10 @@ struct ICOIPrayerCountdown: View {
                             .tint(settings.accentColor)
                             .onReceive(timer) { _ in
                                 progressToNextPrayer = calculateProgress()
+                                if progressToNextPrayer >= 1 {
+                                    settings.fetchPrayerTimes()
+                                    setupTimer()
+                                }
                             }
                             .padding(.top, -4)
                         

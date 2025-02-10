@@ -1,6 +1,5 @@
 import SwiftUI
 import AVFoundation
-import Combine
 
 struct SurahRow: View {
     @EnvironmentObject var settings: Settings

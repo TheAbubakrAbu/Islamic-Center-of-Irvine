@@ -78,6 +78,10 @@
 		72ACDF6D2AA038B7006B1BF2 /* Settings.swift in Sources */ = {isa = PBXBuildFile; fileRef = 72974BEB2A9EDBE400D8BD8E /* Settings.swift */; };
 		72ACDF6E2AA038BB006B1BF2 /* PrayersProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = 720C0C242A9FDB5900CC4F08 /* PrayersProvider.swift */; };
 		72ACDF742AA03A02006B1BF2 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 72974BD72A9EDB7F00D8BD8E /* Assets.xcassets */; };
+		72B8AC252D58BF1900591AD4 /* WatchConnectivity.swift in Sources */ = {isa = PBXBuildFile; fileRef = 72B8AC242D58BF1900591AD4 /* WatchConnectivity.swift */; };
+		72B8AC262D58BF1900591AD4 /* WatchConnectivity.swift in Sources */ = {isa = PBXBuildFile; fileRef = 72B8AC242D58BF1900591AD4 /* WatchConnectivity.swift */; };
+		72B8AC272D58BF1900591AD4 /* WatchConnectivity.swift in Sources */ = {isa = PBXBuildFile; fileRef = 72B8AC242D58BF1900591AD4 /* WatchConnectivity.swift */; };
+		72B8AC282D58BF1900591AD4 /* WatchConnectivity.swift in Sources */ = {isa = PBXBuildFile; fileRef = 72B8AC242D58BF1900591AD4 /* WatchConnectivity.swift */; };
 		72CA76FD2CD48B45002D4EFB /* quran_en.json in Resources */ = {isa = PBXBuildFile; fileRef = 72CA76FC2CD48B44002D4EFB /* quran_en.json */; };
 		72CA76FE2CD48B45002D4EFB /* quran_en.json in Resources */ = {isa = PBXBuildFile; fileRef = 72CA76FC2CD48B44002D4EFB /* quran_en.json */; };
 		72CAE14E2D438B1000C423C5 /* SwiftSoup in Frameworks */ = {isa = PBXBuildFile; productRef = 72CAE14D2D438B1000C423C5 /* SwiftSoup */; };
@@ -211,8 +215,11 @@
 		72ACDF422AA0381D006B1BF2 /* ICOIApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ICOIApp.swift; sourceTree = "<group>"; };
 		72ACDF5D2AA03884006B1BF2 /* Complication.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = Complication.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		72ACDF612AA03884006B1BF2 /* Complication.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Complication.swift; sourceTree = "<group>"; };
+		72B8AC232D58BC4400591AD4 /* Info-Widget.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = "Info-Widget.plist"; sourceTree = "<group>"; };
+		72B8AC242D58BF1900591AD4 /* WatchConnectivity.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WatchConnectivity.swift; sourceTree = "<group>"; };
+		72B8AC292D58C07900591AD4 /* Info-Watch.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = "Info-Watch.plist"; sourceTree = "<group>"; };
 		72CA76FC2CD48B44002D4EFB /* quran_en.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = quran_en.json; sourceTree = "<group>"; };
-		72CAE1402D438A1B00C423C5 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		72CAE1402D438A1B00C423C5 /* Info-iPhone.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = "Info-iPhone.plist"; sourceTree = "<group>"; };
 		72CAE1482D438AD100C423C5 /* google-api-objectivec-client-for-rest-3.2.0 */ = {isa = PBXFileReference; lastKnownFileType = wrapper; path = "google-api-objectivec-client-for-rest-3.2.0"; sourceTree = "<group>"; };
 		72CAE1492D438AD100C423C5 /* SwiftSoup-master */ = {isa = PBXFileReference; lastKnownFileType = wrapper; path = "SwiftSoup-master"; sourceTree = "<group>"; };
 		72CD0B672AE0C50D00D37518 /* EventsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EventsView.swift; sourceTree = "<group>"; };
@@ -412,7 +419,9 @@
 			isa = PBXGroup;
 			children = (
 				72974BD92A9EDB7F00D8BD8E /* Entitlements.entitlements */,
-				72CAE1402D438A1B00C423C5 /* Info.plist */,
+				72CAE1402D438A1B00C423C5 /* Info-iPhone.plist */,
+				72B8AC292D58C07900591AD4 /* Info-Watch.plist */,
+				72B8AC232D58BC4400591AD4 /* Info-Widget.plist */,
 				72974BD72A9EDB7F00D8BD8E /* Assets.xcassets */,
 				729115072AF816A700A4EB2B /* Fonts */,
 				729114EF2AF811DA00A4EB2B /* JSONs */,
@@ -453,6 +462,7 @@
 				72CD0B6F2AE0C57100D37518 /* SettingsView.swift */,
 				720DEC5F2D2455E7006EA342 /* CreditsView.swift */,
 				72974BEB2A9EDBE400D8BD8E /* Settings.swift */,
+				72B8AC242D58BF1900591AD4 /* WatchConnectivity.swift */,
 			);
 			path = Settings;
 			sourceTree = "<group>";
@@ -655,6 +665,7 @@
 				729114EC2AF7751500A4EB2B /* LockScreen1Iqamah.swift in Sources */,
 				72598BAF2AF771BA00B85D8F /* LockScreen2Adhan.swift in Sources */,
 				72598BAB2AF7636000B85D8F /* CountdownAdhan.swift in Sources */,
+				72B8AC262D58BF1900591AD4 /* WatchConnectivity.swift in Sources */,
 				72598BAD2AF7642900B85D8F /* CountdownIqamah.swift in Sources */,
 				729115062AF813D300A4EB2B /* Surah.swift in Sources */,
 				729114E82AF772E500A4EB2B /* LockScreen2Iqamah.swift in Sources */,
@@ -685,6 +696,7 @@
 				729115212AF8176D00A4EB2B /* ToolsView.swift in Sources */,
 				72974BE72A9EDBC400D8BD8E /* PrayerCountdown.swift in Sources */,
 				72974BD42A9EDB7D00D8BD8E /* ICOIApp.swift in Sources */,
+				72B8AC272D58BF1900591AD4 /* WatchConnectivity.swift in Sources */,
 				729114F52AF811DA00A4EB2B /* AyahsView.swift in Sources */,
 				729114FD2AF811DA00A4EB2B /* SurahsView.swift in Sources */,
 				7291151F2AF8176D00A4EB2B /* MosquesView.swift in Sources */,
@@ -703,6 +715,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				72B8AC252D58BF1900591AD4 /* WatchConnectivity.swift in Sources */,
 				727DBDE92AC8DBDA00CD4383 /* LaunchScreen.swift in Sources */,
 				729115282AF8176D00A4EB2B /* IslamicPillarsView.swift in Sources */,
 				72ACDF572AA0385B006B1BF2 /* PrayerCountdown.swift in Sources */,
@@ -733,6 +746,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				72B8AC282D58BF1900591AD4 /* WatchConnectivity.swift in Sources */,
 				72ACDF6D2AA038B7006B1BF2 /* Settings.swift in Sources */,
 				729115052AF813D200A4EB2B /* Surah.swift in Sources */,
 				72ACDF6E2AA038BB006B1BF2 /* PrayersProvider.swift in Sources */,
@@ -770,13 +784,13 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
-				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
+				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = "";
 				CODE_SIGN_ENTITLEMENTS = Resources/Entitlements.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = 8HQMC4MQ59;
 				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_FILE = Resources/Info.plist;
+				INFOPLIST_FILE = "Resources/Info-Widget.plist";
 				INFOPLIST_KEY_CFBundleDisplayName = ICOI;
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
 				IPHONEOS_DEPLOYMENT_TARGET = 15.0;
@@ -786,7 +800,7 @@
 					"@executable_path/../../Frameworks",
 				);
 				MACOSX_DEPLOYMENT_TARGET = 11.0;
-				MARKETING_VERSION = 3.42;
+				MARKETING_VERSION = 3.43;
 				PRODUCT_BUNDLE_IDENTIFIER = "com.Quran.Elmallah.Islamic-Pillars.Islamic-Center-of-Irvine.ICOI1";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = iphoneos;
@@ -801,13 +815,13 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
-				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
+				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = "";
 				CODE_SIGN_ENTITLEMENTS = Resources/Entitlements.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = 8HQMC4MQ59;
 				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_FILE = Resources/Info.plist;
+				INFOPLIST_FILE = "Resources/Info-Widget.plist";
 				INFOPLIST_KEY_CFBundleDisplayName = ICOI;
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
 				IPHONEOS_DEPLOYMENT_TARGET = 15.0;
@@ -817,7 +831,7 @@
 					"@executable_path/../../Frameworks",
 				);
 				MACOSX_DEPLOYMENT_TARGET = 11.0;
-				MARKETING_VERSION = 3.42;
+				MARKETING_VERSION = 3.43;
 				PRODUCT_BUNDLE_IDENTIFIER = "com.Quran.Elmallah.Islamic-Pillars.Islamic-Center-of-Irvine.ICOI1";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = iphoneos;
@@ -884,7 +898,7 @@
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				GENERATE_INFOPLIST_FILE = NO;
-				INFOPLIST_FILE = Resources/Info.plist;
+				INFOPLIST_FILE = "";
 				IPHONEOS_DEPLOYMENT_TARGET = 15.0;
 				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
 				MACOSX_DEPLOYMENT_TARGET = "$(RECOMMENDED_MACOSX_DEPLOYMENT_TARGET)";
@@ -946,7 +960,7 @@
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				GENERATE_INFOPLIST_FILE = NO;
-				INFOPLIST_FILE = Resources/Info.plist;
+				INFOPLIST_FILE = "";
 				IPHONEOS_DEPLOYMENT_TARGET = 15.0;
 				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
 				MACOSX_DEPLOYMENT_TARGET = "$(RECOMMENDED_MACOSX_DEPLOYMENT_TARGET)";
@@ -970,7 +984,7 @@
 				ENABLE_HARDENED_RUNTIME = YES;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_FILE = Resources/Info.plist;
+				INFOPLIST_FILE = "Resources/Info-iPhone.plist";
 				INFOPLIST_KEY_CFBundleDisplayName = ICOI;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.education";
 				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphoneos*]" = YES;
@@ -988,7 +1002,7 @@
 				LD_RUNPATH_SEARCH_PATHS = "@executable_path/Frameworks";
 				"LD_RUNPATH_SEARCH_PATHS[sdk=macosx*]" = "@executable_path/../Frameworks";
 				MACOSX_DEPLOYMENT_TARGET = 11.0;
-				MARKETING_VERSION = 3.42;
+				MARKETING_VERSION = 3.43;
 				PRODUCT_BUNDLE_IDENTIFIER = "com.Quran.Elmallah.Islamic-Pillars.Islamic-Center-of-Irvine";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = auto;
@@ -1015,7 +1029,7 @@
 				ENABLE_HARDENED_RUNTIME = YES;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_FILE = Resources/Info.plist;
+				INFOPLIST_FILE = "Resources/Info-iPhone.plist";
 				INFOPLIST_KEY_CFBundleDisplayName = ICOI;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.education";
 				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphoneos*]" = YES;
@@ -1033,7 +1047,7 @@
 				LD_RUNPATH_SEARCH_PATHS = "@executable_path/Frameworks";
 				"LD_RUNPATH_SEARCH_PATHS[sdk=macosx*]" = "@executable_path/../Frameworks";
 				MACOSX_DEPLOYMENT_TARGET = 11.0;
-				MARKETING_VERSION = 3.42;
+				MARKETING_VERSION = 3.43;
 				PRODUCT_BUNDLE_IDENTIFIER = "com.Quran.Elmallah.Islamic-Pillars.Islamic-Center-of-Irvine";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = auto;
@@ -1058,7 +1072,7 @@
 				DEVELOPMENT_TEAM = 8HQMC4MQ59;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_FILE = Resources/Info.plist;
+				INFOPLIST_FILE = "Resources/Info-Watch.plist";
 				INFOPLIST_KEY_CFBundleDisplayName = ICOI;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown";
 				INFOPLIST_KEY_WKCompanionAppBundleIdentifier = "com.Quran.Elmallah.Islamic-Pillars.Islamic-Center-of-Irvine";
@@ -1068,7 +1082,7 @@
 					"@executable_path/Frameworks",
 				);
 				MACOSX_DEPLOYMENT_TARGET = 11.0;
-				MARKETING_VERSION = 3.42;
+				MARKETING_VERSION = 3.43;
 				PRODUCT_BUNDLE_IDENTIFIER = "com.Quran.Elmallah.Islamic-Pillars.Islamic-Center-of-Irvine.watchkitapp";
 				PRODUCT_NAME = ICOI;
 				SDKROOT = watchos;
@@ -1091,7 +1105,7 @@
 				DEVELOPMENT_TEAM = 8HQMC4MQ59;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_FILE = Resources/Info.plist;
+				INFOPLIST_FILE = "Resources/Info-Watch.plist";
 				INFOPLIST_KEY_CFBundleDisplayName = ICOI;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown";
 				INFOPLIST_KEY_WKCompanionAppBundleIdentifier = "com.Quran.Elmallah.Islamic-Pillars.Islamic-Center-of-Irvine";
@@ -1101,7 +1115,7 @@
 					"@executable_path/Frameworks",
 				);
 				MACOSX_DEPLOYMENT_TARGET = 11.0;
-				MARKETING_VERSION = 3.42;
+				MARKETING_VERSION = 3.43;
 				PRODUCT_BUNDLE_IDENTIFIER = "com.Quran.Elmallah.Islamic-Pillars.Islamic-Center-of-Irvine.watchkitapp";
 				PRODUCT_NAME = ICOI;
 				SDKROOT = watchos;
@@ -1118,13 +1132,13 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
-				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
+				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = "";
 				CODE_SIGN_ENTITLEMENTS = Resources/Entitlements.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = 8HQMC4MQ59;
 				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_FILE = Resources/Info.plist;
+				INFOPLIST_FILE = "Resources/Info-Widget.plist";
 				INFOPLIST_KEY_CFBundleDisplayName = ICOI;
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -1134,7 +1148,7 @@
 					"@executable_path/../../../../Frameworks",
 				);
 				MACOSX_DEPLOYMENT_TARGET = 11.0;
-				MARKETING_VERSION = 3.42;
+				MARKETING_VERSION = 3.43;
 				PRODUCT_BUNDLE_IDENTIFIER = "com.Quran.Elmallah.Islamic-Pillars.Islamic-Center-of-Irvine.watchkitapp.ICOI2";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = watchos;
@@ -1150,13 +1164,13 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
-				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
+				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = "";
 				CODE_SIGN_ENTITLEMENTS = Resources/Entitlements.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = 8HQMC4MQ59;
 				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_FILE = Resources/Info.plist;
+				INFOPLIST_FILE = "Resources/Info-Widget.plist";
 				INFOPLIST_KEY_CFBundleDisplayName = ICOI;
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -1166,7 +1180,7 @@
 					"@executable_path/../../../../Frameworks",
 				);
 				MACOSX_DEPLOYMENT_TARGET = 11.0;
-				MARKETING_VERSION = 3.42;
+				MARKETING_VERSION = 3.43;
 				PRODUCT_BUNDLE_IDENTIFIER = "com.Quran.Elmallah.Islamic-Pillars.Islamic-Center-of-Irvine.watchkitapp.ICOI2";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = watchos;

@@ -1,6 +1,4 @@
 import SwiftUI
-import Combine
-import WatchConnectivity
 import WidgetKit
 import UserNotifications
 import SwiftSoup
@@ -414,6 +412,8 @@ class Settings: NSObject, ObservableObject {
                 self.schedulePrayerTimeNotifications()
                 self.printAllScheduledNotifications()
                 WidgetCenter.shared.reloadAllTimelines()
+                
+                self.printAllScheduledNotifications()
                 completion?()
             }
         }
@@ -707,108 +707,99 @@ class Settings: NSObject, ObservableObject {
     
     func schedulePrayerTimeNotifications() {
         #if !os(watchOS)
-        if let prayerObject = prayersICOI {
-            let weekday = Calendar.current.component(.weekday, from: Date())
-            let isFriday = weekday == 6
+        guard let prayerObject = prayersICOI else { return }
+        
+        let center = UNUserNotificationCenter.current()
+        center.removeAllPendingNotificationRequests()
+        center.removeAllDeliveredNotifications()
+        
+        let weekday = Calendar.current.component(.weekday, from: Date())
+        let isFriday = (weekday == 6)
+        
+        var prayerTimes = prayerObject.prayers
+        
+        if !isFriday {
+            prayerTimes = prayerTimes.dropLast()
+            prayerTimes = prayerTimes.dropLast()
+        }
+        
+        for prayerTime in prayerTimes {
+            let notification: Bool
+            var preNotificationTime: Int?
             
-            var prayerTimes = prayerObject.prayers
-            
-            if !isFriday {
-                prayerTimes = prayerTimes.dropLast()
-                prayerTimes = prayerTimes.dropLast()
+            switch prayerTime.nameTransliteration {
+            case "Fajr Adhan":
+                notification = adhanFajr
+            case "Fajr Iqamah":
+                notification = iqamahFajr
+                preNotificationTime = iqamahFajrPreNotification
+                if khateraFajr {
+                    scheduleKhateraNotification(for: prayerTime, minutesAfter: 30, name: "Fajr Khatera")
+                }
+            case "Shurooq":
+                notification = sunriseTime
+            case "Dhuhr Adhan":
+                notification = adhanDhuhr
+            case "Dhuhr Iqamah":
+                notification = iqamahDhuhr
+                preNotificationTime = iqamahDhuhrPreNotification
+            case "First Jummuah":
+                notification = firstJummuah
+                preNotificationTime = firstJummuahPreNotification
+            case "Second Jummuah":
+                notification = secondJummuah
+                preNotificationTime = secondJummuahPreNotification
+            case "Asr Adhan":
+                notification = adhanAsr
+            case "Asr Iqamah":
+                notification = iqamahAsr
+                preNotificationTime = iqamahAsrPreNotification
+            case "Maghrib Adhan":
+                notification = adhanMaghrib
+            case "Maghrib Iqamah":
+                notification = iqamahMaghrib
+                preNotificationTime = iqamahMaghribPreNotification
+            case "Isha Adhan":
+                notification = adhanIsha
+            case "Isha Iqamah":
+                notification = iqamahIsha
+                preNotificationTime = iqamahIshaPreNotification
+                if khateraIsha {
+                    scheduleKhateraNotification(for: prayerTime, minutesAfter: 30, name: "Isha Khatera")
+                }
+            default:
+                continue
             }
             
-            let center = UNUserNotificationCenter.current()
-            center.removeAllPendingNotificationRequests()
-            
-            print("Scheduling prayer times")
-            
-            var hasScheduledShurooq = false
-                    
-            for prayerTime in prayerTimes {
-                let notification: Bool
-                var preNotificationTime: Int?
-                
-                switch prayerTime.nameTransliteration {
-                case "Fajr Adhan":
-                    notification = adhanFajr
-                case "Fajr Iqamah":
-                    notification = iqamahFajr
-                    preNotificationTime = iqamahFajrPreNotification
-                    
-                    if khateraFajr {
-                        scheduleKhateraNotification(for: prayerTime, minutesAfter: 30, name: "Fajr Khatera")
-                    }
-                case "Shurooq":
-                    if hasScheduledShurooq { continue }
-                    notification = sunriseTime
-                    hasScheduledShurooq = true
-                case "Dhuhr Adhan":
-                    notification = adhanDhuhr
-                case "Dhuhr Iqamah":
-                    notification = iqamahDhuhr
-                    preNotificationTime = iqamahDhuhrPreNotification
-                case "First Jummuah":
-                    notification = firstJummuah
-                    preNotificationTime = firstJummuahPreNotification
-                case "Second Jummuah":
-                    notification = secondJummuah
-                    preNotificationTime = secondJummuahPreNotification
-                case "Asr Adhan":
-                    notification = adhanAsr
-                case "Asr Iqamah":
-                    notification = iqamahAsr
-                    preNotificationTime = iqamahAsrPreNotification
-                case "Maghrib Adhan":
-                    notification = adhanMaghrib
-                case "Maghrib Iqamah":
-                    notification = iqamahMaghrib
-                    preNotificationTime = iqamahMaghribPreNotification
-                case "Isha Adhan":
-                    notification = adhanIsha
-                case "Isha Iqamah":
-                    notification = iqamahIsha
-                    preNotificationTime = iqamahIshaPreNotification
-                    
-                    if khateraIsha {
-                        scheduleKhateraNotification(for: prayerTime, minutesAfter: 30, name: "Isha Khatera")
-                    }
-                default:
-                    continue
-                }
-                
-                if notification {
-                    scheduleNotification(for: prayerTime, preNotificationTime: nil)
-                }
-                
-                if let preNotificationTime = preNotificationTime, preNotificationTime > 0 {
-                    scheduleNotification(for: prayerTime, preNotificationTime: preNotificationTime)
-                }
+            if notification {
+                scheduleNotification(for: prayerTime, preNotificationTime: nil)
             }
-            
-            if ratingJummuah {
-                let center = UNUserNotificationCenter.current()
-                
-                let components = DateComponents(hour: 14, minute: 30, weekday: 6) // Friday at 2:30 PM
-                let date = Calendar.current.nextDate(after: Date(), matching: components, matchingPolicy: .nextTime)!
-                
+            if let m = preNotificationTime, m > 0 {
+                scheduleNotification(for: prayerTime, preNotificationTime: m)
+            }
+        }
+        
+        if ratingJummuah {
+            let components = DateComponents(hour: 14, minute: 30, weekday: 6)
+            if let date = Calendar.current.nextDate(after: Date(), matching: components, matchingPolicy: .nextTime) {
                 let content = UNMutableNotificationContent()
-                content.title = NSString.localizedUserNotificationString(forKey: "Islamic Center of Irvine (ICOI)", arguments: nil)
-                content.body = NSString.localizedUserNotificationString(forKey: "Tap here if you want to rate the khutbah", arguments: nil)
+                content.title = "Islamic Center of Irvine (ICOI)"
+                content.body = "Tap here if you want to rate the khutbah"
+                content.sound = UNNotificationSound.default
                 
-                let trigger = UNCalendarNotificationTrigger(dateMatching: Calendar.current.dateComponents([.weekday, .hour, .minute], from: date), repeats: false)
+                let triggerComponents = Calendar.current.dateComponents([.year, .month, .day, .hour, .minute], from: date)
+                let trigger = UNCalendarNotificationTrigger(dateMatching: triggerComponents, repeats: false)
                 
                 let request = UNNotificationRequest(identifier: "jummuahRating", content: content, trigger: trigger)
-                
-                center.add(request) { (error : Error?) in
-                    if let theError = error {
-                        print(theError.localizedDescription)
+                center.add(request) { error in
+                    if let e = error {
+                        print("Error scheduling jummuahRating:", e.localizedDescription)
                     }
                 }
             }
-            
-            prayersICOI?.setNotification = true
         }
+        
+        prayersICOI?.setNotification = true
         #endif
     }
 
@@ -817,50 +808,54 @@ class Settings: NSObject, ObservableObject {
         let content = UNMutableNotificationContent()
         content.title = "Islamic Center of Irvine (ICOI)"
         
-        let triggerTime: Date
-        if let preNotificationTime = preNotificationTime, preNotificationTime != 0 {
-            triggerTime = Calendar.current.date(byAdding: .minute, value: -preNotificationTime, to: prayerTime.time)!
+        let baseTime = prayerTime.time
+        var triggerTime = baseTime
+        
+        if let pre = preNotificationTime, pre != 0 {
+            triggerTime = Calendar.current.date(byAdding: .minute, value: -pre, to: baseTime) ?? baseTime
             if prayerTime.nameTransliteration == "Shurooq" {
-                content.body = "Shurooq (sunrise - end of Fajr) is in \(preNotificationTime) minutes [\(self.formatDate(prayerTime.time))]"
+                content.body = "Shurooq is in \(pre) min [\(formatDate(baseTime))]"
             } else {
-                content.body = "\(prayerTime.nameTransliteration) is in \(preNotificationTime) minutes [\(self.formatDate(prayerTime.time))]"
+                content.body = "\(prayerTime.nameTransliteration) is in \(pre) min [\(formatDate(baseTime))]"
             }
         } else {
-            triggerTime = prayerTime.time
             if prayerTime.nameTransliteration == "Shurooq" {
-                content.body = "Time for shurooq (sunrise - end of Fajr) at \(self.formatDate(prayerTime.time))"
+                content.body = "Time for Shurooq at \(formatDate(baseTime))"
             } else {
-                content.body = "Time for \(prayerTime.nameTransliteration) at \(self.formatDate(prayerTime.time))"
+                content.body = "Time for \(prayerTime.nameTransliteration) at \(formatDate(baseTime))"
             }
         }
         
-        content.sound = UNNotificationSound.default
-        let dateComponents = Calendar.current.dateComponents([.hour, .minute], from: triggerTime)
-        let trigger = UNCalendarNotificationTrigger(dateMatching: dateComponents, repeats: false)
+        content.sound = .default
+
+        let components = Calendar.current.dateComponents([.year, .month, .day, .hour, .minute], from: triggerTime)
+        
+        let trigger = UNCalendarNotificationTrigger(dateMatching: components, repeats: false)
         let request = UNNotificationRequest(identifier: UUID().uuidString, content: content, trigger: trigger)
-        center.add(request) { (error) in
-            if let error = error {
-                print("Error scheduling notification: \(error.localizedDescription)")
+        
+        center.add(request) { error in
+            if let e = error {
+                print("Error scheduling notification:", e.localizedDescription)
             }
         }
     }
-    
-    private func scheduleKhateraNotification(for prayerTime: Prayer, minutesAfter: Int, name: String) {
+
+    func scheduleKhateraNotification(for prayerTime: Prayer, minutesAfter: Int, name: String) {
         let center = UNUserNotificationCenter.current()
-        
         let khateraDate = prayerTime.time.addingTimeInterval(TimeInterval(minutesAfter * 60))
         
         let content = UNMutableNotificationContent()
-        content.title = NSString.localizedUserNotificationString(forKey: "Islamic Center of Irvine (ICOI)", arguments: nil)
-        content.body = NSString.localizedUserNotificationString(forKey: "Tap here to rate the \(name). You can turn this notification off in app.", arguments: nil)
+        content.title = "Islamic Center of Irvine (ICOI)"
+        content.body = "Tap here to rate the \(name). You can turn this notification off in app."
+        content.sound = .default
         
-        let trigger = UNCalendarNotificationTrigger(dateMatching: Calendar.current.dateComponents([.hour, .minute, .second], from: khateraDate), repeats: false)
+        let comps = Calendar.current.dateComponents([.year, .month, .day, .hour, .minute], from: khateraDate)
+        let trigger = UNCalendarNotificationTrigger(dateMatching: comps, repeats: false)
         
         let request = UNNotificationRequest(identifier: "\(name)Notification", content: content, trigger: trigger)
-        
-        center.add(request) { (error : Error?) in
-            if let theError = error {
-                print(theError.localizedDescription)
+        center.add(request) { error in
+            if let e = error {
+                print("Error scheduling khatera:", e.localizedDescription)
             }
         }
     }
@@ -1426,62 +1421,6 @@ func arabicNumberString(from number: Int) -> String {
         }
     }
     return arabicNumberString
-}
-
-import WatchConnectivity
-
-class WatchConnectivityManager: NSObject, WCSessionDelegate {
-    static let shared = WatchConnectivityManager()
-    
-    private override init() {
-        super.init()
-        
-        if WCSession.isSupported() {
-            WCSession.default.delegate = self
-            WCSession.default.activate()
-        }
-    }
-
-    // WCSessionDelegate methods
-    func session(_ session: WCSession, activationDidCompleteWith activationState: WCSessionActivationState, error: Error?) {
-        switch activationState {
-        case .activated:
-            print("WCSession is activated.")
-        case .inactive:
-            print("WCSession is inactive.")
-        case .notActivated:
-            print("WCSession is not activated.")
-        @unknown default:
-            print("Unknown WCSession activation state.")
-        }
-
-        if let error = error {
-            print("WCSession activation failed with error: \(error.localizedDescription)")
-        }
-    }
-
-    func session(_ session: WCSession, didReceiveMessage message: [String : Any]) {
-        print("Received message from iPhone: \(message)")
-
-        DispatchQueue.main.async {
-            if let settingsDict = message["settings"] as? [String: Any] {
-                print("Updating settings from: \(settingsDict)") // Added print statement
-                // Convert dictionary back to Settings object and assign it to your Settings instance
-                Settings.shared.update(from: settingsDict)
-                print("Updated settings: \(Settings.shared.dictionaryRepresentation())") // Added print statement
-            }
-        }
-    }
-
-    #if os(iOS)
-    func sessionDidBecomeInactive(_ session: WCSession) {
-        // Do something here on the iPhone
-    }
-
-    func sessionDidDeactivate(_ session: WCSession) {
-        // Do something here on the iPhone
-    }
-    #endif
 }
 
 struct CustomColorSchemeKey: EnvironmentKey {
