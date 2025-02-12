@@ -35,6 +35,7 @@ struct LockScreen2AdhanView: View {
                 }
             }
         }
+        .lineLimit(1)
     }
 }
 

@@ -67,22 +67,24 @@ struct IslamicCenterofIrvineApp: App {
             .onAppear {
                 withAnimation {
                     settings.fetchPrayerTimes()
+                    settings.fetchEvents()
+                    settings.fetchBusinesses()
                 }
             }
         }
-        .onChange(of: settings.lastReadSurah) { newValue in
+        .onChange(of: settings.lastReadSurah) { _ in
             sendMessageToWatch()
         }
-        .onChange(of: settings.lastReadAyah) { newValue in
+        .onChange(of: settings.lastReadAyah) { _ in
             sendMessageToWatch()
         }
-        .onChange(of: settings.favoriteSurahs) { newValue in
+        .onChange(of: settings.favoriteSurahs) { _ in
             sendMessageToWatch()
         }
-        .onChange(of: settings.bookmarkedAyahs) { newValue in
+        .onChange(of: settings.bookmarkedAyahs) { _ in
             sendMessageToWatch()
         }
-        .onChange(of: settings.favoriteLetters) { newValue in
+        .onChange(of: settings.favoriteLetters) { _ in
             sendMessageToWatch()
         }
     }

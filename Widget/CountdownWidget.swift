@@ -149,6 +149,8 @@ struct PrayerEntryView: View {
                 }
             }
         }
+        .lineLimit(1)
+        .minimumScaleFactor(0.85)
     }
 }
 

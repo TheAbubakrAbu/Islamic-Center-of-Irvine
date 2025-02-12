@@ -50,8 +50,8 @@ struct ICOISettingsView: View {
                         settings.fetchPrayerTimes(force: true)
                     })
                     
-                    SyncButton(title: "Events and Programs:", lastUpdated: settings.eventsICOI?.day, syncAction: {
-                        settings.fetchEventsAndPrograms(force: true)
+                    SyncButton(title: "Events:", lastUpdated: settings.eventsICOI?.day, syncAction: {
+                        settings.fetchEvents(force: true)
                     })
                     
                     SyncButton(title: "Businesses:", lastUpdated: settings.businessesICOI?.day, syncAction: {
@@ -59,7 +59,7 @@ struct ICOISettingsView: View {
                     })
                     
                     #if !os(watchOS)
-                    Text("Syncing is available every 5 minutes.\n\nAll updates for prayers, events, programs, and businesses occur automatically when you launch the app for the first time each day.\n\nPrayer times are specifically synced daily before Fajr to ensure accurate notifications.")
+                    Text("Syncing is available every 5 minutes.\n\nAll updates for prayers, events, and businesses occur automatically when you launch the app for the first time each day.\n\nPrayer times are specifically synced daily before Fajr to ensure accurate notifications.")
                         .font(.caption)
                         .foregroundColor(.secondary)
                     
@@ -69,7 +69,7 @@ struct ICOISettingsView: View {
                         .foregroundColor(.secondary)
                         .padding(.vertical, 2)
                     #else
-                    Text("Syncing is available every 5 minutes.\n\nAll updates for prayers, events, programs, and businesses occur automatically when you launch the app for the first time each day.")
+                    Text("Syncing is available every 5 minutes.\n\nAll updates for prayers, events, and businesses occur automatically when you launch the app for the first time each day.")
                         .font(.caption)
                         .foregroundColor(.secondary)
                     #endif
@@ -239,10 +239,11 @@ struct SyncButton: View {
             Spacer()
             
             Text("Sync Now")
+                .font(.subheadline)
                 .padding(8)
-                .foregroundColor(.white)
+                .foregroundColor(.primary)
                 .background(settings.accentColor)
-                .cornerRadius(8)
+                .cornerRadius(10)
                 .onTapGesture {
                     if canSync {
                         settings.hapticFeedback()
@@ -636,7 +637,7 @@ struct SettingsAppearanceView: View {
                 .font(.subheadline)
                 .tint(settings.accentColor)
             
-            Text("The default list view is the standard interface found in many of Apple's first party apps, including Notes. This setting only applies to the prayer and event views.")
+            Text("The default list view is the standard interface found in many of Apple's first party apps, including Notes. This setting only applies only to the prayer view.")
                 .font(.caption)
                 .foregroundColor(.secondary)
                 .padding(.vertical, 2)

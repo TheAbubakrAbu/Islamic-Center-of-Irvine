@@ -84,14 +84,9 @@
 		72B8AC282D58BF1900591AD4 /* WatchConnectivity.swift in Sources */ = {isa = PBXBuildFile; fileRef = 72B8AC242D58BF1900591AD4 /* WatchConnectivity.swift */; };
 		72CA76FD2CD48B45002D4EFB /* quran_en.json in Resources */ = {isa = PBXBuildFile; fileRef = 72CA76FC2CD48B44002D4EFB /* quran_en.json */; };
 		72CA76FE2CD48B45002D4EFB /* quran_en.json in Resources */ = {isa = PBXBuildFile; fileRef = 72CA76FC2CD48B44002D4EFB /* quran_en.json */; };
-		72CAE14E2D438B1000C423C5 /* SwiftSoup in Frameworks */ = {isa = PBXBuildFile; productRef = 72CAE14D2D438B1000C423C5 /* SwiftSoup */; };
 		72CAE1512D438B5600C423C5 /* SwiftSoup in Frameworks */ = {isa = PBXBuildFile; productRef = 72CAE1502D438B5600C423C5 /* SwiftSoup */; };
 		72CAE1532D438B5D00C423C5 /* SwiftSoup in Frameworks */ = {isa = PBXBuildFile; productRef = 72CAE1522D438B5D00C423C5 /* SwiftSoup */; };
 		72CAE1552D438B6500C423C5 /* SwiftSoup in Frameworks */ = {isa = PBXBuildFile; productRef = 72CAE1542D438B6500C423C5 /* SwiftSoup */; };
-		72CAE1572D438B7A00C423C5 /* GoogleAPIClientForREST_Sheets in Frameworks */ = {isa = PBXBuildFile; productRef = 72CAE1562D438B7A00C423C5 /* GoogleAPIClientForREST_Sheets */; };
-		72CAE1592D438B7F00C423C5 /* GoogleAPIClientForREST_Sheets in Frameworks */ = {isa = PBXBuildFile; productRef = 72CAE1582D438B7F00C423C5 /* GoogleAPIClientForREST_Sheets */; };
-		72CAE15B2D438B8400C423C5 /* GoogleAPIClientForREST_Sheets in Frameworks */ = {isa = PBXBuildFile; productRef = 72CAE15A2D438B8400C423C5 /* GoogleAPIClientForREST_Sheets */; };
-		72CAE15D2D438B8700C423C5 /* GoogleAPIClientForREST_Sheets in Frameworks */ = {isa = PBXBuildFile; productRef = 72CAE15C2D438B8700C423C5 /* GoogleAPIClientForREST_Sheets */; };
 		72CD0B682AE0C50D00D37518 /* EventsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 72CD0B672AE0C50D00D37518 /* EventsView.swift */; };
 		72CD0B692AE0C50D00D37518 /* EventsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 72CD0B672AE0C50D00D37518 /* EventsView.swift */; };
 		72CD0B6C2AE0C55600D37518 /* LinksView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 72CD0B6B2AE0C55600D37518 /* LinksView.swift */; };
@@ -220,7 +215,6 @@
 		72B8AC292D58C07900591AD4 /* Info-Watch.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = "Info-Watch.plist"; sourceTree = "<group>"; };
 		72CA76FC2CD48B44002D4EFB /* quran_en.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = quran_en.json; sourceTree = "<group>"; };
 		72CAE1402D438A1B00C423C5 /* Info-iPhone.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = "Info-iPhone.plist"; sourceTree = "<group>"; };
-		72CAE1482D438AD100C423C5 /* google-api-objectivec-client-for-rest-3.2.0 */ = {isa = PBXFileReference; lastKnownFileType = wrapper; path = "google-api-objectivec-client-for-rest-3.2.0"; sourceTree = "<group>"; };
 		72CAE1492D438AD100C423C5 /* SwiftSoup-master */ = {isa = PBXFileReference; lastKnownFileType = wrapper; path = "SwiftSoup-master"; sourceTree = "<group>"; };
 		72CD0B672AE0C50D00D37518 /* EventsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EventsView.swift; sourceTree = "<group>"; };
 		72CD0B6B2AE0C55600D37518 /* LinksView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LinksView.swift; sourceTree = "<group>"; };
@@ -235,7 +229,6 @@
 			buildActionMask = 2147483647;
 			files = (
 				72CAE1512D438B5600C423C5 /* SwiftSoup in Frameworks */,
-				72CAE1592D438B7F00C423C5 /* GoogleAPIClientForREST_Sheets in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -244,8 +237,6 @@
 			buildActionMask = 2147483647;
 			files = (
 				7285A3512A9FA79B00D8B118 /* SwiftSoup in Frameworks */,
-				72CAE14E2D438B1000C423C5 /* SwiftSoup in Frameworks */,
-				72CAE1572D438B7A00C423C5 /* GoogleAPIClientForREST_Sheets in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -254,7 +245,6 @@
 			buildActionMask = 2147483647;
 			files = (
 				72CAE1532D438B5D00C423C5 /* SwiftSoup in Frameworks */,
-				72CAE15B2D438B8400C423C5 /* GoogleAPIClientForREST_Sheets in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -263,7 +253,6 @@
 			buildActionMask = 2147483647;
 			files = (
 				72CAE1552D438B6500C423C5 /* SwiftSoup in Frameworks */,
-				72CAE15D2D438B8700C423C5 /* GoogleAPIClientForREST_Sheets in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -433,7 +422,6 @@
 		72CAE1452D438A9E00C423C5 /* Packages */ = {
 			isa = PBXGroup;
 			children = (
-				72CAE1482D438AD100C423C5 /* google-api-objectivec-client-for-rest-3.2.0 */,
 				72CAE1492D438AD100C423C5 /* SwiftSoup-master */,
 			);
 			path = Packages;
@@ -595,7 +583,6 @@
 			);
 			mainGroup = 72974BC72A9EDB7D00D8BD8E;
 			packageReferences = (
-				72CAE14B2D438AF100C423C5 /* XCLocalSwiftPackageReference "Resources/Packages/google-api-objectivec-client-for-rest-3.2.0" */,
 				72CAE14C2D438B1000C423C5 /* XCLocalSwiftPackageReference "Resources/Packages/SwiftSoup-master" */,
 			);
 			preferredProjectObjectVersion = 77;
@@ -800,7 +787,7 @@
 					"@executable_path/../../Frameworks",
 				);
 				MACOSX_DEPLOYMENT_TARGET = 11.0;
-				MARKETING_VERSION = 3.43;
+				MARKETING_VERSION = 3.50;
 				PRODUCT_BUNDLE_IDENTIFIER = "com.Quran.Elmallah.Islamic-Pillars.Islamic-Center-of-Irvine.ICOI1";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = iphoneos;
@@ -831,7 +818,7 @@
 					"@executable_path/../../Frameworks",
 				);
 				MACOSX_DEPLOYMENT_TARGET = 11.0;
-				MARKETING_VERSION = 3.43;
+				MARKETING_VERSION = 3.50;
 				PRODUCT_BUNDLE_IDENTIFIER = "com.Quran.Elmallah.Islamic-Pillars.Islamic-Center-of-Irvine.ICOI1";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = iphoneos;
@@ -1002,7 +989,7 @@
 				LD_RUNPATH_SEARCH_PATHS = "@executable_path/Frameworks";
 				"LD_RUNPATH_SEARCH_PATHS[sdk=macosx*]" = "@executable_path/../Frameworks";
 				MACOSX_DEPLOYMENT_TARGET = 11.0;
-				MARKETING_VERSION = 3.43;
+				MARKETING_VERSION = 3.50;
 				PRODUCT_BUNDLE_IDENTIFIER = "com.Quran.Elmallah.Islamic-Pillars.Islamic-Center-of-Irvine";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = auto;
@@ -1047,7 +1034,7 @@
 				LD_RUNPATH_SEARCH_PATHS = "@executable_path/Frameworks";
 				"LD_RUNPATH_SEARCH_PATHS[sdk=macosx*]" = "@executable_path/../Frameworks";
 				MACOSX_DEPLOYMENT_TARGET = 11.0;
-				MARKETING_VERSION = 3.43;
+				MARKETING_VERSION = 3.50;
 				PRODUCT_BUNDLE_IDENTIFIER = "com.Quran.Elmallah.Islamic-Pillars.Islamic-Center-of-Irvine";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = auto;
@@ -1082,7 +1069,7 @@
 					"@executable_path/Frameworks",
 				);
 				MACOSX_DEPLOYMENT_TARGET = 11.0;
-				MARKETING_VERSION = 3.43;
+				MARKETING_VERSION = 3.50;
 				PRODUCT_BUNDLE_IDENTIFIER = "com.Quran.Elmallah.Islamic-Pillars.Islamic-Center-of-Irvine.watchkitapp";
 				PRODUCT_NAME = ICOI;
 				SDKROOT = watchos;
@@ -1115,7 +1102,7 @@
 					"@executable_path/Frameworks",
 				);
 				MACOSX_DEPLOYMENT_TARGET = 11.0;
-				MARKETING_VERSION = 3.43;
+				MARKETING_VERSION = 3.50;
 				PRODUCT_BUNDLE_IDENTIFIER = "com.Quran.Elmallah.Islamic-Pillars.Islamic-Center-of-Irvine.watchkitapp";
 				PRODUCT_NAME = ICOI;
 				SDKROOT = watchos;
@@ -1148,7 +1135,7 @@
 					"@executable_path/../../../../Frameworks",
 				);
 				MACOSX_DEPLOYMENT_TARGET = 11.0;
-				MARKETING_VERSION = 3.43;
+				MARKETING_VERSION = 3.50;
 				PRODUCT_BUNDLE_IDENTIFIER = "com.Quran.Elmallah.Islamic-Pillars.Islamic-Center-of-Irvine.watchkitapp.ICOI2";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = watchos;
@@ -1180,7 +1167,7 @@
 					"@executable_path/../../../../Frameworks",
 				);
 				MACOSX_DEPLOYMENT_TARGET = 11.0;
-				MARKETING_VERSION = 3.43;
+				MARKETING_VERSION = 3.50;
 				PRODUCT_BUNDLE_IDENTIFIER = "com.Quran.Elmallah.Islamic-Pillars.Islamic-Center-of-Irvine.watchkitapp.ICOI2";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = watchos;
@@ -1244,10 +1231,6 @@
 /* End XCConfigurationList section */
 
 /* Begin XCLocalSwiftPackageReference section */
-		72CAE14B2D438AF100C423C5 /* XCLocalSwiftPackageReference "Resources/Packages/google-api-objectivec-client-for-rest-3.2.0" */ = {
-			isa = XCLocalSwiftPackageReference;
-			relativePath = "Resources/Packages/google-api-objectivec-client-for-rest-3.2.0";
-		};
 		72CAE14C2D438B1000C423C5 /* XCLocalSwiftPackageReference "Resources/Packages/SwiftSoup-master" */ = {
 			isa = XCLocalSwiftPackageReference;
 			relativePath = "Resources/Packages/SwiftSoup-master";

@@ -44,6 +44,8 @@ struct ICOI0_Watch_AppApp: App {
             .onAppear {
                 withAnimation {
                     settings.fetchPrayerTimes()
+                    settings.fetchEvents()
+                    settings.fetchBusinesses()
                 }
             }
         }

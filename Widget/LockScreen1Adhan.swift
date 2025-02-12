@@ -20,6 +20,8 @@ struct LockScreen1AdhanView: View {
                 }
             }
         }
+        .lineLimit(1)
+        .minimumScaleFactor(0.5)
     }
 }
 

@@ -35,6 +35,7 @@ struct LockScreen2IqamahView: View {
                 }
             }
         }
+        .lineLimit(1)
     }
 }
 

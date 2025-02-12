@@ -2,7 +2,6 @@ import SwiftUI
 import WidgetKit
 import UserNotifications
 import SwiftSoup
-import GoogleAPIClientForREST_Sheets
 
 struct LetterData: Identifiable, Codable, Equatable, Comparable {
     let id: Int
@@ -47,25 +46,12 @@ struct Events: Codable {
 }
 
 struct Event: Codable {
+    let dayOfWeek: String
     let name: String
     let link: String
     let date: Date
     let time: String
     let location: String
-}
-
-struct Programs: Codable {
-    let programs: [Program]
-    let day: Date
-}
-
-struct Program: Codable {
-    let name: String
-    let days: String
-    let time: String
-    let location: String
-    let link: String
-    let notes: String
 }
 
 struct Businesses: Codable {
@@ -135,7 +121,6 @@ class Settings: NSObject, ObservableObject {
         
         self.prayersICOIData = appGroupUserDefaultsICOI?.data(forKey: "prayersICOIData") ?? Data()
         self.eventsICOIData = appGroupUserDefaultsICOI?.data(forKey: "eventsICOIData") ?? Data()
-        self.programsICOIData = appGroupUserDefaultsICOI?.data(forKey: "programsICOIData") ?? Data()
         self.businessesICOIData = appGroupUserDefaultsICOI?.data(forKey: "businessesICOIData") ?? Data()
         
         self.favoriteSurahsData = appGroupUserDefaults?.data(forKey: "favoriteSurahsData") ?? Data()
@@ -419,7 +404,7 @@ class Settings: NSObject, ObservableObject {
         }
     }
 
-    var eventsCompletionHandler: ((Events?) -> Void)?
+    /*var eventsCompletionHandler: ((Events?) -> Void)?
 
     func getEventsICOI(completion: @escaping (Events?) -> Void) {
         self.eventsCompletionHandler = completion
@@ -479,66 +464,153 @@ class Settings: NSObject, ObservableObject {
         DispatchQueue.main.async {
             self.eventsCompletionHandler?(fullEvents)
         }
-    }
+    }*/
     
-    var programsCompletionHandler: ((Programs?) -> Void)?
-    
-    func getProgramsICOI(completion: @escaping (Programs?) -> Void) {
-        self.programsCompletionHandler = completion
-
-        let sheetsService = GTLRSheetsService()
-        sheetsService.apiKey = "AIzaSyD4a6F5L_GiJKT44apsMWXJ430EbNp8Lwg"
+    func nextDate(for dayLabel: String, baseDate: Date = Date()) -> Date {
+        let calendar = Calendar.current
+        var weekdayNumber: Int?
         
-        let spreadsheetId = "1h3XPcQEhlp4UtuAkYLvKxwBK1rDmPG_rfPrXW9ZynFU"
-        let range = "Programs!A2:F"
-        let query = GTLRSheetsQuery_SpreadsheetsValuesGet.query(withSpreadsheetId: spreadsheetId, range:range)
+        switch dayLabel.lowercased() {
+        case "mon", "monday":
+            weekdayNumber = 2
+        case "tue", "tuesday":
+            weekdayNumber = 3
+        case "wed", "wednesday", "weds":
+            weekdayNumber = 4
+        case "thu", "thursday":
+            weekdayNumber = 5
+        case "fri", "friday":
+            weekdayNumber = 6
+        case "sat", "saturday":
+            weekdayNumber = 7
+        case "sun", "sunday":
+            weekdayNumber = 1
+        case "daily":
+            return baseDate
+        default:
+            return baseDate
+        }
         
-        sheetsService.executeQuery(query, delegate: self, didFinish: #selector(handleProgramsQueryResult(ticket:finishedWithObject:error:)))
+        if let weekdayNumber = weekdayNumber,
+           let next = calendar.nextDate(after: baseDate,
+                                        matching: DateComponents(weekday: weekdayNumber),
+                                        matchingPolicy: .nextTime) {
+            return next
+        }
+        return baseDate
     }
 
-    @objc func handleProgramsQueryResult(ticket: GTLRServiceTicket, finishedWithObject result: GTLRSheets_ValueRange, error: NSError?) {
-        if let error = error {
-            print("Error: \(error.localizedDescription)")
-            DispatchQueue.main.async {
-                self.programsCompletionHandler?(nil)
-            }
+    func combineDateAndTime(baseDate: Date, timeString: String) -> Date {
+        let upperTime = timeString.uppercased()
+        let period: String
+        if upperTime.contains("AM") {
+            period = "AM"
+        } else if upperTime.contains("PM") {
+            period = "PM"
+        } else {
+            return baseDate
+        }
+        
+        let parts = timeString.split(separator: "-")
+        guard let firstPart = parts.first else { return baseDate }
+        let timePart = firstPart.trimmingCharacters(in: .whitespaces)
+        
+        let combinedString = timePart + " " + period
+        let formatter = DateFormatter()
+        formatter.dateFormat = "h:mm a"
+        
+        if let timeDate = formatter.date(from: combinedString) {
+            let calendar = Calendar.current
+            var baseComponents = calendar.dateComponents([.year, .month, .day], from: baseDate)
+            let timeComponents = calendar.dateComponents([.hour, .minute], from: timeDate)
+            baseComponents.hour = timeComponents.hour
+            baseComponents.minute = timeComponents.minute
+            return calendar.date(from: baseComponents) ?? baseDate
+        }
+        
+        return baseDate
+    }
+
+    func getEventsICOI(completion: @escaping (Events?) -> Void) {
+        guard let url = URL(string: "https://www.icoi.net/weekly-programs/") else {
+            completion(nil)
             return
         }
         
-        guard let rows = result.values, !rows.isEmpty else {
-            print("No data found.")
-            DispatchQueue.main.async {
-                self.programsCompletionHandler?(nil)
-            }
-            return
-        }
-        
-        var programs: [Program] = []
-        for row in rows {
-            guard row.count >= 6 else {
-                print("Incomplete row data.")
-                continue
+        URLSession.shared.dataTask(with: url) { data, response, error in
+            if let error = error {
+                print("Error fetching ICOI events: \(error.localizedDescription)")
+                DispatchQueue.main.async { completion(nil) }
+                return
             }
             
-            let name = (row[0] as? String) ?? ""
-            let days = (row[1] as? String) ?? ""
-            let time = (row[2] as? String) ?? ""
-            let location = (row[3] as? String) ?? ""
-            let link = (row[4] as? String) ?? ""
-            let notes = (row[5] as? String) ?? ""
+            guard let data = data,
+                  let html = String(data: data, encoding: .utf8) else {
+                DispatchQueue.main.async { completion(nil) }
+                return
+            }
             
-            let program = Program(name: name, days: days, time: time, location: location, link: link, notes: notes)
-            programs.append(program)
-        }
-        
-        let fullPrograms = Programs(programs: programs, day: Date())
-        
-        DispatchQueue.main.async {
-            self.programsCompletionHandler?(fullPrograms)
-        }
+            do {
+                let document = try SwiftSoup.parse(html)
+                let columns = try document.select("div.elementor-column.elementor-inner-column")
+                var eventsList: [Event] = []
+                
+                let validDays = ["Daily", "Mon", "Tue", "WED", "THU", "FRI", "Sat", "Sun"]
+                
+                for column in columns.array() {
+                    let spans = try column.select("span.elementor-heading-title")
+                    if spans.count < 2 { continue }
+                    
+                    let dayLabel = try spans.get(0).text().trimmingCharacters(in: .whitespacesAndNewlines)
+                    if !validDays.contains(dayLabel) { continue }
+                    
+                    let baseDate = self.nextDate(for: dayLabel)
+                    var index = 1
+                    while index < spans.count {
+                        let eventName = try spans.get(index).text().trimmingCharacters(in: .whitespacesAndNewlines)
+                        var details = ""
+                        if index + 1 < spans.count {
+                            details = try spans.get(index + 1).text().trimmingCharacters(in: .whitespacesAndNewlines)
+                        }
+                        
+                        var eventTime = ""
+                        var eventLocation = ""
+                        if details.contains("|") {
+                            let parts = details.components(separatedBy: "|")
+                            eventTime = parts[0].trimmingCharacters(in: .whitespacesAndNewlines)
+                            if parts.count > 1 {
+                                eventLocation = parts[1].trimmingCharacters(in: .whitespacesAndNewlines)
+                            }
+                        } else {
+                            eventTime = details
+                        }
+                        
+                        let eventDate = self.combineDateAndTime(baseDate: baseDate, timeString: eventTime)
+                        
+                        let event = Event(dayOfWeek: dayLabel,
+                                          name: eventName,
+                                          link: "",
+                                          date: eventDate,
+                                          time: eventTime,
+                                          location: eventLocation)
+                        eventsList.append(event)
+                        
+                        index += 2
+                    }
+                }
+                
+                let eventsModel = Events(events: eventsList, day: Date())
+                DispatchQueue.main.async {
+                    completion(eventsModel)
+                }
+            } catch {
+                print("Error parsing HTML: \(error)")
+                DispatchQueue.main.async { completion(nil) }
+            }
+        }.resume()
     }
-    
-    func fetchEventsAndPrograms(force: Bool = false) {
+     
+    func fetchEvents(force: Bool = false) {
         var hasUpdatedDates = false
         
         if hijriDateArabic.isEmpty || hijriDateEnglish.isEmpty {
@@ -556,16 +628,6 @@ class Settings: NSObject, ObservableObject {
             
             getEventsICOI { events in
                 self.eventsICOI = events
-            }
-        }
-        
-        if force || programsICOI == nil || programsICOI?.programs.isEmpty == true || programsICOI?.day.isSameDay(as: Date()) == false {
-            print("New programs")
-            
-            if !hasUpdatedDates { updateDates() }
-            
-            getProgramsICOI { programs in
-                self.programsICOI = programs
             }
         }
     }
@@ -955,24 +1017,6 @@ class Settings: NSObject, ObservableObject {
         }
     }
     
-    @Published var programsICOIData: Data {
-        didSet {
-            if !programsICOIData.isEmpty {
-                appGroupUserDefaultsICOI?.setValue(programsICOIData, forKey: "programsICOIData")
-            }
-        }
-    }
-    var programsICOI: Programs? {
-        get {
-            let decoder = JSONDecoder()
-            return try? decoder.decode(Programs.self, from: programsICOIData)
-        }
-        set {
-            let encoder = JSONEncoder()
-            programsICOIData = (try? encoder.encode(newValue)) ?? Data()
-        }
-    }
-    
     @Published var businessesICOIData: Data {
         didSet {
             if !businessesICOIData.isEmpty {
@@ -1049,14 +1093,6 @@ class Settings: NSObject, ObservableObject {
         }
         
         do {
-            if let programsICOI = self.programsICOI {
-                dict["programsICOIData"] = try encoder.encode(programsICOI)
-            }
-        } catch {
-            print("Error encoding programsICOI: \(error)")
-        }
-
-        do {
             dict["businessesICOIData"] = try encoder.encode(self.businessesICOI)
         } catch {
             print("Error encoding businessesICOI: \(error)")
@@ -1093,10 +1129,6 @@ class Settings: NSObject, ObservableObject {
         
         if let eventsICOIData = dict["eventsICOIData"] as? Data {
             self.eventsICOI = try? decoder.decode(Events.self, from: eventsICOIData)
-        }
-        
-        if let programsICOIData = dict["programsICOIData"] as? Data {
-            self.programsICOI = try? decoder.decode(Programs.self, from: programsICOIData)
         }
         
         if let businessesICOIData = dict["businessesICOIData"] as? Data {

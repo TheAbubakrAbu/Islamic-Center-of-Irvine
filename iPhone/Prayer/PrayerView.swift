@@ -98,7 +98,7 @@ struct ICOIPrayerView: View {
         NavigationView {
             List {
                 #if !os(watchOS)
-                Section(header: settings.defaultView ? Text("DATE AND LOCATION") : nil) {
+                Section(header: settings.defaultView ? Text("HIJRI DATE") : nil) {
                     NavigationLink(destination: HijriCalendarView()) {
                         HStack {
                             Text(settings.hijriDateEnglish)

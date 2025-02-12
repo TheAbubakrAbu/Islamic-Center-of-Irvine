@@ -20,6 +20,8 @@ struct LockScreen1EntryView: View {
                 }
             }
         }
+        .lineLimit(1)
+        .minimumScaleFactor(0.5)
     }
 }
 

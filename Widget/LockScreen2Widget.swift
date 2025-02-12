@@ -35,6 +35,7 @@ struct LockScreen2EntryView: View {
                 }
             }
         }
+        .lineLimit(1)
     }
 }
 
