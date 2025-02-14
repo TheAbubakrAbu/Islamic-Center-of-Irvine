@@ -139,11 +139,13 @@ struct ICOIEventsView: View {
                         Image(systemName: "calendar")
                             .resizable()
                             .aspectRatio(contentMode: .fit)
+                            .foregroundColor(.white)
                             .frame(width: 18, height: 18)
                             .padding(.trailing, 8)
                         
                         Text("View Weekly Events")
                             .font(.subheadline)
+                            .foregroundColor(.white)
                         
                         Spacer()
                     }
@@ -151,7 +153,6 @@ struct ICOIEventsView: View {
                     .padding(.vertical, 6)
                     .frame(maxWidth: .infinity)
                     .background(settings.accentColor)
-                    .foregroundColor(.primary)
                     .cornerRadius(10)
                     .padding(.horizontal, 16)
                     .multilineTextAlignment(.center)

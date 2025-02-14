@@ -97,6 +97,7 @@
 		72D746F12C5056E200CEBD1D /* QuranPlayer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 72D746EF2C5056E200CEBD1D /* QuranPlayer.swift */; };
 		72D746F32C5056EE00CEBD1D /* CopyAyah.swift in Sources */ = {isa = PBXBuildFile; fileRef = 72D746F22C5056EE00CEBD1D /* CopyAyah.swift */; };
 		72D746F42C5056EE00CEBD1D /* CopyAyah.swift in Sources */ = {isa = PBXBuildFile; fileRef = 72D746F22C5056EE00CEBD1D /* CopyAyah.swift */; };
+		72F5CBDA2D5EC8D500FF4374 /* SwiftSoup in Frameworks */ = {isa = PBXBuildFile; productRef = 72CAE14D2D438B1000C423C5 /* SwiftSoup */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -221,6 +222,7 @@
 		72CD0B6F2AE0C57100D37518 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
 		72D746EF2C5056E200CEBD1D /* QuranPlayer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QuranPlayer.swift; sourceTree = "<group>"; };
 		72D746F22C5056EE00CEBD1D /* CopyAyah.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CopyAyah.swift; sourceTree = "<group>"; };
+		72F5CBDF2D5ED74900FF4374 /* README.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = README.md; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -236,6 +238,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				72F5CBDA2D5EC8D500FF4374 /* SwiftSoup in Frameworks */,
 				7285A3512A9FA79B00D8B118 /* SwiftSoup in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -354,6 +357,7 @@
 		72974BC72A9EDB7D00D8BD8E = {
 			isa = PBXGroup;
 			children = (
+				72F5CBDF2D5ED74900FF4374 /* README.md */,
 				72CAE13F2D43897B00C423C5 /* Resources */,
 				72974BD22A9EDB7D00D8BD8E /* iPhone */,
 				720C0C102A9FDAFF00CC4F08 /* Widget */,
@@ -473,7 +477,6 @@
 			name = Widget;
 			packageProductDependencies = (
 				72CAE1502D438B5600C423C5 /* SwiftSoup */,
-				72CAE1582D438B7F00C423C5 /* GoogleAPIClientForREST_Sheets */,
 			);
 			productName = ICOI1Extension;
 			productReference = 720C0C0D2A9FDAFF00CC4F08 /* Widget.appex */;
@@ -500,7 +503,6 @@
 			packageProductDependencies = (
 				7285A3502A9FA79B00D8B118 /* SwiftSoup */,
 				72CAE14D2D438B1000C423C5 /* SwiftSoup */,
-				72CAE1562D438B7A00C423C5 /* GoogleAPIClientForREST_Sheets */,
 			);
 			productName = "Islamic Center of Irvine";
 			productReference = 72974BD02A9EDB7D00D8BD8E /* iPhone.app */;
@@ -523,7 +525,6 @@
 			name = Watch;
 			packageProductDependencies = (
 				72CAE1522D438B5D00C423C5 /* SwiftSoup */,
-				72CAE15A2D438B8400C423C5 /* GoogleAPIClientForREST_Sheets */,
 			);
 			productName = "ICOI0 Watch App";
 			productReference = 72ACDF402AA0381C006B1BF2 /* ICOI.app */;
@@ -544,7 +545,6 @@
 			name = Complication;
 			packageProductDependencies = (
 				72CAE1542D438B6500C423C5 /* SwiftSoup */,
-				72CAE15C2D438B8700C423C5 /* GoogleAPIClientForREST_Sheets */,
 			);
 			productName = ICOI2Extension;
 			productReference = 72ACDF5D2AA03884006B1BF2 /* Complication.appex */;
@@ -787,7 +787,7 @@
 					"@executable_path/../../Frameworks",
 				);
 				MACOSX_DEPLOYMENT_TARGET = 11.0;
-				MARKETING_VERSION = 3.50;
+				MARKETING_VERSION = 3.51;
 				PRODUCT_BUNDLE_IDENTIFIER = "com.Quran.Elmallah.Islamic-Pillars.Islamic-Center-of-Irvine.ICOI1";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = iphoneos;
@@ -818,7 +818,7 @@
 					"@executable_path/../../Frameworks",
 				);
 				MACOSX_DEPLOYMENT_TARGET = 11.0;
-				MARKETING_VERSION = 3.50;
+				MARKETING_VERSION = 3.51;
 				PRODUCT_BUNDLE_IDENTIFIER = "com.Quran.Elmallah.Islamic-Pillars.Islamic-Center-of-Irvine.ICOI1";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = iphoneos;
@@ -973,7 +973,7 @@
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = "Resources/Info-iPhone.plist";
 				INFOPLIST_KEY_CFBundleDisplayName = ICOI;
-				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.education";
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.utilities";
 				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphoneos*]" = YES;
 				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphonesimulator*]" = YES;
 				"INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents[sdk=iphoneos*]" = YES;
@@ -989,7 +989,7 @@
 				LD_RUNPATH_SEARCH_PATHS = "@executable_path/Frameworks";
 				"LD_RUNPATH_SEARCH_PATHS[sdk=macosx*]" = "@executable_path/../Frameworks";
 				MACOSX_DEPLOYMENT_TARGET = 11.0;
-				MARKETING_VERSION = 3.50;
+				MARKETING_VERSION = 3.51;
 				PRODUCT_BUNDLE_IDENTIFIER = "com.Quran.Elmallah.Islamic-Pillars.Islamic-Center-of-Irvine";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = auto;
@@ -1018,7 +1018,7 @@
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = "Resources/Info-iPhone.plist";
 				INFOPLIST_KEY_CFBundleDisplayName = ICOI;
-				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.education";
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.utilities";
 				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphoneos*]" = YES;
 				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphonesimulator*]" = YES;
 				"INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents[sdk=iphoneos*]" = YES;
@@ -1034,7 +1034,7 @@
 				LD_RUNPATH_SEARCH_PATHS = "@executable_path/Frameworks";
 				"LD_RUNPATH_SEARCH_PATHS[sdk=macosx*]" = "@executable_path/../Frameworks";
 				MACOSX_DEPLOYMENT_TARGET = 11.0;
-				MARKETING_VERSION = 3.50;
+				MARKETING_VERSION = 3.51;
 				PRODUCT_BUNDLE_IDENTIFIER = "com.Quran.Elmallah.Islamic-Pillars.Islamic-Center-of-Irvine";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = auto;
@@ -1069,7 +1069,7 @@
 					"@executable_path/Frameworks",
 				);
 				MACOSX_DEPLOYMENT_TARGET = 11.0;
-				MARKETING_VERSION = 3.50;
+				MARKETING_VERSION = 3.51;
 				PRODUCT_BUNDLE_IDENTIFIER = "com.Quran.Elmallah.Islamic-Pillars.Islamic-Center-of-Irvine.watchkitapp";
 				PRODUCT_NAME = ICOI;
 				SDKROOT = watchos;
@@ -1102,7 +1102,7 @@
 					"@executable_path/Frameworks",
 				);
 				MACOSX_DEPLOYMENT_TARGET = 11.0;
-				MARKETING_VERSION = 3.50;
+				MARKETING_VERSION = 3.51;
 				PRODUCT_BUNDLE_IDENTIFIER = "com.Quran.Elmallah.Islamic-Pillars.Islamic-Center-of-Irvine.watchkitapp";
 				PRODUCT_NAME = ICOI;
 				SDKROOT = watchos;
@@ -1135,7 +1135,7 @@
 					"@executable_path/../../../../Frameworks",
 				);
 				MACOSX_DEPLOYMENT_TARGET = 11.0;
-				MARKETING_VERSION = 3.50;
+				MARKETING_VERSION = 3.51;
 				PRODUCT_BUNDLE_IDENTIFIER = "com.Quran.Elmallah.Islamic-Pillars.Islamic-Center-of-Irvine.watchkitapp.ICOI2";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = watchos;
@@ -1167,7 +1167,7 @@
 					"@executable_path/../../../../Frameworks",
 				);
 				MACOSX_DEPLOYMENT_TARGET = 11.0;
-				MARKETING_VERSION = 3.50;
+				MARKETING_VERSION = 3.51;
 				PRODUCT_BUNDLE_IDENTIFIER = "com.Quran.Elmallah.Islamic-Pillars.Islamic-Center-of-Irvine.watchkitapp.ICOI2";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = watchos;
@@ -1257,22 +1257,6 @@
 		72CAE1542D438B6500C423C5 /* SwiftSoup */ = {
 			isa = XCSwiftPackageProductDependency;
 			productName = SwiftSoup;
-		};
-		72CAE1562D438B7A00C423C5 /* GoogleAPIClientForREST_Sheets */ = {
-			isa = XCSwiftPackageProductDependency;
-			productName = GoogleAPIClientForREST_Sheets;
-		};
-		72CAE1582D438B7F00C423C5 /* GoogleAPIClientForREST_Sheets */ = {
-			isa = XCSwiftPackageProductDependency;
-			productName = GoogleAPIClientForREST_Sheets;
-		};
-		72CAE15A2D438B8400C423C5 /* GoogleAPIClientForREST_Sheets */ = {
-			isa = XCSwiftPackageProductDependency;
-			productName = GoogleAPIClientForREST_Sheets;
-		};
-		72CAE15C2D438B8700C423C5 /* GoogleAPIClientForREST_Sheets */ = {
-			isa = XCSwiftPackageProductDependency;
-			productName = GoogleAPIClientForREST_Sheets;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};

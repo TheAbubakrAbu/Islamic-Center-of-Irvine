@@ -241,7 +241,7 @@ struct SyncButton: View {
             Text("Sync Now")
                 .font(.subheadline)
                 .padding(8)
-                .foregroundColor(.primary)
+                .foregroundColor(.white)
                 .background(settings.accentColor)
                 .cornerRadius(10)
                 .onTapGesture {
