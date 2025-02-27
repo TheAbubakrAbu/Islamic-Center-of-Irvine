@@ -58,9 +58,7 @@ struct PillarsView: View {
             
             PillarsOtherView()
         }
-        #if !os(watchOS)
         .applyConditionalListStyle(defaultView: true)
-        #endif
         .navigationTitle("Islamic Pillars")
         .navigationBarTitleDisplayMode(.inline)
     }
@@ -192,9 +190,7 @@ struct IslamView: View {
                     .font(.body)
             }
         }
-        #if !os(watchOS)
         .applyConditionalListStyle(defaultView: true)
-        #endif
         .navigationTitle("What is Islam?")
     }
 }
@@ -283,9 +279,7 @@ struct AllahView: View {
                     .font(.body)
             }
         }
-        #if !os(watchOS)
         .applyConditionalListStyle(defaultView: true)
-        #endif
         .navigationTitle("Who is Allah?")
     }
 }
@@ -360,9 +354,7 @@ struct QuranView: View {
                     .font(.caption)
             }
         }
-        #if !os(watchOS)
         .applyConditionalListStyle(defaultView: true)
-        #endif
         .navigationTitle("What is the Quran?")
     }
 }
@@ -460,9 +452,7 @@ struct ProphetView: View {
                     .font(.caption)
             }
         }
-        #if !os(watchOS)
         .applyConditionalListStyle(defaultView: true)
-        #endif
         .navigationTitle("Who is the Prophet?")
     }
 }
@@ -533,9 +523,7 @@ struct SunnahView: View {
                     .font(.caption)
             }
         }
-        #if !os(watchOS)
         .applyConditionalListStyle(defaultView: true)
-        #endif
         .navigationTitle("What is the Sunnah?")
     }
 }
@@ -618,9 +606,7 @@ struct HadithView: View {
                     .font(.caption)
             }
         }
-        #if !os(watchOS)
         .applyConditionalListStyle(defaultView: true)
-        #endif
         .navigationTitle("What are Hadiths?")
     }
 }

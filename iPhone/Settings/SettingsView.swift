@@ -36,9 +36,7 @@ struct ICOISettingsView: View {
                         List {
                             SettingsQuranView(showEdits: true).environmentObject(quranData)
                         }
-                        #if !os(watchOS)
                         .applyConditionalListStyle(defaultView: true)
-                        #endif
                         .navigationTitle("Quran")
                     ) {
                         Label("Quran Settings", systemImage: "character.book.closed.ar")
@@ -204,9 +202,7 @@ struct NotificationView: View {
         }
         .navigationTitle("Notifications")
         .navigationBarTitleDisplayMode(.inline)
-        #if !os(watchOS)
         .applyConditionalListStyle(defaultView: true)
-        #endif
     }
 }
 

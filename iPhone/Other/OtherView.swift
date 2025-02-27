@@ -125,9 +125,7 @@ struct OtherView: View {
                 }
                 #endif
             }
-            #if !os(watchOS)
             .applyConditionalListStyle(defaultView: true)
-            #endif
             .navigationTitle("Tools")
             .navigationBarTitleDisplayMode(.inline)
         }

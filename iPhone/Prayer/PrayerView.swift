@@ -195,9 +195,7 @@ struct ICOIPrayerView: View {
             }
             .navigationTitle("ICOI Prayers")
             .navigationBarTitleDisplayMode(.inline)
-            #if !os(watchOS)
             .applyConditionalListStyle(defaultView: settings.defaultView)
-            #endif
             .refreshable {
                 settings.requestNotificationAuthorization()
                 

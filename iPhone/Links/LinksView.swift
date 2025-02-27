@@ -344,9 +344,7 @@ struct ICOILinksView: View {
             }
             .navigationTitle("ICOI Links")
             .navigationBarTitleDisplayMode(.inline)
-            #if !os(watchOS)
             .applyConditionalListStyle(defaultView: true)
-            #endif
             .refreshable {
                 settings.fetchBusinesses(force: true) {
                     if settings.businessesICOI == nil {

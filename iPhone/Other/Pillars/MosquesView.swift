@@ -105,9 +105,7 @@ struct HaramView: View {
                 #endif
             }
         }
-        #if !os(watchOS)
         .applyConditionalListStyle(defaultView: true)
-        #endif
         .navigationTitle("Masjid Al-Haram")
     }
 }
@@ -180,9 +178,7 @@ struct NabawiView: View {
                 #endif
             }
         }
-        #if !os(watchOS)
         .applyConditionalListStyle(defaultView: true)
-        #endif
         .navigationTitle("Masjid An-Nabawi")
     }
 }
@@ -261,9 +257,7 @@ struct AqsaView: View {
                 #endif
             }
         }
-        #if !os(watchOS)
         .applyConditionalListStyle(defaultView: true)
-        #endif
         .navigationTitle("Masjid Al-Aqsa")
     }
 }
