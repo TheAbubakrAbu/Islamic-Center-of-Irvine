@@ -202,27 +202,28 @@ struct ICOIEventsView: View {
                 actions: { alertType in
                     switch alertType {
                     case .eventsFetchError:
-                        Button("OK", role: .none) { }
                         Button("Try Again", role: .destructive) {
                             settings.fetchEvents()
                             if settings.eventsICOI == nil {
                                 activeAlert = .showVisitWebsiteButton
                             }
                         }
+                        
+                        Button("OK", role: .cancel) { }
                     case .showVisitWebsiteButton:
                         #if !os(watchOS)
-                        Button("OK", role: .none) { }
                         Button("Visit icoi.net", role: .destructive) {
                             if let url = URL(string: "https://www.icoi.net/") {
                                 UIApplication.shared.open(url)
                             }
                         }
                         #else
-                        Button("OK", role: .none) { }
                         Button("Try Again", role: .destructive) {
                             settings.fetchEvents()
                         }
                         #endif
+                        
+                        Button("OK", role: .cancel) { }
                     }
                 },
                 message: { _ in

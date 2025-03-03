@@ -208,6 +208,7 @@ class Settings: NSObject, ObservableObject {
                 let html = String(data: data, encoding: .utf8)
                 var prayers: [Prayer] = []
                 let formatter = DateFormatter()
+                formatter.locale = Locale(identifier: "en_US_POSIX")
                 formatter.dateFormat = "h:mm a"
                 
                 let weekday = Calendar.current.component(.weekday, from: Date())

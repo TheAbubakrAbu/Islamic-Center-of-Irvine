@@ -256,7 +256,6 @@ struct ICOIPrayerView: View {
                     Button("Ignore", role: .cancel) { }
 
                 case .prayerTimeFetchError:
-                    Button("OK") {}
                     Button("Try Again", role: .destructive) {
                         settings.fetchPrayerTimes() {
                             if settings.prayersICOI == nil {
@@ -264,9 +263,10 @@ struct ICOIPrayerView: View {
                             }
                         }
                     }
+                    
+                    Button("OK", role: .cancel) { }
 
                 case .showVisitWebsiteButton:
-                    Button("OK") {}
                     #if !os(watchOS)
                     Button("Visit icoi.net", role: .destructive) {
                         if let url = URL(string: "https://www.icoi.net/") {
@@ -278,6 +278,8 @@ struct ICOIPrayerView: View {
                         settings.fetchPrayerTimes()
                     }
                     #endif
+                    
+                    Button("OK", role: .cancel) { }
 
                 case .jummuahRating:
                     #if !os(watchOS)
@@ -286,11 +288,11 @@ struct ICOIPrayerView: View {
                             UIApplication.shared.open(url)
                         }
                     }
-                    Button("No", role: .destructive) {}
                     #else
                     Button("Yes") {}
-                    Button("No", role: .destructive) {}
                     #endif
+                    
+                    Button("No", role: .destructive) {}
 
                 case .khateraRating:
                     #if !os(watchOS)
@@ -299,11 +301,11 @@ struct ICOIPrayerView: View {
                             UIApplication.shared.open(url)
                         }
                     }
-                    Button("No", role: .destructive) {}
                     #else
                     Button("Yes") {}
-                    Button("No", role: .destructive) {}
                     #endif
+                    
+                    Button("No", role: .destructive) {}
 
                 case .none:
                     EmptyView()

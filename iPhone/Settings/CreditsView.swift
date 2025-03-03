@@ -72,7 +72,7 @@ struct CreditsView: View {
                 .foregroundColor(settings.accentColor2)
                 .font(.body)
             
-            Text("Version 3.5.1")
+            Text("Version 3.5.3")
                 .font(.caption)
 
             Section(header: Text("APPS BY ABUBAKR ELMALLAH")) {
