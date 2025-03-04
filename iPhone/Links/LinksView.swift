@@ -359,12 +359,10 @@ struct ICOILinksView: View {
                     }
                 }
             }
-            .onChange(of: scenePhase) { newScenePhase in
-                if newScenePhase == .active {
-                    settings.fetchBusinesses() {
-                        if settings.businessesICOI == nil {
-                            activeAlert = .businessFetchError
-                        }
+            .onChange(of: scenePhase) { _ in
+                settings.fetchBusinesses() {
+                    if settings.businessesICOI == nil {
+                        activeAlert = .businessFetchError
                     }
                 }
             }

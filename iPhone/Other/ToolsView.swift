@@ -384,7 +384,6 @@ struct NamesView : View {
                     
                     Toggle("Show Description", isOn: $showDescription.animation(.easeInOut))
                         .font(.subheadline)
-                        .tint(settings.accentColor)
                 }
                 
                 Section(header: Text("99 NAMES")) {

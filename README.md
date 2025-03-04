@@ -2,30 +2,33 @@
 
 **Apple Ecosystem App** – Available on iPhone, iPad, Mac, and Apple Watch
 
-Stay connected with the ICOI community through accurate prayer times, local Muslim business support, and essential Islamic tools, all in one app.
+Stay connected with the Islamic Irvine community through accurate prayer times, local Muslim business support, and essential Islamic tools, all in one app.
 
 I was a **17-year-old** high school student when this app was published on the App Store on **October 3, 2023**.
 
 [**Download ICOI on the App Store here**](https://apps.apple.com/us/app/islamic-center-of-irvine/id6463835936?platform=iphone)
 
-## Features  
+## Overview
+The ICOI App is designed to keep you connected with your faith and community. Whether it’s accessing accurate prayer times, engaging with the Quran, discovering local Muslim-owned businesses, or exploring essential Islamic tools, the ICOI App serves as your all-in-one resource.
 
-### Core Islamic Practices  
+## Key Features
 
-- **Prayer Times** – Accurate Adhan and Iqamah times based on your location, with customizable settings.
-- **Adhan Notifications** – Never miss a prayer with real-time Adhan and Iqamah alerts.
+### Prayer Times (Adhan and Iqamah)
+- Stay informed with accurate prayer times.
+- Never miss a prayer with real-time Adhan and Iqamah notifications.
 
-### Quranic Access  
+### Quran
+- Read the Quran with Arabic Beginner Mode to aid new learners.
+- Share ayahs as text and images effortlessly.
+- Listen to beautiful audio recitations.
 
-- **Beginner Arabic Mode** – Helps new learners recognize and read Arabic by spacing out letters.
-- **Complete Quran Access** – Read the Quran with Arabic text, transliteration, translations, and audio recitations.
-- **Ayah Sharing** – Share Quranic verses as text or images.
+### Local Businesses
+- Discover and support Muslim-owned local businesses.
+- Explore a variety of services and products within the community.
 
-### Community Engagement  
-
-- **Local Businesses** – Discover and support Muslim-owned businesses in the Irvine area.
-- **Masjid Events** – Stay updated with ICOI’s events, programs, and community activities.
-- **Helpful Links** – Quick access to important resources from [icoi.net](https://icoi.net).
+### Helpful Links
+- Quickly access important resources available on [icoi.net](https://icoi.net).
+- Strengthen your connection with the ICOI community and your faith.
 
 ### Additional Islamic Tools  
 
@@ -37,7 +40,6 @@ I was a **17-year-old** high school student when this app was published on the A
 
 ### Customizable Experience  
 
-- **Personalization Options** – Adjust prayer calculation methods, Madhab, Arabic font size, and more.
 - **Widgets and Apple Watch Support** – Add prayer times to your home screen, lock screen, and Apple Watch.
 
 ### Privacy and Accessibility  
@@ -45,6 +47,12 @@ I was a **17-year-old** high school student when this app was published on the A
 - **Completely Free** – No fees, subscriptions, or in-app purchases.
 - **Ad-Free** – Enjoy an uninterrupted experience.
 - **Privacy-Focused** – No data leaves your device, ensuring complete security.
+
+## Benefits
+- Enhance your spiritual journey with timely prayer reminders.
+- Stay engaged with the vibrant ICOI community and foster a sense of belonging.
+- Support local Muslim entrepreneurs and contribute to the local economy.
+- Enrich your understanding and practice of Islam through valuable insights and tools.
 
 ## License
 

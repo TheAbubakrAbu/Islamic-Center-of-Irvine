@@ -126,7 +126,6 @@ struct ICOIPrayerCountdown: View {
                         }
                         
                         ProgressView(value: progressToNextPrayer, total: 1)
-                            .tint(settings.accentColor)
                             .onReceive(timer) { _ in
                                 progressToNextPrayer = calculateProgress()
                                 if progressToNextPrayer >= 1 {
@@ -150,10 +149,8 @@ struct ICOIPrayerCountdown: View {
             .onAppear {
                 setupTimer()
             }
-            .onChange(of: scenePhase) { newScenePhase in
-                if newScenePhase == .active {
-                    setupTimer()
-                }
+            .onChange(of: scenePhase) { _ in
+                setupTimer()
             }
             .onChange(of: progressToNextPrayer) { value in
                 if value >= 1 {

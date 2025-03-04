@@ -37,7 +37,7 @@ struct ICOISettingsView: View {
                             SettingsQuranView(showEdits: true).environmentObject(quranData)
                         }
                         .applyConditionalListStyle(defaultView: true)
-                        .navigationTitle("Quran")
+                        .navigationTitle("Quran Settings")
                     ) {
                         Label("Quran Settings", systemImage: "character.book.closed.ar")
                     }
@@ -174,6 +174,10 @@ struct ICOISettingsView: View {
 struct NotificationView: View {
     @EnvironmentObject var settings: Settings
     
+    @Environment(\.scenePhase) private var scenePhase
+    
+    @State private var showAlert: Bool = false
+    
     var body: some View {
         List {
             Section(header: Text("ALL PRAYER NOTIFICATIONS")) {
@@ -223,7 +227,6 @@ struct NotificationView: View {
                     }
                 ))
                 .font(.subheadline)
-                .tint(settings.accentColor)
                 
                 Toggle("Turn On All Adhan Notifications", isOn: Binding(
                     get: {
@@ -248,7 +251,6 @@ struct NotificationView: View {
                     }
                 ))
                 .font(.subheadline)
-                .tint(settings.accentColor)
                 
                 Toggle("Turn On All Iqamah Notifications", isOn: Binding(
                     get: {
@@ -269,7 +271,6 @@ struct NotificationView: View {
                     }
                 ))
                 .font(.subheadline)
-                .tint(settings.accentColor)
                 
                 Stepper(value: Binding(
                     get: { settings.iqamahFajrPreNotification },
@@ -295,11 +296,9 @@ struct NotificationView: View {
             
             Section(header: Text("Khateras")) {
                 Toggle("Fajr Khatera Rating", isOn: $settings.khateraFajr)
-                    .tint(settings.accentColor)
                     .font(.subheadline)
                 
                 Toggle("Isha Khatera Rating", isOn: $settings.khateraIsha)
-                    .tint(settings.accentColor)
                     .font(.subheadline)
                 
                 Text("You will receive notifications 30 minutes after the Fajr and Isha Iqamah times, reminding you to rate the khatera.")
@@ -317,7 +316,37 @@ struct NotificationView: View {
             PrayerSettingsSection(prayerName: "Maghrib", adhanTime: $settings.adhanMaghrib, iqamahTime: $settings.iqamahMaghrib, iqamahPreNotification: $settings.iqamahMaghribPreNotification, jummuahPreNotification: .constant(0))
             PrayerSettingsSection(prayerName: "Isha", adhanTime: $settings.adhanIsha, iqamahTime: $settings.iqamahIsha, iqamahPreNotification: $settings.iqamahIshaPreNotification, jummuahPreNotification: .constant(0))
         }
-        .navigationTitle("Notifications")
+        .onAppear {
+            settings.requestNotificationAuthorization()
+            
+            settings.fetchPrayerTimes() {
+                if settings.showNotificationAlert {
+                    showAlert = true
+                }
+            }
+        }
+        .onChange(of: scenePhase) { _ in
+            settings.requestNotificationAuthorization()
+            
+            settings.fetchPrayerTimes() {
+                if settings.showNotificationAlert {
+                    showAlert = true
+                }
+            }
+        }
+        .confirmationDialog("", isPresented: $showAlert, titleVisibility: .visible) {
+            Button("Open Settings") {
+                #if !os(watchOS)
+                if let url = URL(string: UIApplication.openSettingsURLString) {
+                    UIApplication.shared.open(url, options: [:], completionHandler: nil)
+                }
+                #endif
+            }
+            Button("Ignore", role: .cancel) { }
+        } message: {
+            Text("Please go to Settings and enable notifications to be notified of prayer times.")
+        }
+        .navigationTitle("Notification Settings")
         .navigationBarTitleDisplayMode(.inline)
         .applyConditionalListStyle(defaultView: true)
     }
@@ -383,11 +412,9 @@ struct PrayerSettingsSection: View {
             if prayerName == "Shurooq" {
                 Toggle("Shurooq (Sunrise) Notification", isOn: $adhanTime.animation(.easeInOut))
                     .font(.subheadline)
-                    .tint(settings.accentColor)
             } else if prayerName == "Jummuah" {
                 Toggle("First Jummuah Notification", isOn: $adhanTime.animation(.easeInOut))
                     .font(.subheadline)
-                    .tint(settings.accentColor)
                 
                 Stepper(value: $iqamahPreNotification.animation(.easeInOut), in: 0...30, step: 5) {
                     Text("1st Jummuah Prenotification:")
@@ -400,7 +427,6 @@ struct PrayerSettingsSection: View {
             
                 Toggle("Second Jummuah Notification", isOn: $iqamahTime.animation(.easeInOut))
                     .font(.subheadline)
-                    .tint(settings.accentColor)
                 
                 Stepper(value: $jummuahPreNotification.animation(.easeInOut), in: 0...30, step: 5) {
                     Text("2nd Jummuah Prenotification:")
@@ -413,7 +439,6 @@ struct PrayerSettingsSection: View {
                 
                 Toggle("Jummuah Rating Notification at 2:30", isOn: $settings.ratingJummuah.animation(.easeInOut))
                     .font(.subheadline)
-                    .tint(settings.accentColor)
                 
                 Text("On Fridays, Dhuhr notifications are not sent and are instead replaced with Jummuah notifications.")
                     .font(.caption)
@@ -422,11 +447,9 @@ struct PrayerSettingsSection: View {
             } else {
                 Toggle("Adhan Notification", isOn: $adhanTime.animation(.easeInOut))
                     .font(.subheadline)
-                    .tint(settings.accentColor)
             
                 Toggle("Iqamah Notification", isOn: $iqamahTime.animation(.easeInOut))
                     .font(.subheadline)
-                    .tint(settings.accentColor)
                 
                 Stepper(value: $iqamahPreNotification.animation(.easeInOut), in: 0...30, step: 5) {
                     Text("Iqamah Prenotification:")
@@ -475,14 +498,12 @@ struct SettingsQuranView: View {
         Section(header: Text("ARABIC TEXT")) {
             Toggle("Show Arabic Quran Text", isOn: $settings.showArabicText.animation(.easeInOut))
                 .font(.subheadline)
-                .tint(settings.accentColor)
                 .disabled(!settings.showTransliteration && !settings.showEnglishTranslation)
             
             if settings.showArabicText {
                 VStack(alignment: .leading) {
                     Toggle("Remove Arabic Tashkeel (Vowel Diacritics) and Signs", isOn: $settings.cleanArabicText.animation(.easeInOut))
                         .font(.subheadline)
-                        .tint(settings.accentColor)
                         .disabled(!settings.showArabicText)
                     
                     #if !os(watchOS)
@@ -515,7 +536,6 @@ struct SettingsQuranView: View {
                 VStack(alignment: .leading) {
                     Toggle("Enable Arabic Beginner Mode", isOn: $settings.beginnerMode.animation(.easeInOut))
                         .font(.subheadline)
-                        .tint(settings.accentColor)
                         .disabled(!settings.showArabicText)
                     
                     Text("Puts a space between each Arabic letter to make it easier for beginners to read the Quran.")
@@ -529,12 +549,10 @@ struct SettingsQuranView: View {
         Section(header: Text("ENGLISH TEXT")) {
             Toggle("Show Transliteration", isOn: $settings.showTransliteration.animation(.easeInOut))
                 .font(.subheadline)
-                .tint(settings.accentColor)
                 .disabled(!settings.showArabicText && !settings.showEnglishTranslation)
             
             Toggle("Show English Translation", isOn: $settings.showEnglishTranslation.animation(.easeInOut))
                 .font(.subheadline)
-                .tint(settings.accentColor)
                 .disabled(!settings.showArabicText && !settings.showTransliteration)
             
             if settings.showTransliteration || settings.showEnglishTranslation {
@@ -546,7 +564,6 @@ struct SettingsQuranView: View {
             
             Toggle("Use System Font Size", isOn: $settings.useSystemFontSize.animation(.easeInOut))
                 .font(.subheadline)
-                .tint(settings.accentColor)
                 .onChange(of: settings.useSystemFontSize) { useSystemFontSize in
                     if useSystemFontSize {
                         settings.englishFontSize = UIFont.preferredFont(forTextStyle: .body).pointSize
@@ -748,7 +765,6 @@ struct SettingsAppearanceView: View {
         VStack(alignment: .leading) {
             Toggle("Default List View", isOn: $settings.defaultView.animation(.easeInOut))
                 .font(.subheadline)
-                .tint(settings.accentColor)
             
             Text("The default list view is the standard interface found in many of Apple's first party apps, including Notes. This setting only applies only to the prayer view.")
                 .font(.caption)
@@ -759,6 +775,5 @@ struct SettingsAppearanceView: View {
         
         Toggle("Haptic Feedback", isOn: $settings.hapticOn.animation(.easeInOut))
             .font(.subheadline)
-            .tint(settings.accentColor)
     }
 }

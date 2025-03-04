@@ -184,12 +184,10 @@ struct ICOIEventsView: View {
                     activeAlert = .eventsFetchError
                 }
             }
-            .onChange(of: scenePhase) { newScenePhase in
-                if newScenePhase == .active {
-                    settings.fetchEvents()
-                    if settings.eventsICOI == nil {
-                        activeAlert = .eventsFetchError
-                    }
+            .onChange(of: scenePhase) { _ in
+                settings.fetchEvents()
+                if settings.eventsICOI == nil {
+                    activeAlert = .eventsFetchError
                 }
             }
             .confirmationDialog(

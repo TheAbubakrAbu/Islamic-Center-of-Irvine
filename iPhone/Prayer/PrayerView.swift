@@ -195,29 +195,6 @@ struct ICOIPrayerView: View {
                 }
                 #endif
             }
-            .navigationTitle("ICOI Prayers")
-            .navigationBarTitleDisplayMode(.inline)
-            #if !os(watchOS)
-            .toolbar {
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    Button {
-                        settings.hapticFeedback()
-                        
-                        showingSettingsSheet = true
-                    } label: {
-                        Image(systemName: "gear")
-                    }
-                    .padding(.trailing, settings.defaultView ? 6 : 0)
-                }
-            }
-            .sheet(isPresented: $showingSettingsSheet) {
-                NavigationView {
-                    NotificationView()
-                        .accentColor(settings.accentColor)
-                }
-            }
-            #endif
-            .applyConditionalListStyle(defaultView: settings.defaultView)
             .refreshable {
                 settings.requestNotificationAuthorization()
                 
@@ -244,21 +221,41 @@ struct ICOIPrayerView: View {
                     }
                 }
             }
-            .onChange(of: scenePhase) { newScenePhase in
-                if newScenePhase == .active {
-                    settings.requestNotificationAuthorization()
-                    
-                    settings.fetchPrayerTimes() {
-                        if settings.prayersICOI == nil {
-                            activeAlert = .prayerTimeFetchError
-                        } else if !settings.notificationNeverAskAgain && settings.showNotificationAlert {
-                            activeAlert = .notficationError
-                        } else if settings.prayersICOI != nil {
-                            promptForJummuahOrKhateraRatingIfNeeded()
-                        }
+            .onChange(of: scenePhase) { _ in
+                settings.requestNotificationAuthorization()
+                
+                settings.fetchPrayerTimes() {
+                    if settings.prayersICOI == nil {
+                        activeAlert = .prayerTimeFetchError
+                    } else if !settings.notificationNeverAskAgain && settings.showNotificationAlert {
+                        activeAlert = .notficationError
+                    } else if settings.prayersICOI != nil {
+                        promptForJummuahOrKhateraRatingIfNeeded()
                     }
                 }
             }
+            .navigationTitle("ICOI Prayers")
+            .navigationBarTitleDisplayMode(.inline)
+            #if !os(watchOS)
+            .toolbar {
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    Button {
+                        settings.hapticFeedback()
+                        
+                        showingSettingsSheet = true
+                    } label: {
+                        Image(systemName: "gear")
+                    }
+                    .padding(.trailing, settings.defaultView ? 6 : 0)
+                }
+            }
+            .sheet(isPresented: $showingSettingsSheet) {
+                NavigationView {
+                    NotificationView()
+                }
+            }
+            #endif
+            .applyConditionalListStyle(defaultView: settings.defaultView)
             .confirmationDialog("", isPresented: Binding(
                 get: { activeAlert != nil },
                 set: { if !$0 { activeAlert = nil } }

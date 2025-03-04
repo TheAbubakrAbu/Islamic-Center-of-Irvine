@@ -61,6 +61,7 @@ struct IslamicCenterofIrvineApp: App {
             .environmentObject(quranPlayer)
             .environmentObject(namesData)
             .accentColor(settings.accentColor)
+            .tint(settings.accentColor)
             .preferredColorScheme(settings.colorScheme)
             .transition(.opacity)
             .onAppear {
