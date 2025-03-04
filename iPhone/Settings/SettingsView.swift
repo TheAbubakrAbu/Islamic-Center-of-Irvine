@@ -176,6 +176,123 @@ struct NotificationView: View {
     
     var body: some View {
         List {
+            Section(header: Text("ALL PRAYER NOTIFICATIONS")) {
+                Toggle("Turn On All Notifications", isOn: Binding(
+                    get: {
+                        settings.adhanFajr &&
+                        settings.adhanDhuhr &&
+                        settings.adhanAsr &&
+                        settings.adhanMaghrib &&
+                        settings.adhanIsha &&
+                        settings.iqamahFajr &&
+                        settings.iqamahDhuhr &&
+                        settings.iqamahAsr &&
+                        settings.iqamahMaghrib &&
+                        settings.iqamahIsha &&
+                        settings.firstJummuah &&
+                        settings.secondJummuah &&
+                        settings.ratingJummuah &&
+                        settings.sunriseTime &&
+                        settings.khateraFajr &&
+                        settings.khateraIsha
+                    },
+                    set: { newValue in
+                        withAnimation {
+                            settings.adhanFajr = newValue
+                            settings.adhanDhuhr = newValue
+                            settings.adhanAsr = newValue
+                            settings.adhanMaghrib = newValue
+                            settings.adhanIsha = newValue
+                            
+                            settings.iqamahFajr = newValue
+                            settings.iqamahDhuhr = newValue
+                            settings.iqamahAsr = newValue
+                            settings.iqamahMaghrib = newValue
+                            settings.iqamahIsha = newValue
+                            
+                            settings.firstJummuah = newValue
+                            settings.secondJummuah = newValue
+                            
+                            settings.ratingJummuah = newValue
+                            
+                            settings.sunriseTime = newValue
+                            
+                            settings.khateraFajr = newValue
+                            settings.khateraIsha = newValue
+                        }
+                    }
+                ))
+                .font(.subheadline)
+                .tint(settings.accentColor)
+                
+                Toggle("Turn On All Adhan Notifications", isOn: Binding(
+                    get: {
+                        settings.adhanFajr &&
+                        settings.adhanDhuhr &&
+                        settings.adhanAsr &&
+                        settings.adhanMaghrib &&
+                        settings.adhanIsha &&
+                        settings.firstJummuah &&
+                        settings.secondJummuah
+                    },
+                    set: { newValue in
+                        withAnimation {
+                            settings.adhanFajr = newValue
+                            settings.adhanDhuhr = newValue
+                            settings.adhanAsr = newValue
+                            settings.adhanMaghrib = newValue
+                            settings.adhanIsha = newValue
+                            settings.firstJummuah = newValue
+                            settings.secondJummuah = newValue
+                        }
+                    }
+                ))
+                .font(.subheadline)
+                .tint(settings.accentColor)
+                
+                Toggle("Turn On All Iqamah Notifications", isOn: Binding(
+                    get: {
+                        settings.iqamahFajr &&
+                        settings.iqamahDhuhr &&
+                        settings.iqamahAsr &&
+                        settings.iqamahMaghrib &&
+                        settings.iqamahIsha
+                    },
+                    set: { newValue in
+                        withAnimation {
+                            settings.iqamahFajr = newValue
+                            settings.iqamahDhuhr = newValue
+                            settings.iqamahAsr = newValue
+                            settings.iqamahMaghrib = newValue
+                            settings.iqamahIsha = newValue
+                        }
+                    }
+                ))
+                .font(.subheadline)
+                .tint(settings.accentColor)
+                
+                Stepper(value: Binding(
+                    get: { settings.iqamahFajrPreNotification },
+                    set: { newValue in
+                        withAnimation {
+                            settings.iqamahFajrPreNotification = newValue
+                            settings.iqamahDhuhrPreNotification = newValue
+                            settings.iqamahAsrPreNotification = newValue
+                            settings.iqamahMaghribPreNotification = newValue
+                            settings.iqamahIshaPreNotification = newValue
+                            settings.firstJummuahPreNotification = newValue
+                            settings.secondJummuahPreNotification = newValue
+                        }
+                    }
+                ), in: 0...30, step: 5) {
+                    Text("All Prayer Prenotifications:")
+                        .font(.subheadline)
+                    Text("\(settings.iqamahFajrPreNotification) minute\(settings.iqamahFajrPreNotification != 1 ? "s" : "")")
+                        .font(.subheadline)
+                        .foregroundColor(settings.accentColor)
+                }
+            }
+            
             Section(header: Text("Khateras")) {
                 Toggle("Fajr Khatera Rating", isOn: $settings.khateraFajr)
                     .tint(settings.accentColor)

@@ -5,6 +5,8 @@ struct ICOIPrayerView: View {
     
     @Environment(\.scenePhase) private var scenePhase
     
+    @State private var showingSettingsSheet = false
+    
     @State private var activeAlert: ICOIAlertType?
     
     enum ICOIAlertType: Identifiable {
@@ -195,6 +197,26 @@ struct ICOIPrayerView: View {
             }
             .navigationTitle("ICOI Prayers")
             .navigationBarTitleDisplayMode(.inline)
+            #if !os(watchOS)
+            .toolbar {
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    Button {
+                        settings.hapticFeedback()
+                        
+                        showingSettingsSheet = true
+                    } label: {
+                        Image(systemName: "gear")
+                    }
+                    .padding(.trailing, settings.defaultView ? 6 : 0)
+                }
+            }
+            .sheet(isPresented: $showingSettingsSheet) {
+                NavigationView {
+                    NotificationView()
+                        .accentColor(settings.accentColor)
+                }
+            }
+            #endif
             .applyConditionalListStyle(defaultView: settings.defaultView)
             .refreshable {
                 settings.requestNotificationAuthorization()
