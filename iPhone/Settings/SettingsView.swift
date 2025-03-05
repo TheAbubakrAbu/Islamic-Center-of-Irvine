@@ -92,32 +92,7 @@ struct ICOISettingsView: View {
                         }
                     }
                     .sheet(isPresented: $showingCredits) {
-                        NavigationView {
-                            VStack {
-                                Text("Credits")
-                                    .foregroundColor(settings.accentColor)
-                                    .font(.title)
-                                    .padding(.top, 20)
-                                    .padding(.bottom, 4)
-                                    .padding(.horizontal)
-                                
-                                CreditsView()
-                                
-                                Button(action: {
-                                    settings.hapticFeedback()
-                                    
-                                    showingCredits = false
-                                }) {
-                                    Text("Done")
-                                        .padding()
-                                        .frame(maxWidth: .infinity)
-                                        .background(settings.accentColor)
-                                        .foregroundColor(.primary)
-                                        .cornerRadius(10)
-                                        .padding(.horizontal, 16)
-                                }
-                            }
-                        }
+                        CreditsView()
                     }
                     #endif
                     
