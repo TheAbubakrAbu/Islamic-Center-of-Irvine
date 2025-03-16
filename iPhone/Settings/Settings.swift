@@ -1227,6 +1227,9 @@ class Settings: NSObject, ObservableObject {
             bookmarkedAyahsData = (try? encoder.encode(newValue)) ?? Data()
         }
     }
+    
+    @AppStorage("showBookmarks") var showBookmarks = true
+    @AppStorage("showFavorites") var showFavorites = true
 
     @Published var favoriteLetterData: Data {
         didSet {
@@ -1259,18 +1262,10 @@ class Settings: NSObject, ObservableObject {
     
     @AppStorage("useFontArabic") var useFontArabic: Bool = true
     
-    @AppStorage("useSystemFontSize") var useSystemFontSize: Bool = true
-
     @AppStorage("showTransliteration") var showTransliteration: Bool = true
     @AppStorage("showEnglishTranslation") var showEnglishTranslation: Bool = true
     
-    @AppStorage("englishFontSize") var englishFontSize: Double = Double(UIFont.preferredFont(forTextStyle: .body).pointSize) {
-        didSet {
-            if useSystemFontSize && englishFontSize != Double(UIFont.preferredFont(forTextStyle: .body).pointSize) {
-                useSystemFontSize = false
-            }
-        }
-    }
+    @AppStorage("englishFontSize") var englishFontSize: Double = Double(UIFont.preferredFont(forTextStyle: .body).pointSize)
     
     var hijriCalendar: Calendar = {
         var calendar = Calendar(identifier: .islamicUmmAlQura)

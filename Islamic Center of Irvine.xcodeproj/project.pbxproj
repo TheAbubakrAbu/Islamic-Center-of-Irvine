@@ -17,6 +17,7 @@
 		720DEC532D209FE3006EA342 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 72974BD72A9EDB7F00D8BD8E /* Assets.xcassets */; };
 		720DEC542D209FE3006EA342 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 72974BD72A9EDB7F00D8BD8E /* Assets.xcassets */; };
 		720DEC612D2455E7006EA342 /* CreditsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 720DEC5F2D2455E7006EA342 /* CreditsView.swift */; };
+		721EEE232D7B043200FFE5F6 /* NowPlayingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 721EEE222D7B043200FFE5F6 /* NowPlayingView.swift */; };
 		7247DBA02CD4DBEB000803F2 /* Hafs.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 7247DB9F2CD4DBEB000803F2 /* Hafs.ttf */; };
 		7247DBA12CD4DBEB000803F2 /* Hafs.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 7247DB9F2CD4DBEB000803F2 /* Hafs.ttf */; };
 		7247DBAC2CD4DEA7000803F2 /* Indopak.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 7247DBAB2CD4DEA7000803F2 /* Indopak.ttf */; };
@@ -152,25 +153,25 @@
 		};
 		7285A3912A9FCE5400D8B118 /* Embed Foundation Extensions */ = {
 			isa = PBXCopyFilesBuildPhase;
-			buildActionMask = 8;
+			buildActionMask = 12;
 			dstPath = "";
 			dstSubfolderSpec = 13;
 			files = (
 				720C0C1A2A9FDB0000CC4F08 /* Widget.appex in Embed Foundation Extensions */,
 			);
 			name = "Embed Foundation Extensions";
-			runOnlyForDeploymentPostprocessing = 1;
+			runOnlyForDeploymentPostprocessing = 0;
 		};
 		72ACDF6C2AA03886006B1BF2 /* Embed Foundation Extensions */ = {
 			isa = PBXCopyFilesBuildPhase;
-			buildActionMask = 8;
+			buildActionMask = 12;
 			dstPath = "";
 			dstSubfolderSpec = 13;
 			files = (
 				72ACDF682AA03886006B1BF2 /* Complication.appex in Embed Foundation Extensions */,
 			);
 			name = "Embed Foundation Extensions";
-			runOnlyForDeploymentPostprocessing = 1;
+			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXCopyFilesBuildPhase section */
 
@@ -182,6 +183,7 @@
 		720C0C242A9FDB5900CC4F08 /* PrayersProvider.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = PrayersProvider.swift; sourceTree = "<group>"; };
 		720C0C252A9FDB5900CC4F08 /* Widgets.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = Widgets.swift; sourceTree = "<group>"; };
 		720DEC5F2D2455E7006EA342 /* CreditsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CreditsView.swift; sourceTree = "<group>"; };
+		721EEE222D7B043200FFE5F6 /* NowPlayingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NowPlayingView.swift; sourceTree = "<group>"; };
 		722044BA2AF7723F00EEF184 /* LockScreen2Iqamah.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LockScreen2Iqamah.swift; sourceTree = "<group>"; };
 		7247DB9F2CD4DBEB000803F2 /* Hafs.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = Hafs.ttf; sourceTree = "<group>"; };
 		7247DBAB2CD4DEA7000803F2 /* Indopak.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = Indopak.ttf; sourceTree = "<group>"; };
@@ -309,6 +311,7 @@
 				729114F42AF811DA00A4EB2B /* Surah.swift */,
 				729114F32AF811DA00A4EB2B /* SurahsView.swift */,
 				729114EE2AF811DA00A4EB2B /* AyahsView.swift */,
+				721EEE222D7B043200FFE5F6 /* NowPlayingView.swift */,
 				72D746EF2C5056E200CEBD1D /* QuranPlayer.swift */,
 				72D746F22C5056EE00CEBD1D /* CopyAyah.swift */,
 			);
@@ -709,6 +712,7 @@
 				729115212AF8176D00A4EB2B /* ToolsView.swift in Sources */,
 				72974BE72A9EDBC400D8BD8E /* PrayerCountdown.swift in Sources */,
 				72974BD42A9EDB7D00D8BD8E /* ICOIApp.swift in Sources */,
+				721EEE232D7B043200FFE5F6 /* NowPlayingView.swift in Sources */,
 				72B8AC272D58BF1900591AD4 /* WatchConnectivity.swift in Sources */,
 				729114F52AF811DA00A4EB2B /* AyahsView.swift in Sources */,
 				729114FD2AF811DA00A4EB2B /* SurahsView.swift in Sources */,
@@ -819,7 +823,7 @@
 					"@executable_path/../../Frameworks",
 				);
 				MACOSX_DEPLOYMENT_TARGET = 11.0;
-				MARKETING_VERSION = 3.55;
+				MARKETING_VERSION = 3.56;
 				PRODUCT_BUNDLE_IDENTIFIER = "com.Quran.Elmallah.Islamic-Pillars.Islamic-Center-of-Irvine.ICOI1";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = iphoneos;
@@ -850,7 +854,7 @@
 					"@executable_path/../../Frameworks",
 				);
 				MACOSX_DEPLOYMENT_TARGET = 11.0;
-				MARKETING_VERSION = 3.55;
+				MARKETING_VERSION = 3.56;
 				PRODUCT_BUNDLE_IDENTIFIER = "com.Quran.Elmallah.Islamic-Pillars.Islamic-Center-of-Irvine.ICOI1";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = iphoneos;
@@ -1021,7 +1025,7 @@
 				LD_RUNPATH_SEARCH_PATHS = "@executable_path/Frameworks";
 				"LD_RUNPATH_SEARCH_PATHS[sdk=macosx*]" = "@executable_path/../Frameworks";
 				MACOSX_DEPLOYMENT_TARGET = 11.0;
-				MARKETING_VERSION = 3.55;
+				MARKETING_VERSION = 3.56;
 				PRODUCT_BUNDLE_IDENTIFIER = "com.Quran.Elmallah.Islamic-Pillars.Islamic-Center-of-Irvine";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = auto;
@@ -1066,7 +1070,7 @@
 				LD_RUNPATH_SEARCH_PATHS = "@executable_path/Frameworks";
 				"LD_RUNPATH_SEARCH_PATHS[sdk=macosx*]" = "@executable_path/../Frameworks";
 				MACOSX_DEPLOYMENT_TARGET = 11.0;
-				MARKETING_VERSION = 3.55;
+				MARKETING_VERSION = 3.56;
 				PRODUCT_BUNDLE_IDENTIFIER = "com.Quran.Elmallah.Islamic-Pillars.Islamic-Center-of-Irvine";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = auto;
@@ -1101,7 +1105,7 @@
 					"@executable_path/Frameworks",
 				);
 				MACOSX_DEPLOYMENT_TARGET = 11.0;
-				MARKETING_VERSION = 3.55;
+				MARKETING_VERSION = 3.56;
 				PRODUCT_BUNDLE_IDENTIFIER = "com.Quran.Elmallah.Islamic-Pillars.Islamic-Center-of-Irvine.watchkitapp";
 				PRODUCT_NAME = ICOI;
 				SDKROOT = watchos;
@@ -1134,7 +1138,7 @@
 					"@executable_path/Frameworks",
 				);
 				MACOSX_DEPLOYMENT_TARGET = 11.0;
-				MARKETING_VERSION = 3.55;
+				MARKETING_VERSION = 3.56;
 				PRODUCT_BUNDLE_IDENTIFIER = "com.Quran.Elmallah.Islamic-Pillars.Islamic-Center-of-Irvine.watchkitapp";
 				PRODUCT_NAME = ICOI;
 				SDKROOT = watchos;
@@ -1167,7 +1171,7 @@
 					"@executable_path/../../../../Frameworks",
 				);
 				MACOSX_DEPLOYMENT_TARGET = 11.0;
-				MARKETING_VERSION = 3.55;
+				MARKETING_VERSION = 3.56;
 				PRODUCT_BUNDLE_IDENTIFIER = "com.Quran.Elmallah.Islamic-Pillars.Islamic-Center-of-Irvine.watchkitapp.ICOI2";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = watchos;
@@ -1199,7 +1203,7 @@
 					"@executable_path/../../../../Frameworks",
 				);
 				MACOSX_DEPLOYMENT_TARGET = 11.0;
-				MARKETING_VERSION = 3.55;
+				MARKETING_VERSION = 3.56;
 				PRODUCT_BUNDLE_IDENTIFIER = "com.Quran.Elmallah.Islamic-Pillars.Islamic-Center-of-Irvine.watchkitapp.ICOI2";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = watchos;

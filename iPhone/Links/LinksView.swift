@@ -82,7 +82,7 @@ struct ICOILinksView: View {
                         }
                     }
                     
-                    Link(destination: URL(string: "https://icoi.kindful.com/")!) {
+                    Link(destination: URL(string: "https://www.icoi.net/fundraising-ramadan-2025/")!) {
                         HStack {
                             Image(systemName: "heart.fill")
                                 .resizable()
@@ -91,7 +91,7 @@ struct ICOILinksView: View {
                                 .foregroundColor(settings.accentColor)
                                 .padding(.trailing, 8)
                             
-                            Text("Donate: Sadaqa, Zakat, Masjid & More")
+                            Text("Give Now. Power Your Masjid.")
                                 .font(.subheadline)
                                 .foregroundColor(settings.accentColor2)
                         }
@@ -100,7 +100,32 @@ struct ICOILinksView: View {
                         Button(action: {
                             settings.hapticFeedback()
                             
-                            UIPasteboard.general.string = "https://icoi.kindful.com/"
+                            UIPasteboard.general.string = "https://www.icoi.net/fundraising-ramadan-2025/"
+                        }) {
+                            Text("Copy Link")
+                            Image(systemName: "doc.on.doc")
+                        }
+                    }
+                    
+                    Link(destination: URL(string: "https://www.icoi.net/donate/")!) {
+                        HStack {
+                            Image(systemName: "gift.fill")
+                                .resizable()
+                                .aspectRatio(contentMode: .fit)
+                                .frame(width: 18, height: 18)
+                                .foregroundColor(settings.accentColor)
+                                .padding(.trailing, 8)
+                            
+                            Text("Give Zakat/Sadaqah")
+                                .font(.subheadline)
+                                .foregroundColor(settings.accentColor2)
+                        }
+                    }
+                    .contextMenu {
+                        Button(action: {
+                            settings.hapticFeedback()
+                            
+                            UIPasteboard.general.string = "https://www.icoi.net/donate/"
                         }) {
                             Text("Copy Link")
                             Image(systemName: "doc.on.doc")
@@ -108,8 +133,8 @@ struct ICOILinksView: View {
                     }
                 }
                 
-                Section(header: Text("ICOI VILLAGE")) {
-                    Link(destination: URL(string: "https://www.icoi.net/village/")!) {
+                Section(header: Text("THE VILLAGE IN IRVINE")) {
+                    Link(destination: URL(string: "https://www.thevillageinirvine.com/")!) {
                         HStack {
                             Image(systemName: "house.fill")
                                 .resizable()
@@ -118,7 +143,7 @@ struct ICOILinksView: View {
                                 .foregroundColor(settings.accentColor)
                                 .padding(.trailing, 8)
                             
-                            Text("icoi.net/village")
+                            Text("Visit the Village")
                                 .font(.subheadline)
                                 .foregroundColor(settings.accentColor2)
                         }
@@ -127,7 +152,7 @@ struct ICOILinksView: View {
                         Button(action: {
                             settings.hapticFeedback()
                             
-                            UIPasteboard.general.string = "https://www.icoi.net/village/"
+                            UIPasteboard.general.string = "https://www.thevillageinirvine.com/"
                         }) {
                             Text("Copy Link")
                             Image(systemName: "doc.on.doc")
@@ -136,7 +161,7 @@ struct ICOILinksView: View {
                     
                     Link(destination: URL(string: "https://maps.apple.com/?address=5530%20Trabuco%20Rd,%20Irvine,%20CA%20%2092620,%20United%20States&ll=33.697056,-117.765272&q=5530%20Trabuco%20Rd")!) {
                         HStack {
-                            Image(systemName: "mappin")
+                            Image(systemName: "location.fill")
                                 .resizable()
                                 .aspectRatio(contentMode: .fit)
                                 .frame(width: 18, height: 18)
@@ -155,31 +180,6 @@ struct ICOILinksView: View {
                             UIPasteboard.general.string = "5530 Trabuco, Irvine, CA 92620"
                         }) {
                             Text("Copy Address")
-                            Image(systemName: "doc.on.doc")
-                        }
-                    }
-                    
-                    Link(destination: URL(string: "https://icoi.kindful.com/")!) {
-                        HStack {
-                            Image(systemName: "gift.fill")
-                                .resizable()
-                                .aspectRatio(contentMode: .fit)
-                                .frame(width: 18, height: 18)
-                                .foregroundColor(settings.accentColor)
-                                .padding(.trailing, 8)
-                            
-                            Text("Donate to ICOI Village")
-                                .font(.subheadline)
-                                .foregroundColor(settings.accentColor2)
-                        }
-                    }
-                    .contextMenu {
-                        Button(action: {
-                            settings.hapticFeedback()
-                            
-                            UIPasteboard.general.string = "https://icoi.kindful.com/"
-                        }) {
-                            Text("Copy Link")
                             Image(systemName: "doc.on.doc")
                         }
                     }
@@ -290,47 +290,7 @@ struct ICOILinksView: View {
                         }
                     }
                     
-                    Button(action: {
-                        if let url = URL(string: "https://www.icoi.net/schedule-appointment-with-shaykh-mustafa-umar/") {
-                            settings.hapticFeedback()
-                            
-                            DispatchQueue.main.async {
-                                UIApplication.shared.open(url)
-                            }
-                        }
-                    }) {
-                        HStack {
-                            Image(systemName: "person.crop.circle.fill")
-                                .resizable()
-                                .aspectRatio(contentMode: .fit)
-                                .frame(width: 18, height: 18)
-                                .foregroundColor(settings.accentColor2)
-                                .padding(.trailing, 10)
-                            
-                            Text("Schedule Appointment with Sheikh Mustafa Umar")
-                                .font(.subheadline)
-                                .foregroundColor(settings.accentColor2)
-                            
-                            Spacer()
-                            
-                            Image("Mustafa")
-                                .resizable()
-                                .aspectRatio(contentMode: .fit)
-                                .clipShape(Circle())
-                                .frame(width: 50, height: 50)
-                                .foregroundColor(settings.accentColor2)
-                        }
-                    }
-                    .contextMenu {
-                        Button(action: {
-                            settings.hapticFeedback()
-                            
-                            UIPasteboard.general.string = "https://www.icoi.net/schedule-appointment-with-shaykh-mustafa-umar/"
-                        }) {
-                            Text("Copy Link")
-                            Image(systemName: "doc.on.doc")
-                        }
-                    }
+                    createButtonForURL(url: "https://open.spotify.com/show/21boeFrl1YETpYbclnDSYf?si=5d069a3507c54d22", title: "Follow the ICOI Podcast on Spotify", image: "waveform.and.mic")
                     
                     createButtonForURL(url: "https://www.icoi.net/subscribe-to-icoi-newsletter-2/", title: "Subscribe to ICOI's Newsletter", image: "newspaper.fill")
                     

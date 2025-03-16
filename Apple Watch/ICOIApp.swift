@@ -3,7 +3,7 @@ import WatchConnectivity
 import WidgetKit
 
 @main
-struct ICOI0_Watch_AppApp: App {
+struct IslamicCenterofIrvineApp: App {
     @StateObject private var settings = Settings.shared
     @StateObject private var quranData = QuranData.shared
     @StateObject private var quranPlayer = QuranPlayer.shared
