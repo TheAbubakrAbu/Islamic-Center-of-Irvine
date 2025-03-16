@@ -1,6 +1,7 @@
 import SwiftUI
 import WatchConnectivity
 import WidgetKit
+import StoreKit
 
 @main
 struct IslamicCenterofIrvineApp: App {
@@ -10,6 +11,10 @@ struct IslamicCenterofIrvineApp: App {
     @StateObject private var namesData = NamesViewModel.shared
     
     @State private var isLaunching = true
+    
+    @AppStorage("timeSpent") private var timeSpent: Double = 0
+    @AppStorage("shouldShowRateAlert") private var shouldShowRateAlert: Bool = true
+    @State private var startTime: Date?
     
     @UIApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
     
@@ -69,6 +74,34 @@ struct IslamicCenterofIrvineApp: App {
                     settings.fetchPrayerTimes()
                     settings.fetchEvents()
                     settings.fetchBusinesses()
+                }
+                
+                if shouldShowRateAlert {
+                    startTime = Date()
+                    
+                    let remainingTime = max(180 - timeSpent, 0)
+                    if remainingTime == 0 {
+                        guard let windowScene = UIApplication.shared.connectedScenes
+                            .first(where: { $0.activationState == .foregroundActive }) as? UIWindowScene else {
+                            return
+                        }
+                        SKStoreReviewController.requestReview(in: windowScene)
+                        shouldShowRateAlert = false
+                    } else {
+                        DispatchQueue.main.asyncAfter(deadline: .now() + remainingTime) {
+                            guard let windowScene = UIApplication.shared.connectedScenes
+                                .first(where: { $0.activationState == .foregroundActive }) as? UIWindowScene else {
+                                return
+                            }
+                            SKStoreReviewController.requestReview(in: windowScene)
+                            shouldShowRateAlert = false
+                        }
+                    }
+                }
+            }
+            .onDisappear {
+                if shouldShowRateAlert, let startTime = startTime {
+                    timeSpent += Date().timeIntervalSince(startTime)
                 }
             }
         }
