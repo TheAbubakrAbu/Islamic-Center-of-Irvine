@@ -127,7 +127,6 @@ struct OtherView: View {
             }
             .applyConditionalListStyle(defaultView: true)
             .navigationTitle("Tools")
-            .navigationBarTitleDisplayMode(.inline)
         }
         .navigationViewStyle(.stack)
     }

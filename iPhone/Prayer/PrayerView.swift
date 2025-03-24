@@ -235,7 +235,7 @@ struct ICOIPrayerView: View {
                 }
             }
             .navigationTitle("ICOI Prayers")
-            .navigationBarTitleDisplayMode(.inline)
+            .applyConditionalListStyle(defaultView: settings.defaultView)
             #if !os(watchOS)
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
@@ -255,7 +255,6 @@ struct ICOIPrayerView: View {
                 }
             }
             #endif
-            .applyConditionalListStyle(defaultView: settings.defaultView)
             .confirmationDialog("", isPresented: Binding(
                 get: { activeAlert != nil },
                 set: { if !$0 { activeAlert = nil } }

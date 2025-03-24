@@ -9,7 +9,7 @@ struct CreditsView: View {
                 VStack(alignment: .center) {
                     HStack {
                         Spacer()
-                        Text("The Islamic Center of Irvine (ICOI) App was created by Abubakr Elmallah (أبوبكر الملاح), who was a 17-year old high school student when this app was published on October 3, 2023.")
+                        Text("The ICOI App was created by Abubakr Elmallah (أبوبكر الملاح), who was a 17-year old high school student when this app was published on October 3, 2023.")
                             .font(.headline)
                             .padding(.vertical, 4)
                             .multilineTextAlignment(.center)
@@ -45,36 +45,74 @@ struct CreditsView: View {
                 }
                 .listRowSeparator(.hidden)
                 
-                Link("Credit for the Arabic and English transliteration of the Quran data goes to Risan Bagja Pradana", destination: URL(string: "https://github.com/risan/quran-json")!)
-                    .foregroundColor(settings.accentColor2)
-                    .font(.body)
+                Section {
+                    Link("View the source code: github.com/TheAbubakrAbu/Islamic-Center-of-Irvine", destination: URL(string: "https://github.com/TheAbubakrAbu/Islamic-Center-of-Irvine")!)
+                        .font(.body)
+                        .foregroundColor(settings.accentColor)
+                        .contextMenu {
+                            Button(action: {
+                                UIPasteboard.general.string = "https://github.com/TheAbubakrAbu/Islamic-Center-of-Irvine"
+                            }) {
+                                HStack {
+                                    Image(systemName: "doc.on.doc")
+                                    Text("Copy Website")
+                                }
+                            }
+                        }
+                    
+                    Button(action: {
+                        if settings.hapticOn { UIImpactFeedbackGenerator(style: .light).impactOccurred() }
+                        
+                        withAnimation(.smooth()) {
+                            if let url = URL(string: "itms-apps://itunes.apple.com/app/id6463835936?action=write-review") {
+                                UIApplication.shared.open(url)
+                            }
+                        }
+                    }) {
+                        HStack {
+                            Text("Leave a Review")
+                            
+                            Image(systemName: "rectangle.and.pencil.and.ellipsis.rtl")
+                        }
+                        .font(.body)
+                        .foregroundColor(settings.accentColor)
+                    }
+                }
                 
-                Link("Credit for the English Saheeh International translation of the Quran data goes to Global Quran", destination: URL(string: "https://globalquran.com/download/data/")!)
-                    .foregroundColor(settings.accentColor2)
-                    .font(.body)
+                Section(header: Text("CREDITS")) {
+                    Link("Credit for the Arabic and English transliteration of the Quran data goes to Risan Bagja Pradana", destination: URL(string: "https://github.com/risan/quran-json")!)
+                        .foregroundColor(settings.accentColor2)
+                        .font(.body)
+                    
+                    Link("Credit for the English Saheeh International translation of the Quran data goes to Global Quran", destination: URL(string: "https://globalquran.com/download/data/")!)
+                        .foregroundColor(settings.accentColor2)
+                        .font(.body)
+                    
+                    Link("Credit for the Uthmani Hafs Quran font goes to Urdu Nigar", destination: URL(string: "https://urdunigaar.com/download/hafs-quran-ttf-font/")!)
+                        .foregroundColor(settings.accentColor2)
+                        .font(.body)
+                    
+                    Link("Credit for the Indopak Quran font goes to Urdu Nigar", destination: URL(string: "https://urdunigaar.com/download/al-mushaf-arabic-font-ttf-font-download/")!)
+                        .foregroundColor(settings.accentColor2)
+                        .font(.body)
+                    
+                    Link("Credit for the 99 Names of Allah from KabDeveloper", destination: URL(string: "https://github.com/KabDeveloper/99-Names-Of-Allah/tree/main")!)
+                        .foregroundColor(settings.accentColor2)
+                        .font(.body)
+                    
+                    Link("Credit for the Ayah Quran Recitations goes to Al Quran", destination: URL(string: "https://alquran.cloud/cdn")!)
+                        .foregroundColor(settings.accentColor2)
+                        .font(.body)
+                    
+                    Link("Credit for the Surah Quran Recitations goes to MP3 Quran", destination: URL(string: "https://mp3quran.net/eng")!)
+                        .foregroundColor(settings.accentColor2)
+                        .font(.body)
+                }
                 
-                Link("Credit for the Uthmani Hafs Quran font goes to Urdu Nigar", destination: URL(string: "https://urdunigaar.com/download/hafs-quran-ttf-font/")!)
-                    .foregroundColor(settings.accentColor2)
-                    .font(.body)
-                
-                Link("Credit for the Indopak Quran font goes to Urdu Nigar", destination: URL(string: "https://urdunigaar.com/download/al-mushaf-arabic-font-ttf-font-download/")!)
-                    .foregroundColor(settings.accentColor2)
-                    .font(.body)
-                
-                Link("Credit for the 99 Names of Allah from KabDeveloper", destination: URL(string: "https://github.com/KabDeveloper/99-Names-Of-Allah/tree/main")!)
-                    .foregroundColor(settings.accentColor2)
-                    .font(.body)
-                
-                Link("Credit for the Ayah Quran Recitations goes to Al Quran", destination: URL(string: "https://alquran.cloud/cdn")!)
-                    .foregroundColor(settings.accentColor2)
-                    .font(.body)
-                
-                Link("Credit for the Surah Quran Recitations goes to MP3 Quran", destination: URL(string: "https://mp3quran.net/eng")!)
-                    .foregroundColor(settings.accentColor2)
-                    .font(.body)
-                
-                Text("Version 3.5.6")
-                    .font(.caption)
+                Section {
+                    Text("Version 3.5.6")
+                        .font(.caption)
+                }
                 
                 Section(header: Text("APPS BY ABUBAKR ELMALLAH")) {
                     HStack {

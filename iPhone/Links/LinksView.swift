@@ -303,7 +303,6 @@ struct ICOILinksView: View {
                 ICOIBusinessView()
             }
             .navigationTitle("ICOI Links")
-            .navigationBarTitleDisplayMode(.inline)
             .applyConditionalListStyle(defaultView: true)
             .refreshable {
                 settings.fetchBusinesses(force: true) {

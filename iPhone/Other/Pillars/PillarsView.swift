@@ -60,7 +60,6 @@ struct PillarsView: View {
         }
         .applyConditionalListStyle(defaultView: true)
         .navigationTitle("Islamic Pillars")
-        .navigationBarTitleDisplayMode(.inline)
     }
 }
 

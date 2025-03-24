@@ -1415,7 +1415,6 @@ struct SurahsView: View {
                 }
                 .applyConditionalListStyle(defaultView: true)
                 .navigationTitle("Al-Quran Settings")
-                .navigationBarTitleDisplayMode(.inline)
             }
             
             /*SettingsView()

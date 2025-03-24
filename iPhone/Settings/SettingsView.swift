@@ -140,7 +140,7 @@ struct ICOISettingsView: View {
                 }
             }
             .navigationTitle("App Settings")
-            .navigationBarTitleDisplayMode(.inline)
+            .applyConditionalListStyle(defaultView: true)
         }
         .navigationViewStyle(.stack)
     }
@@ -322,7 +322,6 @@ struct NotificationView: View {
             Text("Please go to Settings and enable notifications to be notified of prayer times.")
         }
         .navigationTitle("Notification Settings")
-        .navigationBarTitleDisplayMode(.inline)
         .applyConditionalListStyle(defaultView: true)
     }
 }
