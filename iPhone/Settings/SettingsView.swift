@@ -85,28 +85,79 @@ struct ICOISettingsView: View {
                         showingCredits = true
                     }) {
                         HStack {
+                            Image(systemName: "scroll.fill")
+                            
                             Text("View Credits")
-                                .font(.subheadline)
-                                .foregroundColor(settings.accentColor)
-                                .multilineTextAlignment(.center)
                         }
+                        .font(.subheadline)
+                        .foregroundColor(settings.accentColor)
                     }
                     .sheet(isPresented: $showingCredits) {
                         CreditsView()
+                    }
+                    
+                    Button(action: {
+                        if settings.hapticOn { UIImpactFeedbackGenerator(style: .light).impactOccurred() }
+                        
+                        withAnimation(.smooth()) {
+                            if let url = URL(string: "itms-apps://itunes.apple.com/app/id6463835936?action=write-review") {
+                                UIApplication.shared.open(url)
+                            }
+                        }
+                    }) {
+                        HStack {
+                            Image(systemName: "star.bubble.fill")
+                            
+                            Text("Leave a Review")
+                        }
+                        .font(.subheadline)
+                        .foregroundColor(settings.accentColor2)
+                    }
+                    .contextMenu {
+                        Button(action: {
+                            settings.hapticFeedback()
+                            
+                            UIPasteboard.general.string = "itms-apps://itunes.apple.com/app/id6463835936?action=write-review"
+                        }) {
+                            HStack {
+                                Image(systemName: "doc.on.doc")
+                                Text("Copy Website")
+                            }
+                        }
+                    }
+                    
+                    Link(destination: URL(string: "https://forms.gle/s2mp1uSr9rEXTWU29")!, label: {
+                        HStack {
+                            Image(systemName: "quote.bubble.fill")
+                            
+                            Text("Send Feedback via Google Form")
+                        }
+                        .font(.subheadline)
+                        .foregroundColor(settings.accentColor2)
+                    })
+                    .contextMenu {
+                        Button(action: {
+                            settings.hapticFeedback()
+                            
+                            UIPasteboard.general.string = "https://forms.gle/s2mp1uSr9rEXTWU29"
+                        }) {
+                            HStack {
+                                Image(systemName: "doc.on.doc")
+                                Text("Copy Website")
+                            }
+                        }
                     }
                     #endif
                     
                     HStack {
                         Text("Contact me at: ")
-                            .font(.subheadline)
-                            .multilineTextAlignment(.leading)
                         
                         Text("ammelmallah@icloud.com")
-                            .font(.subheadline)
                             .foregroundColor(settings.accentColor)
-                            .multilineTextAlignment(.leading)
                             .padding(.leading, -4)
                     }
+                    .font(.subheadline)
+                    .multilineTextAlignment(.leading)
                     #if !os(watchOS)
                     .contextMenu {
                         Button(action: {
@@ -120,22 +171,6 @@ struct ICOISettingsView: View {
                             }
                         }
                     }
-                    #endif
-                    
-                    #if !os(watchOS)
-                    Link(destination: URL(string: "https://forms.gle/s2mp1uSr9rEXTWU29")!, label: {
-                        HStack {
-                            Image(systemName: "pencil.and.ellipsis.rectangle")
-                                .resizable()
-                                .aspectRatio(contentMode: .fit)
-                                .frame(width: 18, height: 18)
-                                .foregroundColor(settings.accentColor2)
-                            
-                            Text("Send Feedback via Google Form")
-                                .font(.subheadline)
-                                .foregroundColor(settings.accentColor2)
-                        }
-                    })
                     #endif
                 }
             }

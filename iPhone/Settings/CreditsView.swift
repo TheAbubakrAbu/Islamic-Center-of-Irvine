@@ -45,40 +45,6 @@ struct CreditsView: View {
                 }
                 .listRowSeparator(.hidden)
                 
-                Section {
-                    Link("View the source code: github.com/TheAbubakrAbu/Islamic-Center-of-Irvine", destination: URL(string: "https://github.com/TheAbubakrAbu/Islamic-Center-of-Irvine")!)
-                        .font(.body)
-                        .foregroundColor(settings.accentColor)
-                        .contextMenu {
-                            Button(action: {
-                                UIPasteboard.general.string = "https://github.com/TheAbubakrAbu/Islamic-Center-of-Irvine"
-                            }) {
-                                HStack {
-                                    Image(systemName: "doc.on.doc")
-                                    Text("Copy Website")
-                                }
-                            }
-                        }
-                    
-                    Button(action: {
-                        if settings.hapticOn { UIImpactFeedbackGenerator(style: .light).impactOccurred() }
-                        
-                        withAnimation(.smooth()) {
-                            if let url = URL(string: "itms-apps://itunes.apple.com/app/id6463835936?action=write-review") {
-                                UIApplication.shared.open(url)
-                            }
-                        }
-                    }) {
-                        HStack {
-                            Text("Leave a Review")
-                            
-                            Image(systemName: "rectangle.and.pencil.and.ellipsis.rtl")
-                        }
-                        .font(.body)
-                        .foregroundColor(settings.accentColor)
-                    }
-                }
-                
                 Section(header: Text("CREDITS")) {
                     Link("Credit for the Arabic and English transliteration of the Quran data goes to Risan Bagja Pradana", destination: URL(string: "https://github.com/risan/quran-json")!)
                         .foregroundColor(settings.accentColor2)

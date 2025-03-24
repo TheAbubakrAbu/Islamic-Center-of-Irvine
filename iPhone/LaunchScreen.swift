@@ -5,7 +5,7 @@ struct LaunchScreen: View {
 
     @Binding var isLaunching: Bool
 
-    @State private var size = 0.8
+    @State private var size = 1.0
     @State private var opacity = 0.5
     @State private var gradientSize: CGFloat = 0.0
 
@@ -65,7 +65,7 @@ struct LaunchScreen: View {
             triggerHapticFeedback(.soft)
             
             withAnimation(.easeInOut(duration: 0.5)) {
-                size = 0.9
+                size = 1.25
                 opacity = 1.0
                 gradientSize = 3.0
                 
@@ -76,7 +76,7 @@ struct LaunchScreen: View {
                 triggerHapticFeedback(.soft)
                 
                 withAnimation(.easeOut(duration: 0.5)) {
-                    size = 0.8
+                    size = 1.0
                     gradientSize = 0.0
                 }
 

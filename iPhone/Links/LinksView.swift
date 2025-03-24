@@ -37,9 +37,10 @@ struct ICOILinksView: View {
                             Image("ICOI2")
                                 .resizable()
                                 .aspectRatio(contentMode: .fit)
-                                .frame(width: 18, height: 18)
+                                .frame(width: 24, height: 24)
                                 .foregroundColor(settings.accentColor2)
-                                .padding(.trailing, 10)
+                                .padding(.leading, -2)
+                                .padding(.trailing, 2)
                             
                             Text("icoi.net")
                                 .font(.subheadline)
