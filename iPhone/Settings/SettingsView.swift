@@ -411,7 +411,7 @@ struct PrayerSettingsSection: View {
                         .foregroundColor(settings.accentColor)
                 }
                 
-                Toggle("Jummuah Rating Notification at 2:30", isOn: $settings.ratingJummuah.animation(.easeInOut))
+                Toggle("Jummuah Rating Notification at 3:00", isOn: $settings.ratingJummuah.animation(.easeInOut))
                     .font(.subheadline)
                 
                 Text("On Fridays, Dhuhr notifications are not sent and are instead replaced with Jummuah notifications.")
@@ -756,7 +756,7 @@ struct SettingsAppearanceView: View {
             Toggle("Default List View", isOn: $settings.defaultView.animation(.easeInOut))
                 .font(.subheadline)
             
-            Text("The default list view is the standard interface found in many of Apple's first party apps, including Notes. This setting only applies only to the prayer view.")
+            Text("The default list view is the standard interface found in many of Apple's first party apps, including Notes. This setting only applies only to the prayer and Quran view.")
                 .font(.caption)
                 .foregroundColor(.secondary)
                 .padding(.vertical, 2)

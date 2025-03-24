@@ -743,7 +743,7 @@ class Settings: NSObject, ObservableObject {
         }
         
         if ratingJummuah {
-            let components = DateComponents(hour: 14, minute: 30, weekday: 6)
+            let components = DateComponents(hour: 15, minute: 0, weekday: 6)
             if let date = Calendar.current.nextDate(after: Date(), matching: components, matchingPolicy: .nextTime) {
                 let content = UNMutableNotificationContent()
                 content.title = "Islamic Center of Irvine (ICOI)"

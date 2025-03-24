@@ -56,7 +56,7 @@ struct ICOIPrayerView: View {
         if isFriday {
             let hour = calendar.component(.hour, from: today)
             let minutes = calendar.component(.minute, from: today)
-            let isAfterTwoThirty = (hour > 14) || (hour == 14 && minutes >= 30)
+            let isAfterTwoThirty = hour > 14
 
             if isAfterTwoThirty {
                 if let lastAskedTimestamp = lastJummuahRatingTimestamp {

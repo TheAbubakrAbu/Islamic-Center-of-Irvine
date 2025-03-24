@@ -255,7 +255,7 @@ struct DaySelectionView: View {
                         .font(.subheadline)
                         .frame(maxWidth: .infinity)
                         .padding(.vertical, 8)
-                        .background(selectedDay == day ? Color.accentColor : Color.gray.opacity(0.2))
+                        .background(selectedDay == day ? Color.accentColor : Color.secondary.opacity(0.2))
                         .foregroundColor(selectedDay == day ? Color.white : Color.primary)
                         .cornerRadius(10)
                         .minimumScaleFactor(0.5)

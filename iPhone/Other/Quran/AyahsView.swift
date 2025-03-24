@@ -169,9 +169,9 @@ struct AyahRow: View {
     var body: some View {
         ZStack {
             if let currentSurahNumber = quranPlayer.currentSurahNumber, let currentAyahNumber = quranPlayer.currentAyahNumber, currentSurahNumber == surah.id {
-                RoundedRectangle(cornerRadius: 15)
+                RoundedRectangle(cornerRadius: 10)
                     .fill(ayah.id == currentAyahNumber ? settings.accentColor.opacity(settings.defaultView ? 0.1 : 0.25) : .clear)
-                    .padding(.horizontal, -12)
+                    .padding(.horizontal, settings.defaultView ? -15 : -12)
                     .transition(.opacity)
                     .animation(.easeInOut, value: ayah.id == currentAyahNumber)
             }
@@ -647,13 +647,11 @@ struct AyahsView: View {
             }) {
                 VStack(alignment: .trailing) {
                     Text("\(surah.nameArabic) - \(arabicNumberString(from: surah.id))")
-                        .font(.footnote)
-                        .foregroundColor(settings.accentColor)
                 
                     Text("\(surah.nameTransliteration) - \(surah.id)")
-                        .font(.footnote)
-                        .foregroundColor(settings.accentColor)
                 }
+                .font(.footnote)
+                .foregroundColor(settings.accentColor)
             }
         )
         .sheet(isPresented: $showingSettingsSheet) {
@@ -662,6 +660,8 @@ struct AyahsView: View {
                     SettingsQuranView(showEdits: false)
                         .environmentObject(quranData)
                 }
+                .accentColor(settings.accentColor)
+                .preferredColorScheme(settings.colorScheme)
                 .navigationTitle("Al-Quran Settings")
                 .applyConditionalListStyle(defaultView: true)
             }
