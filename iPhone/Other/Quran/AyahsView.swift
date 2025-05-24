@@ -53,13 +53,13 @@ struct SurahSectionHeader: View {
             }
             #endif
             
-            Image(systemName: settings.isSurahFavorite(surah: surah) ? "star.fill" : "star")
+            Image(systemName: settings.isSurahFavoriteCopy(surah: surah) ? "star.fill" : "star")
                 .foregroundColor(settings.accentColor)
                 .font(.subheadline)
                 .onTapGesture {
                     settings.hapticFeedback()
 
-                    settings.toggleSurahFavorite(surah: surah)
+                    settings.toggleSurahFavoriteCopy(surah: surah)
                 }
         }
     }
@@ -189,16 +189,16 @@ struct AyahRow: View {
                     Spacer()
                     
                     #if os(watchOS)
-                    Image(systemName: settings.isBookmarked(surah: surah.id, ayah: ayah.id) ? "bookmark.fill" : "bookmark")
+                    Image(systemName: settings.isBookmarkedCopy(surah: surah.id, ayah: ayah.id) ? "bookmark.fill" : "bookmark")
                         .foregroundColor(settings.accentColor)
                         .font(.system(size: UIFont.preferredFont(forTextStyle: .title3).pointSize))
                         .onTapGesture {
                             settings.hapticFeedback()
                             
-                            settings.toggleBookmark(surah: surah.id, ayah: ayah.id)
+                            settings.toggleBookmarkCopy(surah: surah.id, ayah: ayah.id)
                         }
                     #else
-                    if(settings.isBookmarked(surah: surah.id, ayah: ayah.id)) {
+                    if(settings.isBookmarkedCopy(surah: surah.id, ayah: ayah.id)) {
                         Image(systemName: "bookmark.fill")
                             .foregroundColor(settings.accentColor)
                             .font(.system(size: UIFont.preferredFont(forTextStyle: .title3).pointSize))
@@ -206,12 +206,12 @@ struct AyahRow: View {
                     }
                     
                     Menu {
-                        Button(role: settings.isBookmarked(surah: surah.id, ayah: ayah.id) ? .destructive : nil, action: {
+                        Button(role: settings.isBookmarkedCopy(surah: surah.id, ayah: ayah.id) ? .destructive : nil, action: {
                             settings.hapticFeedback()
                             
-                            settings.toggleBookmark(surah: surah.id, ayah: ayah.id)
+                            settings.toggleBookmarkCopy(surah: surah.id, ayah: ayah.id)
                         }) {
-                            Label(settings.isBookmarked(surah: surah.id, ayah: ayah.id) ? "Unbookmark Ayah" : "Bookmark Ayah", systemImage: settings.isBookmarked(surah: surah.id, ayah: ayah.id) ? "bookmark.fill" : "bookmark")
+                            Label(settings.isBookmarkedCopy(surah: surah.id, ayah: ayah.id) ? "Unbookmark Ayah" : "Bookmark Ayah", systemImage: settings.isBookmarkedCopy(surah: surah.id, ayah: ayah.id) ? "bookmark.fill" : "bookmark")
                         }
                         
                         if settings.showArabicText && !settings.beginnerMode {
@@ -355,12 +355,12 @@ struct AyahRow: View {
             .lineLimit(nil)
             #if !os(watchOS)
             .contextMenu {
-                Button(role: settings.isBookmarked(surah: surah.id, ayah: ayah.id) ? .destructive : nil, action: {
+                Button(role: settings.isBookmarkedCopy(surah: surah.id, ayah: ayah.id) ? .destructive : nil, action: {
                     settings.hapticFeedback()
                     
-                    settings.toggleBookmark(surah: surah.id, ayah: ayah.id)
+                    settings.toggleBookmarkCopy(surah: surah.id, ayah: ayah.id)
                 }) {
-                    Label(settings.isBookmarked(surah: surah.id, ayah: ayah.id) ? "Unbookmark Ayah" : "Bookmark Ayah", systemImage: settings.isBookmarked(surah: surah.id, ayah: ayah.id) ? "bookmark.fill" : "bookmark")
+                    Label(settings.isBookmarkedCopy(surah: surah.id, ayah: ayah.id) ? "Unbookmark Ayah" : "Bookmark Ayah", systemImage: settings.isBookmarkedCopy(surah: surah.id, ayah: ayah.id) ? "bookmark.fill" : "bookmark")
                 }
                 
                 if settings.showArabicText && !settings.beginnerMode {
@@ -414,6 +414,8 @@ struct AyahsView: View {
     @EnvironmentObject var settings: Settings
     @EnvironmentObject var quranData: QuranData
     @EnvironmentObject var quranPlayer: QuranPlayer
+    
+    @Environment(\.scenePhase) private var scenePhase
 
     @State private var searchText = ""
     @State private var visibleAyahs: [Int] = []
@@ -628,6 +630,17 @@ struct AyahsView: View {
         }
         .environmentObject(quranPlayer)
         .onDisappear {
+            DispatchQueue.main.async {
+                withAnimation {
+                    settings.lastReadSurah = surah.id
+                    visibleAyahs.sort()
+                    if let firstVisible = visibleAyahs.first {
+                        settings.lastReadAyah = firstVisible
+                    }
+                }
+            }
+        }
+        .onChange(of: scenePhase) { _ in
             DispatchQueue.main.async {
                 withAnimation {
                     settings.lastReadSurah = surah.id
