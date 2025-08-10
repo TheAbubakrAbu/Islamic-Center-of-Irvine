@@ -200,7 +200,6 @@ final class Settings: NSObject, ObservableObject {
                 jumuahTimes.reserveCapacity(2)
                 
                 for row in todayRows {
-                    // Minimize repeated lookups.
                     let name = try row.select("td").first()?.text()
                     let adhanTimeText = try row.select("td.one-span span").text()
                     let iqamahTimeText = try row.select("td b").text()
@@ -262,7 +261,6 @@ final class Settings: NSObject, ObservableObject {
                             second: 0,
                             of: currentDate
                         ) ?? currentDate
-                        // Preserve original behavior: add Sunrise twice.
                         prayers.append(
                             Prayer(
                                 nameArabic: "الشروق",
