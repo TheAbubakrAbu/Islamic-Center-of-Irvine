@@ -10,13 +10,15 @@ struct IslamicCenterofIrvineApp: App {
     @StateObject private var quranPlayer = QuranPlayer.shared
     @StateObject private var namesData = NamesViewModel.shared
     
+    @UIApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
+    
+    @Environment(\.scenePhase) private var scenePhase
+
     @State private var isLaunching = true
     
     @AppStorage("timeSpent") private var timeSpent: Double = 0
     @AppStorage("shouldShowRateAlert") private var shouldShowRateAlert: Bool = true
     @State private var startTime: Date?
-    
-    @UIApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
     
     init() {
         _ = WatchConnectivityManager.shared
@@ -69,6 +71,7 @@ struct IslamicCenterofIrvineApp: App {
             .tint(settings.accentColor)
             .preferredColorScheme(settings.colorScheme)
             .transition(.opacity)
+            .animation(.easeInOut, value: isLaunching)
             .onAppear {
                 withAnimation {
                     settings.fetchPrayerTimes()
@@ -119,20 +122,23 @@ struct IslamicCenterofIrvineApp: App {
         .onChange(of: settings.lastReadAyah) { _ in
             sendMessageToWatch()
         }
-        .onChange(of: settings.favoriteSurahs) { _ in
+        .onChange(of: settings.favoriteSurahs) { newSurahs in
             sendMessageToWatch()
         }
-        .onChange(of: settings.bookmarkedAyahs) { _ in
+        .onChange(of: settings.bookmarkedAyahs) { newBookmarks in
             sendMessageToWatch()
         }
         .onChange(of: settings.favoriteLetters) { _ in
             sendMessageToWatch()
         }
+        .onChange(of: scenePhase) { _ in
+            quranPlayer.saveLastListenedSurah()
+        }
     }
     
     private func sendMessageToWatch() {
         guard WCSession.default.isPaired else {
-            print("No Apple Watch is paired")
+            logger.debug("No Apple Watch is paired")
             return
         }
         
@@ -140,13 +146,13 @@ struct IslamicCenterofIrvineApp: App {
         let message = ["settings": settingsData]
 
         if WCSession.default.isReachable {
-            print("Watch is reachable. Sending message to watch: \(message)")
+            logger.debug("Watch is reachable. Sending message to watch: \(message)")
 
             WCSession.default.sendMessage(message, replyHandler: nil) { error in
-                print("Error sending message to watch: \(error.localizedDescription)")
+                logger.debug("Error sending message to watch: \(error.localizedDescription)")
             }
         } else {
-            print("Watch is not reachable. Transferring user info to watch: \(message)")
+            logger.debug("Watch is not reachable. Transferring user info to watch: \(message)")
             WCSession.default.transferUserInfo(message)
         }
     }

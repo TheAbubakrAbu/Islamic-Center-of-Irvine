@@ -46,7 +46,7 @@ struct ICOIEventsView: View {
                         }
                         #endif
                         
-                        ForEach(filteredEvents, id: \.name) { event in
+                        ForEach(filteredEvents, id: \.uniqueKey) { event in
                             if event.name.lowercased() == "no upcoming events" {
                                 HStack {
                                     VStack(alignment: .leading) {

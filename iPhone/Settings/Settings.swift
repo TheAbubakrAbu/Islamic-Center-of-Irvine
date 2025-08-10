@@ -1,152 +1,100 @@
 import SwiftUI
+import os
 import WidgetKit
 import UserNotifications
 import SwiftSoup
 
-struct LetterData: Identifiable, Codable, Equatable, Comparable {
-    let id: Int
-    let letter: String
-    let forms: [String]
-    let name: String
-    let transliteration: String
-    let showTashkeel: Bool
-    let sound: String
-    
-    static func < (lhs: LetterData, rhs: LetterData) -> Bool {
-        return lhs.id < rhs.id
-    }
-}
-
-struct Prayer: Identifiable, Codable, Equatable {
-    var id = UUID()
-    let nameArabic: String
-    let nameTransliteration: String
-    let nameEnglish: String
-    let time: Date
-    let image: String
-    let rakah: Int
-    let sunnahBefore: Int
-    let sunnahAfter: Int
-    
-    static func ==(lhs: Prayer, rhs: Prayer) -> Bool {
-        return lhs.id == rhs.id
-    }
-}
-
-struct Prayers: Identifiable, Codable, Equatable {
-    var id = UUID()
-    let day: Date
-    let prayers: [Prayer]
-    var setNotification: Bool
-}
-
-struct Events: Codable {
-    let events: [Event]
-    let day: Date
-}
-
-struct Event: Codable {
-    let dayOfWeek: String
-    let name: String
-    let link: String
-    let date: Date
-    let time: String
-    let location: String
-}
-
-struct Businesses: Codable {
-    let businesses: [Business]
-    let day: Date
-}
-
-struct Business: Codable {
-    let name: String
-    let phoneNumber: String
-    let website: String
-}
-
-extension Date {
-    func isSameDay(as date: Date) -> Bool {
-        let calendar = Calendar.current
-        return calendar.isDate(self, inSameDayAs: date)
-    }
-}
+let logger = Logger(subsystem: "com.Quran.Elmallah.Islamic-Pillars.Islamic-Center-of-Irvine", category: "ICOI")
 
 final class Settings: NSObject, ObservableObject {
     static let shared = Settings()
-    private var appGroupUserDefaultsICOI: UserDefaults?
-    private var appGroupUserDefaults: UserDefaults?
     
-    override init() {
-        self.appGroupUserDefaultsICOI = UserDefaults(suiteName: "group.com.ICOI.AppGroup")
-        self.appGroupUserDefaults = UserDefaults(suiteName: "group.com.IslamicPillars.AppGroup")
-        
-        self.prayersICOIData = appGroupUserDefaultsICOI?.data(forKey: "prayersICOIData") ?? Data()
-        self.eventsICOIData = appGroupUserDefaultsICOI?.data(forKey: "eventsICOIData") ?? Data()
-        self.businessesICOIData = appGroupUserDefaultsICOI?.data(forKey: "businessesICOIData") ?? Data()
-        
-        self.favoriteSurahsData = appGroupUserDefaults?.data(forKey: "favoriteSurahsData") ?? Data()
-        self.bookmarkedAyahsData = appGroupUserDefaults?.data(forKey: "bookmarkedAyahsData") ?? Data()
-        self.favoriteLetterData = appGroupUserDefaults?.data(forKey: "favoriteLetterData") ?? Data()
-    }
+    static let encoder: JSONEncoder = {
+        let enc = JSONEncoder()
+        enc.dateEncodingStrategy = .millisecondsSince1970
+        return enc
+    }()
+
+    static let decoder: JSONDecoder = {
+        let dec = JSONDecoder()
+        dec.dateDecodingStrategy = .millisecondsSince1970
+        return dec
+    }()
     
     func updateCurrentAndNextPrayer() {
         guard let todayPrayersICOI = prayersICOI else {
-            print("Failed to get today's ICOI prayer times")
+            logger.debug("Failed to get today's ICOI prayer times")
             return
         }
         
-        let weekday = Calendar.current.component(.weekday, from: Date())
-        let isFriday = weekday == 6
+        let calendar = Calendar.current
+        let now = Date()
+        let isFriday = calendar.component(.weekday, from: now) == 6
         
         var prayersICOIToday = todayPrayersICOI.prayers
         
-        if !isFriday {
-            prayersICOIToday = prayersICOIToday.dropLast()
-            prayersICOIToday = prayersICOIToday.dropLast()
+        // On non-Fridays, remove the last two entries (Jumuah slots) efficiently and safely.
+        if !isFriday, prayersICOIToday.count >= 2 {
+            prayersICOIToday.removeLast(2)
         }
                 
-        let now = Date()
-        
         let currentICOI = prayersICOIToday.last(where: { $0.time <= now })
         let nextICOI = prayersICOIToday.first(where: { $0.time > now })
 
         if let next = nextICOI {
             nextPrayerICOI = next
-        } else if let firstPrayerToday = prayersICOIToday.first {
-            var tomorrowComponents = Calendar.current.dateComponents([.year, .month, .day, .hour, .minute], from: firstPrayerToday.time)
-            tomorrowComponents.day! += 1
-            if let firstPrayerTomorrow = Calendar.current.date(from: tomorrowComponents) {
-                nextPrayerICOI = Prayer(nameArabic: "أذان الفجر", nameTransliteration: "Fajr Adhan", nameEnglish: "Dawn", time: firstPrayerTomorrow, image: "sunrise", rakah: 2, sunnahBefore: 2, sunnahAfter: 0)
-            }
+        } else if let firstPrayerToday = prayersICOIToday.first,
+                  let firstPrayerTomorrow = calendar.date(byAdding: .day, value: 1, to: firstPrayerToday.time) {
+            nextPrayerICOI = Prayer(
+                nameArabic: "أذان الفجر",
+                nameTransliteration: "Fajr Adhan",
+                nameEnglish: "Dawn",
+                time: firstPrayerTomorrow,
+                image: "sunrise",
+                rakah: 2,
+                sunnahBefore: 2,
+                sunnahAfter: 0
+            )
         }
 
         currentPrayerICOI = currentICOI ?? prayersICOIToday.last
     }
     
+    @inlinable
     func arabicNumberString(from numberString: String) -> String {
-        let arabicNumbers = ["٠", "١", "٢", "٣", "٤", "٥", "٦", "٧", "٨", "٩"]
-
-        var arabicNumberString = ""
-        for character in numberString {
-            if let digit = Int(String(character)) {
-                arabicNumberString += arabicNumbers[digit]
+        if !numberString.unicodeScalars.contains(where: { 48...57 ~= $0.value }) {
+            return numberString
+        }
+        
+        var out = String.UnicodeScalarView()
+        out.reserveCapacity(numberString.unicodeScalars.count)
+        
+        let arabicZero = UnicodeScalar(0x0660)!
+        for s in numberString.unicodeScalars {
+            if 48...57 ~= s.value {
+                let mapped = UnicodeScalar(arabicZero.value + (s.value - 48))!
+                out.append(mapped)
             } else {
-                arabicNumberString += String(character)  // handle non-digit characters like ':' in time
+                out.append(s)
             }
         }
-        return arabicNumberString
+        return String(out)
     }
     
     func formatArabicDate(_ date: Date) -> String {
-        let formatter = DateFormatter()
-        formatter.timeStyle = .short
-        formatter.timeZone = TimeZone.current
-        formatter.locale = Locale(identifier: "ar")
-        let dateInEnglish = formatter.string(from: date)
-        return arabicNumberString(from: dateInEnglish)
+        struct Cache {
+            static let formatter: DateFormatter = {
+                let f = DateFormatter()
+                f.timeStyle = .short
+                f.locale = Locale(identifier: "ar")
+                return f
+            }()
+        }
+        Cache.formatter.timeZone = .current
+        let s = Cache.formatter.string(from: date)
+        return arabicNumberString(from: s)
     }
-    
+
     private let hijriDateFormatterArabic: DateFormatter = {
         let formatter = DateFormatter()
         var hijriCalendar = Calendar(identifier: .islamicUmmAlQura)
@@ -166,190 +114,274 @@ final class Settings: NSObject, ObservableObject {
         formatter.locale = Locale(identifier: "en")
         return formatter
     }()
-    
-    func formatDate(_ date: Date) -> String {
-        let formatter = DateFormatter()
-        formatter.timeStyle = .short
-        formatter.timeZone = TimeZone.current
-        return formatter.string(from: date)
-    }
-    
-    func updateDates() {
-        let dateFormatter = DateFormatter()
-        dateFormatter.dateFormat = "yyyy-MM-dd'T'HH:mm:ss"
 
-        let currentDateString = dateFormatter.string(from: Date())
-        let currentDateInRiyadh = dateFormatter.date(from: currentDateString) ?? Date()
+    func formatDate(_ date: Date) -> String {
+        struct Cache {
+            static let formatter: DateFormatter = {
+                let f = DateFormatter()
+                f.timeStyle = .short
+                return f
+            }()
+        }
+        Cache.formatter.timeZone = .current
+        return Cache.formatter.string(from: date)
+    }
+
+    func updateDates() {
+        struct Cache {
+            static let df: DateFormatter = {
+                let f = DateFormatter()
+                f.dateFormat = "yyyy-MM-dd'T'HH:mm:ss"
+                return f
+            }()
+        }
+
+        let now = Date()
+        let currentDateString = Cache.df.string(from: now)
+        let currentDateInRiyadh = Cache.df.date(from: currentDateString) ?? now
 
         var hijriCalendar = Calendar(identifier: .islamicUmmAlQura)
         hijriCalendar.locale = Locale(identifier: "ar")
-        
+
         let hijriComponents = hijriCalendar.dateComponents([.year, .month, .day], from: currentDateInRiyadh)
         let hijriDateArabic = hijriCalendar.date(from: hijriComponents)
+        let refDate = hijriDateArabic ?? currentDateInRiyadh
 
         withAnimation {
-            let arabicFormattedDate = hijriDateFormatterArabic.string(from: hijriDateArabic ?? currentDateInRiyadh)
+            let arabicFormattedDate = hijriDateFormatterArabic.string(from: refDate)
             self.hijriDateArabic = arabicNumberString(from: arabicFormattedDate) + " هـ"
-            self.hijriDateEnglish = hijriDateFormatterEnglish.string(from: hijriDateArabic ?? currentDateInRiyadh)
+            self.hijriDateEnglish = hijriDateFormatterEnglish.string(from: refDate)
         }
     }
     
     func getICOIPrayerTimes(completion: @escaping (Prayers?) -> Void) {
         guard let url = URL(string: "https://timing.athanplus.com/masjid/widgets/embed?theme=3&masjid_id=6adJkrKk&color=7A0C05&labeljumuah1=Jumuah%201") else {
-            print("Invalid URL")
-            DispatchQueue.main.async {
-                completion(nil)
-            }
+            logger.debug("Invalid URL")
+            DispatchQueue.main.async { completion(nil) }
             return
         }
         
-        let task = URLSession.shared.dataTask(with: url) { data, response, error in
-            if let data = data, error == nil {
-                let html = String(data: data, encoding: .utf8)
-                var prayers: [Prayer] = []
-                let formatter = DateFormatter()
-                formatter.locale = Locale(identifier: "en_US_POSIX")
-                formatter.dateFormat = "h:mm a"
+        let task = URLSession.shared.dataTask(with: url) { data, _, error in
+            guard error == nil, let data = data, let html = String(data: data, encoding: .utf8) else {
+                logger.debug("Failed to load ICOI prayer data.")
+                DispatchQueue.main.async { completion(nil) }
+                return
+            }
+            
+            struct Cache {
+                static let formatter: DateFormatter = {
+                    let f = DateFormatter()
+                    f.locale = Locale(identifier: "en_US_POSIX")
+                    f.dateFormat = "h:mm a"
+                    return f
+                }()
+            }
+            let formatter = Cache.formatter
+            
+            var prayers: [Prayer] = []
+            prayers.reserveCapacity(16)
+            
+            let weekday = Calendar.current.component(.weekday, from: Date())
+            let isFriday = weekday == 6
+            
+            do {
+                let document = try SwiftSoup.parse(html)
                 
-                let weekday = Calendar.current.component(.weekday, from: Date())
-                let isFriday = weekday == 6
+                let rows = try document.select("table.full-table-sec tr.no-border").array()
+                let todayRows = Array(rows.prefix(6))
                 
-                do {
-                    let document = try SwiftSoup.parse(html ?? "")
+                let calendar = Calendar.current
+                let currentDate = Date()
+                
+                let jumuahList = try document.select("ul.testing-sec li").array()
+                let firstTwoJumuahs = Array(jumuahList.prefix(2))
+                
+                var jumuahTimes: [Date] = []
+                jumuahTimes.reserveCapacity(2)
+                
+                for row in todayRows {
+                    // Minimize repeated lookups.
+                    let name = try row.select("td").first()?.text()
+                    let adhanTimeText = try row.select("td.one-span span").text()
+                    let iqamahTimeText = try row.select("td b").text()
+                    let sunriseTimeText = try row.select("td.cnter-jummah span").text()
                     
-                    let rows = try document.select("table.full-table-sec tr.no-border").array()
-                    let todayRows = Array(rows.prefix(6))
-                    
-                    let calendar = Calendar.current
-                    let currentDate = Date()
-                    
-                    let jumuahList = try document.select("ul.testing-sec li").array()
-                    let firstTwoJumuahs = Array(jumuahList.prefix(2))
-                    var jumuahTimes: [Date] = []
-                    
-                    for row in todayRows {
-                        let name = try row.select("td").first()?.text()
-                        let adhanTime = try row.select("td.one-span span").text()
-                        let iqamahTime = try row.select("td b").text()
+                    if let name = name,
+                       let adhanTime = formatter.date(from: adhanTimeText),
+                       let iqamahTime = formatter.date(from: iqamahTimeText) {
                         
-                        let sunriseTime = try row.select("td.cnter-jummah span").text()
-                        
-                        if let name = name, let adhanTime = formatter.date(from: adhanTime), let iqamahTime = formatter.date(from: iqamahTime) {
-                            if isFriday && name == "Dhuhr" {
-                                for li in firstTwoJumuahs {
-                                    let timeText = try li.select("b").first()?.text() ?? ""
-                                    
-                                    if let jumuahTime = formatter.date(from: timeText.trimmingCharacters(in: .whitespacesAndNewlines)) {
-                                        let jumuahDateComponent = calendar.date(bySettingHour: calendar.component(.hour, from: jumuahTime), minute: calendar.component(.minute, from: jumuahTime), second: 0, of: currentDate) ?? currentDate
-                                        jumuahTimes.append(jumuahDateComponent)
-                                    }
+                        if isFriday && name == "Dhuhr" {
+                            for li in firstTwoJumuahs {
+                                let timeText = try li.select("b").first()?.text() ?? ""
+                                if let jumuahTime = formatter.date(from: timeText.trimmingCharacters(in: .whitespacesAndNewlines)) {
+                                    let jumuahDate = calendar.date(
+                                        bySettingHour: calendar.component(.hour, from: jumuahTime),
+                                        minute: calendar.component(.minute, from: jumuahTime),
+                                        second: 0,
+                                        of: currentDate
+                                    ) ?? currentDate
+                                    jumuahTimes.append(jumuahDate)
                                 }
-                                
-                                for (index, jumuahTime) in jumuahTimes.enumerated() {
-                                    prayers.append(Prayer(nameArabic: "\(index + 1 == 1 ? "الجُمُعَة الأُوَل" : "الجُمُعَة الثَانِي")", nameTransliteration: "\(index + 1 == 1 ? "First" : "Second") Jummuah", nameEnglish: "\(index + 1 == 1 ? "First" : "Second") Friday", time: jumuahTime, image: "sun.max.fill", rakah: 2, sunnahBefore: 0, sunnahAfter: 4))
-                                }
-                            } else {
-                                let adhanDate = calendar.date(bySettingHour: calendar.component(.hour, from: adhanTime), minute: calendar.component(.minute, from: adhanTime), second: 0, of: currentDate) ?? currentDate
-                                
-                                let iqamahDate = calendar.date(bySettingHour: calendar.component(.hour, from: iqamahTime), minute: calendar.component(.minute, from: iqamahTime), second: 0, of: currentDate) ?? currentDate
-                                
-                                self.appendPrayer(for: name, adhanTime: adhanDate, iqamahTime: iqamahDate, into: &prayers)
                             }
-                        } else if let sunriseDate = formatter.date(from: sunriseTime) {
-                            let sunriseDateComponent = calendar.date(bySettingHour: calendar.component(.hour, from: sunriseDate), minute: calendar.component(.minute, from: sunriseDate), second: 0, of: currentDate) ?? currentDate
-                            prayers.append(Prayer(nameArabic: "الشروق", nameTransliteration: "Shurooq", nameEnglish: "Sunrise", time: sunriseDateComponent, image: "sunrise.fill", rakah: 0, sunnahBefore: 0, sunnahAfter: 0))
-                            prayers.append(Prayer(nameArabic: "الشروق", nameTransliteration: "Shurooq", nameEnglish: "Sunrise", time: sunriseDateComponent, image: "sunrise.fill", rakah: 0, sunnahBefore: 0, sunnahAfter: 0))
-                        }
-                    }
-
-                    if !isFriday {
-                        for li in firstTwoJumuahs {
-                            let timeText = try li.select("b").first()?.text() ?? ""
                             
-                            if let jumuahTime = formatter.date(from: timeText.trimmingCharacters(in: .whitespacesAndNewlines)) {
-                                let jumuahDateComponent = calendar.date(bySettingHour: calendar.component(.hour, from: jumuahTime), minute: calendar.component(.minute, from: jumuahTime), second: 0, of: currentDate) ?? currentDate
-                                jumuahTimes.append(jumuahDateComponent)
+                            for (index, jumuahTime) in jumuahTimes.enumerated() {
+                                prayers.append(
+                                    Prayer(
+                                        nameArabic: "\(index + 1 == 1 ? "الجُمُعَة الأُوَل" : "الجُمُعَة الثَانِي")",
+                                        nameTransliteration: "\(index + 1 == 1 ? "First" : "Second") Jummuah",
+                                        nameEnglish: "\(index + 1 == 1 ? "First" : "Second") Friday",
+                                        time: jumuahTime,
+                                        image: "sun.max.fill",
+                                        rakah: 2,
+                                        sunnahBefore: 0,
+                                        sunnahAfter: 4
+                                    )
+                                )
                             }
+                        } else {
+                            let adhanDate = calendar.date(
+                                bySettingHour: calendar.component(.hour, from: adhanTime),
+                                minute: calendar.component(.minute, from: adhanTime),
+                                second: 0,
+                                of: currentDate
+                            ) ?? currentDate
+                            
+                            let iqamahDate = calendar.date(
+                                bySettingHour: calendar.component(.hour, from: iqamahTime),
+                                minute: calendar.component(.minute, from: iqamahTime),
+                                second: 0,
+                                of: currentDate
+                            ) ?? currentDate
+                            
+                            self.appendPrayer(for: name, adhanTime: adhanDate, iqamahTime: iqamahDate, into: &prayers)
                         }
-                        
-                        for (index, jumuahTime) in jumuahTimes.enumerated() {
-                            prayers.append(Prayer(nameArabic: "\(index + 1 == 1 ? "الجُمُعَة الأُوَل" : "الجُمُعَة الثَانِي")", nameTransliteration: "\(index + 1 == 1 ? "First" : "Second") Jummuah", nameEnglish: "\(index + 1 == 1 ? "First" : "Second") Friday", time: jumuahTime, image: "sun.max.fill", rakah: 2, sunnahBefore: 0, sunnahAfter: 4))
-                        }
-                    }
-                    
-                    print("Getting ICOI prayer times")
-                    DispatchQueue.main.async {
-                        let newPrayers = Prayers(day: currentDate, prayers: prayers, setNotification: false)
-                        completion(newPrayers)
-                    }
-                    
-                } catch {
-                    print("Error parsing HTML: \(error)")
-                    DispatchQueue.main.async {
-                        completion(nil)
+                    } else if let sunriseDate = formatter.date(from: sunriseTimeText) {
+                        let sunriseDateComponent = calendar.date(
+                            bySettingHour: calendar.component(.hour, from: sunriseDate),
+                            minute: calendar.component(.minute, from: sunriseDate),
+                            second: 0,
+                            of: currentDate
+                        ) ?? currentDate
+                        // Preserve original behavior: add Sunrise twice.
+                        prayers.append(
+                            Prayer(
+                                nameArabic: "الشروق",
+                                nameTransliteration: "Shurooq",
+                                nameEnglish: "Sunrise",
+                                time: sunriseDateComponent,
+                                image: "sunrise.fill",
+                                rakah: 0,
+                                sunnahBefore: 0,
+                                sunnahAfter: 0
+                            )
+                        )
+                        prayers.append(
+                            Prayer(
+                                nameArabic: "الشروق",
+                                nameTransliteration: "Shurooq",
+                                nameEnglish: "Sunrise",
+                                time: sunriseDateComponent,
+                                image: "sunrise.fill",
+                                rakah: 0,
+                                sunnahBefore: 0,
+                                sunnahAfter: 0
+                            )
+                        )
                     }
                 }
-            } else {
-                print("Failed to load ICOI prayer data.")
+                
+                if !isFriday {
+                    for li in firstTwoJumuahs {
+                        let timeText = try li.select("b").first()?.text() ?? ""
+                        if let jumuahTime = formatter.date(from: timeText.trimmingCharacters(in: .whitespacesAndNewlines)) {
+                            let jumuahDate = calendar.date(
+                                bySettingHour: calendar.component(.hour, from: jumuahTime),
+                                minute: calendar.component(.minute, from: jumuahTime),
+                                second: 0,
+                                of: currentDate
+                            ) ?? currentDate
+                            jumuahTimes.append(jumuahDate)
+                        }
+                    }
+                    
+                    for (index, jumuahTime) in jumuahTimes.enumerated() {
+                        prayers.append(
+                            Prayer(
+                                nameArabic: "\(index + 1 == 1 ? "الجُمُعَة الأُوَل" : "الجُمُعَة الثَانِي")",
+                                nameTransliteration: "\(index + 1 == 1 ? "First" : "Second") Jummuah",
+                                nameEnglish: "\(index + 1 == 1 ? "First" : "Second") Friday",
+                                time: jumuahTime,
+                                image: "sun.max.fill",
+                                rakah: 2,
+                                sunnahBefore: 0,
+                                sunnahAfter: 4
+                            )
+                        )
+                    }
+                }
+                
+                logger.debug("Getting ICOI prayer times")
                 DispatchQueue.main.async {
-                    completion(nil)
+                    let newPrayers = Prayers(day: currentDate, prayers: prayers, setNotification: false)
+                    completion(newPrayers)
                 }
+            } catch {
+                logger.debug("Error parsing HTML: \(error)")
+                DispatchQueue.main.async { completion(nil) }
             }
         }
         
         task.resume()
     }
-    
+
     func appendPrayer(for name: String, adhanTime: Date, iqamahTime: Date, into prayers: inout [Prayer]) {
         switch name {
         case "Fajr":
             prayers.append(Prayer(nameArabic: "أذان الفجر", nameTransliteration: "Fajr Adhan", nameEnglish: "Dawn", time: adhanTime, image: "sunrise", rakah: 2, sunnahBefore: 2, sunnahAfter: 0))
             prayers.append(Prayer(nameArabic: "إقامة الفجر", nameTransliteration: "Fajr Iqamah", nameEnglish: "Dawn", time: iqamahTime, image: "sunrise", rakah: 2, sunnahBefore: 2, sunnahAfter: 0))
-
+            
         case "Dhuhr":
             prayers.append(Prayer(nameArabic: "أذان الظهر", nameTransliteration: "Dhuhr Adhan", nameEnglish: "Noon", time: adhanTime, image: "sun.max", rakah: 4, sunnahBefore: 4, sunnahAfter: 2))
             prayers.append(Prayer(nameArabic: "إقامة الظهر", nameTransliteration: "Dhuhr Iqamah", nameEnglish: "Noon", time: iqamahTime, image: "sun.max", rakah: 4, sunnahBefore: 4, sunnahAfter: 2))
-
+            
         case "Asr":
             prayers.append(Prayer(nameArabic: "أذان العصر", nameTransliteration: "Asr Adhan", nameEnglish: "Afternoon", time: adhanTime, image: "sun.min", rakah: 4, sunnahBefore: 0, sunnahAfter: 0))
             prayers.append(Prayer(nameArabic: "إقامة العصر", nameTransliteration: "Asr Iqamah", nameEnglish: "Afternoon", time: iqamahTime, image: "sun.min", rakah: 4, sunnahBefore: 0, sunnahAfter: 0))
-
+            
         case "Maghrib":
             prayers.append(Prayer(nameArabic: "أذان المغرب", nameTransliteration: "Maghrib Adhan", nameEnglish: "Sunset", time: adhanTime, image: "sunset", rakah: 3, sunnahBefore: 0, sunnahAfter: 2))
             prayers.append(Prayer(nameArabic: "إقامة المغرب", nameTransliteration: "Maghrib Iqamah", nameEnglish: "Sunset", time: iqamahTime, image: "sunset", rakah: 3, sunnahBefore: 0, sunnahAfter: 2))
-
+            
         case "Isha":
             prayers.append(Prayer(nameArabic: "أذان العشاء", nameTransliteration: "Isha Adhan", nameEnglish: "Night", time: adhanTime, image: "moon", rakah: 4, sunnahBefore: 0, sunnahAfter: 2))
             prayers.append(Prayer(nameArabic: "إقامة العشاء", nameTransliteration: "Isha Iqamah", nameEnglish: "Night", time: iqamahTime, image: "moon", rakah: 4, sunnahBefore: 0, sunnahAfter: 2))
             
         default:
-            print("Unknown prayer name: \(name)")
+            logger.debug("Unknown prayer name: \(name)")
         }
     }
-    
+
     func fetchPrayerTimes(force: Bool = false, notification: Bool = false, completion: (() -> Void)? = nil) {
         var hasUpdatedDates = false
-        var hasUpdatedNotifications = false
         
         if hijriDateArabic.isEmpty || hijriDateEnglish.isEmpty {
             updateDates()
             hasUpdatedDates = true
         }
         
-        if !force && prayersICOI != nil && prayersICOI?.prayers.isEmpty == false && prayersICOI?.day.isSameDay(as: Date()) == true {
-            print("Updated current and next prayer times")
+        if !force, let prayersObject = prayersICOI, !prayersObject.prayers.isEmpty, prayersObject.day.isSameDay(as: Date()) {
+            logger.debug("Updated current and next prayer times")
             
             updateCurrentAndNextPrayer()
             
-            if let prayersObject = prayersICOI, !prayersObject.setNotification || (notification && !hasUpdatedNotifications)  {
+            if !prayersObject.setNotification || notification  {
                 schedulePrayerTimeNotifications()
                 printAllScheduledNotifications()
-                hasUpdatedNotifications = true
             }
             
             completion?()
         } else {
-            print("New prayer times")
+            logger.debug("New prayer times")
             if !hasUpdatedDates { updateDates() }
             
             getICOIPrayerTimes { prayers in
@@ -361,41 +393,28 @@ final class Settings: NSObject, ObservableObject {
                 self.printAllScheduledNotifications()
                 WidgetCenter.shared.reloadAllTimelines()
                 
-                self.printAllScheduledNotifications()
                 completion?()
             }
         }
     }
     
     func nextDate(for dayLabel: String, baseDate: Date = Date()) -> Date {
+        let lower = dayLabel.lowercased()
+        if lower == "daily" { return baseDate }
+        
+        let weekdayMap: [String: Int] = [
+            "mon": 2, "monday": 2,
+            "tue": 3, "tuesday": 3,
+            "wed": 4, "wednesday": 4, "weds": 4,
+            "thu": 5, "thursday": 5,
+            "fri": 6, "friday": 6,
+            "sat": 7, "saturday": 7,
+            "sun": 1, "sunday": 1
+        ]
+        guard let weekdayNumber = weekdayMap[lower] else { return baseDate }
+        
         let calendar = Calendar.current
-        var weekdayNumber: Int?
-        
-        switch dayLabel.lowercased() {
-        case "mon", "monday":
-            weekdayNumber = 2
-        case "tue", "tuesday":
-            weekdayNumber = 3
-        case "wed", "wednesday", "weds":
-            weekdayNumber = 4
-        case "thu", "thursday":
-            weekdayNumber = 5
-        case "fri", "friday":
-            weekdayNumber = 6
-        case "sat", "saturday":
-            weekdayNumber = 7
-        case "sun", "sunday":
-            weekdayNumber = 1
-        case "daily":
-            return baseDate
-        default:
-            return baseDate
-        }
-        
-        if let weekdayNumber = weekdayNumber,
-           let next = calendar.nextDate(after: baseDate,
-                                        matching: DateComponents(weekday: weekdayNumber),
-                                        matchingPolicy: .nextTime) {
+        if let next = calendar.nextDate(after: baseDate, matching: DateComponents(weekday: weekdayNumber), matchingPolicy: .nextTime) {
             return next
         }
         return baseDate
@@ -417,10 +436,17 @@ final class Settings: NSObject, ObservableObject {
         let timePart = firstPart.trimmingCharacters(in: .whitespaces)
         
         let combinedString = timePart + " " + period
-        let formatter = DateFormatter()
-        formatter.dateFormat = "h:mm a"
         
-        if let timeDate = formatter.date(from: combinedString) {
+        struct Cache {
+            static let formatter: DateFormatter = {
+                let f = DateFormatter()
+                f.locale = Locale(identifier: "en_US_POSIX")
+                f.dateFormat = "h:mm a"
+                return f
+            }()
+        }
+        
+        if let timeDate = Cache.formatter.date(from: combinedString) {
             let calendar = Calendar.current
             var baseComponents = calendar.dateComponents([.year, .month, .day], from: baseDate)
             let timeComponents = calendar.dateComponents([.hour, .minute], from: timeDate)
@@ -438,9 +464,9 @@ final class Settings: NSObject, ObservableObject {
             return
         }
         
-        URLSession.shared.dataTask(with: url) { data, response, error in
+        URLSession.shared.dataTask(with: url) { data, _, error in
             if let error = error {
-                print("Error fetching ICOI events: \(error.localizedDescription)")
+                logger.debug("Error fetching ICOI events: \(error.localizedDescription)")
                 DispatchQueue.main.async { completion(nil) }
                 return
             }
@@ -455,6 +481,7 @@ final class Settings: NSObject, ObservableObject {
                 let document = try SwiftSoup.parse(html)
                 let columns = try document.select("div.elementor-column.elementor-inner-column")
                 var eventsList: [Event] = []
+                eventsList.reserveCapacity(32)
                 
                 let validDays = ["Daily", "Mon", "Tue", "WED", "THU", "FRI", "Sat", "Sun"]
                 
@@ -488,12 +515,14 @@ final class Settings: NSObject, ObservableObject {
                         
                         let eventDate = self.combineDateAndTime(baseDate: baseDate, timeString: eventTime)
                         
-                        let event = Event(dayOfWeek: dayLabel,
-                                          name: eventName,
-                                          link: "",
-                                          date: eventDate,
-                                          time: eventTime,
-                                          location: eventLocation)
+                        let event = Event(
+                            dayOfWeek: dayLabel,
+                            name: eventName,
+                            link: "",
+                            date: eventDate,
+                            time: eventTime,
+                            location: eventLocation
+                        )
                         eventsList.append(event)
                         
                         index += 2
@@ -505,12 +534,12 @@ final class Settings: NSObject, ObservableObject {
                     completion(eventsModel)
                 }
             } catch {
-                print("Error parsing HTML: \(error)")
+                logger.debug("Error parsing HTML: \(error)")
                 DispatchQueue.main.async { completion(nil) }
             }
         }.resume()
     }
-     
+
     func fetchEvents(force: Bool = false) {
         var hasUpdatedDates = false
         
@@ -520,7 +549,7 @@ final class Settings: NSObject, ObservableObject {
         }
         
         if force || eventsICOI == nil || eventsICOI?.events.isEmpty == true || eventsICOI?.day.isSameDay(as: Date()) == false {
-            print("New events")
+            logger.debug("New events")
             
             if !hasUpdatedDates {
                 updateDates()
@@ -535,107 +564,95 @@ final class Settings: NSObject, ObservableObject {
     
     func getBusinessesICOI(completion: @escaping (Businesses?) -> Void) {
         guard let url = URL(string: "https://www.icoi.net/business-directory/") else {
-            print("Invalid URL")
-            DispatchQueue.main.async {
-                completion(nil)
-            }
+            logger.debug("Invalid URL")
+            DispatchQueue.main.async { completion(nil) }
             return
         }
 
-        URLSession.shared.dataTask(with: url) { data, response, error in
-            if let data = data, error == nil {
-                // Convert the raw data to a string for parsing
-                let html = String(data: data, encoding: .utf8)
+        URLSession.shared.dataTask(with: url) { data, _, error in
+            guard error == nil, let data = data, let html = String(data: data, encoding: .utf8) else {
+                logger.debug("Failed to fetch ICOI business data.")
+                DispatchQueue.main.async { completion(nil) }
+                return
+            }
 
-                do {
-                    // Parse HTML using SwiftSoup
-                    let document = try SwiftSoup.parse(html ?? "")
+            do {
+                let document = try SwiftSoup.parse(html)
 
-                    // Grab all <p> elements that contain <span class="listing-phone">
-                    // (this will pick up UMMA, Inland Leather, Accounting48, Dr. Q, etc.)
-                    let businessElements = try document.select("p:has(span.listing-phone)")
+                // Grab all <p> elements that contain <span class="listing-phone">
+                let businessElements = try document.select("p:has(span.listing-phone)").array()
 
-                    var businesses: [Business] = []
+                var businesses: [Business] = []
+                businesses.reserveCapacity(businessElements.count)
 
-                    for element in businessElements.array() {
-                        // Get the entire text from <p>
-                        // e.g. "Inland Leather +1 949 214 4436"
-                        var pText = try element.text()
-
-                        // Extract the phone text from within <span class="listing-phone">
-                        // e.g. "+1 949 214 4436"
-                        let phoneNumberRaw = try element.select("span.listing-phone").text()
-
-                        // Convert that phone text to digits only
-                        var phoneNumber = phoneNumberRaw
-                            .components(separatedBy: CharacterSet.decimalDigits.inverted)
-                            .joined()
-
-                        // If phone starts with '1' but is longer than 10 digits, remove the first '1'
-                        if phoneNumber.hasPrefix("1"), phoneNumber.count > 10 {
-                            phoneNumber.removeFirst()
-                        }
-
-                        // Remove the phone text from pText to isolate the name
-                        if let range = pText.range(of: phoneNumberRaw) {
-                            pText.removeSubrange(range)
-                        }
-
-                        // Clean up the name (remove plus signs, dashes, parentheses, etc.)
-                        let name = pText
-                            .replacingOccurrences(of: "+", with: "")
-                            .replacingOccurrences(of: "—", with: "")
-                            .replacingOccurrences(of: "(", with: "")
-                            .replacingOccurrences(of: ")", with: "")
-                            .trimmingCharacters(in: .whitespacesAndNewlines)
-
-                        // Attempt to get the first link in this <p> as the website
-                        // (Might be an actual site like https://inlandleather.com/, or a PDF link, etc.)
-                        let websiteLink = try element.select("a").first()?.attr("href") ?? ""
-
-                        // Create the struct
-                        let business = Business(
-                            name: name,
-                            phoneNumber: phoneNumber,
-                            website: websiteLink
-                        )
-                        businesses.append(business)
-                    }
-
-                    // Wrap them in Businesses struct, and return
-                    let fullBusinesses = Businesses(businesses: businesses, day: Date())
-                    DispatchQueue.main.async {
-                        completion(fullBusinesses)
-                    }
-
-                } catch {
-                    print("Error parsing HTML: \(error)")
-                    DispatchQueue.main.async {
-                        completion(nil)
-                    }
+                struct Cache {
+                    static let nonDigits = CharacterSet.decimalDigits.inverted
                 }
-            } else {
-                print("Failed to fetch ICOI business data.")
-                DispatchQueue.main.async {
-                    completion(nil)
+
+                for element in businessElements {
+                    // Get the entire text from <p>
+                    var pText = try element.text()
+
+                    // Extract the phone text from within <span class="listing-phone">
+                    let phoneNumberRaw = try element.select("span.listing-phone").text()
+
+                    // Convert that phone text to digits only
+                    var phoneNumber = phoneNumberRaw
+                        .components(separatedBy: Cache.nonDigits)
+                        .joined()
+
+                    // If phone starts with '1' but is longer than 10 digits, remove the first '1'
+                    if phoneNumber.hasPrefix("1"), phoneNumber.count > 10 {
+                        phoneNumber.removeFirst()
+                    }
+
+                    // Remove the phone text from pText to isolate the name
+                    if let range = pText.range(of: phoneNumberRaw) {
+                        pText.removeSubrange(range)
+                    }
+
+                    // Clean up the name (remove plus signs, dashes, parentheses, etc.)
+                    let name = pText
+                        .replacingOccurrences(of: "+", with: "")
+                        .replacingOccurrences(of: "—", with: "")
+                        .replacingOccurrences(of: "(", with: "")
+                        .replacingOccurrences(of: ")", with: "")
+                        .trimmingCharacters(in: .whitespacesAndNewlines)
+
+                    // Attempt to get the first link in this <p> as the website
+                    let websiteLink = try element.select("a").first()?.attr("href") ?? ""
+
+                    let business = Business(
+                        name: name,
+                        phoneNumber: phoneNumber,
+                        website: websiteLink
+                    )
+                    businesses.append(business)
                 }
+
+                let fullBusinesses = Businesses(businesses: businesses, day: Date())
+                DispatchQueue.main.async { completion(fullBusinesses) }
+
+            } catch {
+                logger.debug("Error parsing HTML: \(error)")
+                DispatchQueue.main.async { completion(nil) }
             }
         }.resume()
     }
-    
+
     func fetchBusinesses(force: Bool = false, completion: (() -> Void)? = nil) {
         var hasUpdatedDates = false
-        
+
         if hijriDateArabic.isEmpty || hijriDateEnglish.isEmpty {
             updateDates()
             hasUpdatedDates = true
         }
-        
+
         if force || businessesICOI == nil || businessesICOI?.businesses.isEmpty == true || businessesICOI?.day.isSameDay(as: Date()) == false {
-            print("New businesses")
-            
+            logger.debug("New businesses")
+
             if !hasUpdatedDates { updateDates() }
-            
+
             getBusinessesICOI { businesses in
                 self.businessesICOI = businesses
                 completion?()
@@ -648,22 +665,8 @@ final class Settings: NSObject, ObservableObject {
     func printAllScheduledNotifications() {
         let center = UNUserNotificationCenter.current()
         center.getPendingNotificationRequests { (requests) in
-            let sortedRequests = requests.compactMap { request -> (date: Date, request: UNNotificationRequest)? in
-                if let trigger = request.trigger as? UNCalendarNotificationTrigger,
-                   let nextTriggerDate = trigger.nextTriggerDate() {
-                    return (date: nextTriggerDate, request: request)
-                }
-                return nil
-            }.sorted { $0.date < $1.date }
-
-            let dateFormatter = DateFormatter()
-            dateFormatter.dateFormat = "h:mm a"
-            dateFormatter.amSymbol = "AM"
-            dateFormatter.pmSymbol = "PM"
-
-            for sortedRequest in sortedRequests {
-                let date = dateFormatter.string(from: sortedRequest.date)
-                print("\(sortedRequest.request.content.body) at \(date)")
+            for request in requests {
+                logger.debug("\(request.content.body)")
             }
         }
     }
@@ -676,14 +679,13 @@ final class Settings: NSObject, ObservableObject {
         center.removeAllPendingNotificationRequests()
         center.removeAllDeliveredNotifications()
         
-        let weekday = Calendar.current.component(.weekday, from: Date())
-        let isFriday = (weekday == 6)
+        let calendar = Calendar.current
+        let isFriday = (calendar.component(.weekday, from: Date()) == 6)
         
         var prayerTimes = prayerObject.prayers
-        
-        if !isFriday {
-            prayerTimes = prayerTimes.dropLast()
-            prayerTimes = prayerTimes.dropLast()
+        if !isFriday, prayerTimes.count >= 2 {
+            // Remove Jumuah slots on non-Fridays (preserves original behavior).
+            prayerTimes.removeLast(2)
         }
         
         for prayerTime in prayerTimes {
@@ -744,19 +746,19 @@ final class Settings: NSObject, ObservableObject {
         
         if ratingJummuah {
             let components = DateComponents(hour: 15, minute: 0, weekday: 6)
-            if let date = Calendar.current.nextDate(after: Date(), matching: components, matchingPolicy: .nextTime) {
+            if let date = calendar.nextDate(after: Date(), matching: components, matchingPolicy: .nextTime) {
                 let content = UNMutableNotificationContent()
                 content.title = "Islamic Center of Irvine (ICOI)"
                 content.body = "Tap here if you want to rate the khutbah"
                 content.sound = UNNotificationSound.default
                 
-                let triggerComponents = Calendar.current.dateComponents([.year, .month, .day, .hour, .minute], from: date)
+                let triggerComponents = calendar.dateComponents([.year, .month, .day, .hour, .minute], from: date)
                 let trigger = UNCalendarNotificationTrigger(dateMatching: triggerComponents, repeats: false)
                 
                 let request = UNNotificationRequest(identifier: "jummuahRating", content: content, trigger: trigger)
                 center.add(request) { error in
                     if let e = error {
-                        print("Error scheduling jummuahRating:", e.localizedDescription)
+                        logger.debug("Error scheduling jummuahRating: \(e.localizedDescription)")
                     }
                 }
             }
@@ -771,11 +773,12 @@ final class Settings: NSObject, ObservableObject {
         let content = UNMutableNotificationContent()
         content.title = "Islamic Center of Irvine (ICOI)"
         
+        let calendar = Calendar.current
         let baseTime = prayerTime.time
         var triggerTime = baseTime
         
         if let pre = preNotificationTime, pre != 0 {
-            triggerTime = Calendar.current.date(byAdding: .minute, value: -pre, to: baseTime) ?? baseTime
+            triggerTime = calendar.date(byAdding: .minute, value: -pre, to: baseTime) ?? baseTime
             if prayerTime.nameTransliteration == "Shurooq" {
                 content.body = "Shurooq is in \(pre) min [\(formatDate(baseTime))]"
             } else {
@@ -790,15 +793,14 @@ final class Settings: NSObject, ObservableObject {
         }
         
         content.sound = .default
-
-        let components = Calendar.current.dateComponents([.year, .month, .day, .hour, .minute], from: triggerTime)
         
+        let components = calendar.dateComponents([.year, .month, .day, .hour, .minute], from: triggerTime)
         let trigger = UNCalendarNotificationTrigger(dateMatching: components, repeats: false)
         let request = UNNotificationRequest(identifier: UUID().uuidString, content: content, trigger: trigger)
         
         center.add(request) { error in
             if let e = error {
-                print("Error scheduling notification:", e.localizedDescription)
+                logger.debug("Error scheduling notification: \(e.localizedDescription)")
             }
         }
     }
@@ -812,13 +814,14 @@ final class Settings: NSObject, ObservableObject {
         content.body = "Tap here to rate the \(name). You can turn this notification off in app."
         content.sound = .default
         
-        let comps = Calendar.current.dateComponents([.year, .month, .day, .hour, .minute], from: khateraDate)
+        let calendar = Calendar.current
+        let comps = calendar.dateComponents([.year, .month, .day, .hour, .minute], from: khateraDate)
         let trigger = UNCalendarNotificationTrigger(dateMatching: comps, repeats: false)
         
         let request = UNNotificationRequest(identifier: "\(name)Notification", content: content, trigger: trigger)
         center.add(request) { error in
             if let e = error {
-                print("Error scheduling khatera:", e.localizedDescription)
+                logger.debug("Error scheduling khatera: \(e.localizedDescription)")
             }
         }
     }
@@ -827,11 +830,13 @@ final class Settings: NSObject, ObservableObject {
         #if !os(watchOS)
         let center = UNUserNotificationCenter.current()
 
-        center.getNotificationSettings { settings in
+        center.getNotificationSettings { [weak self] settings in
+            guard let self = self else { return }
             switch settings.authorizationStatus {
             case .notDetermined:
-                center.requestAuthorization(options: [.alert, .sound]) { (granted, error) in
+                center.requestAuthorization(options: [.alert, .sound]) { [weak self] (granted, _) in
                     DispatchQueue.main.async {
+                        guard let self = self else { return }
                         if granted {
                             if self.showNotificationAlert {
                                 self.fetchPrayerTimes(notification: true)
@@ -854,7 +859,7 @@ final class Settings: NSObject, ObservableObject {
             case .denied:
                 DispatchQueue.main.async {
                     self.showNotificationAlert = true
-                    print("Permission denied")
+                    logger.debug("Permission denied")
                     if !self.notificationNeverAskAgain {
                         self.showNotificationAlert = true
                     }
@@ -868,11 +873,11 @@ final class Settings: NSObject, ObservableObject {
     
     func hapticFeedback() {
         #if os(iOS)
-        UIImpactFeedbackGenerator(style: .light).impactOccurred()
+        if hapticOn { UIImpactFeedbackGenerator(style: .light).impactOccurred() }
         #endif
         
         #if os(watchOS)
-        WKInterfaceDevice.current().play(.click)
+        if hapticOn { WKInterfaceDevice.current().play(.click) }
         #endif
     }
     
@@ -882,79 +887,76 @@ final class Settings: NSObject, ObservableObject {
     @AppStorage("hijriDateArabic") var hijriDateArabic: String = ""
     @AppStorage("hijriDateEnglish") var hijriDateEnglish: String = ""
     
-    @Published var prayersICOIData: Data {
-        didSet {
-            if !prayersICOIData.isEmpty {
-                appGroupUserDefaultsICOI?.setValue(prayersICOIData, forKey: "prayersICOIData")
-            }
-        }
+    @AppStorage("prayersICOIData") private var prayersICOIDataRaw: Data = Data() {
+        didSet { objectWillChange.send() }
     }
+
     var prayersICOI: Prayers? {
         get {
-            let decoder = JSONDecoder()
-            return try? decoder.decode(Prayers.self, from: prayersICOIData)
+            guard !prayersICOIDataRaw.isEmpty else { return nil }
+            return try? Self.decoder.decode(Prayers.self, from: prayersICOIDataRaw)
         }
         set {
-            let encoder = JSONEncoder()
-            prayersICOIData = (try? encoder.encode(newValue)) ?? Data()
-        }
-    }
-    
-    @Published var eventsICOIData: Data {
-        didSet {
-            if !eventsICOIData.isEmpty {
-                appGroupUserDefaultsICOI?.setValue(eventsICOIData, forKey: "eventsICOIData")
+            if let newValue, let data = try? Self.encoder.encode(newValue) {
+                prayersICOIDataRaw = data
+            } else {
+                prayersICOIDataRaw = Data()
             }
         }
     }
+    
+    @AppStorage("eventsICOIData") private var eventsICOIDataRaw: Data = Data() {
+        didSet { objectWillChange.send() }
+    }
+
     var eventsICOI: Events? {
         get {
-            let decoder = JSONDecoder()
-            return try? decoder.decode(Events.self, from: eventsICOIData)
+            guard !eventsICOIDataRaw.isEmpty else { return nil }
+            return try? Self.decoder.decode(Events.self, from: eventsICOIDataRaw)
         }
         set {
-            let encoder = JSONEncoder()
-            eventsICOIData = (try? encoder.encode(newValue)) ?? Data()
-        }
-    }
-    
-    @Published var businessesICOIData: Data {
-        didSet {
-            if !businessesICOIData.isEmpty {
-                appGroupUserDefaultsICOI?.setValue(businessesICOIData, forKey: "businessesICOIData")
+            if let newValue, let data = try? Self.encoder.encode(newValue) {
+                eventsICOIDataRaw = data
+            } else {
+                eventsICOIDataRaw = Data()
             }
         }
     }
+    
+    @AppStorage("businessesICOIData") private var businessesICOIDataRaw: Data = Data() {
+        didSet { objectWillChange.send() }
+    }
+
     var businessesICOI: Businesses? {
         get {
-            let decoder = JSONDecoder()
-            return try? decoder.decode(Businesses.self, from: businessesICOIData)
+            guard !businessesICOIDataRaw.isEmpty else { return nil }
+            return try? Self.decoder.decode(Businesses.self, from: businessesICOIDataRaw)
         }
         set {
-            let encoder = JSONEncoder()
-            businessesICOIData = (try? encoder.encode(newValue)) ?? Data()
+            if let newValue, let data = try? Self.encoder.encode(newValue) {
+                businessesICOIDataRaw = data
+            } else {
+                businessesICOIDataRaw = Data()
+            }
         }
     }
+
     
     @AppStorage("currentPrayerICOIData") var currentPrayerICOIData: Data?
     @Published var currentPrayerICOI: Prayer? {
         didSet {
-            let encoder = JSONEncoder()
-            currentPrayerICOIData = try? encoder.encode(currentPrayerICOI)
+            currentPrayerICOIData = try? Self.encoder.encode(currentPrayerICOI)
         }
     }
 
     @AppStorage("nextPrayerICOIData") var nextPrayerICOIData: Data?
     @Published var nextPrayerICOI: Prayer? {
         didSet {
-            let encoder = JSONEncoder()
-            nextPrayerICOIData = try? encoder.encode(nextPrayerICOI)
+            nextPrayerICOIData = try? Self.encoder.encode(nextPrayerICOI)
         }
     }
     
-    // Convert Settings object to a dictionary
     func dictionaryRepresentation() -> [String: Any] {
-        let encoder = JSONEncoder()
         var dict: [String: Any] = [
             "beginnerMode": self.beginnerMode,
             "lastReadSurah": self.lastReadSurah,
@@ -962,49 +964,47 @@ final class Settings: NSObject, ObservableObject {
         ]
         
         do {
-            dict["favoriteSurahsData"] = try encoder.encode(self.favoriteSurahs)
+            dict["favoriteSurahsData"] = try Self.encoder.encode(self.favoriteSurahs)
         } catch {
-            print("Error encoding favoriteSurahs: \(error)")
+            logger.debug("Error encoding favoriteSurahs: \(error)")
         }
 
         do {
-            dict["bookmarkedAyahsData"] = try encoder.encode(self.bookmarkedAyahs)
+            dict["bookmarkedAyahsData"] = try Self.encoder.encode(self.bookmarkedAyahs)
         } catch {
-            print("Error encoding bookmarkedAyahs: \(error)")
+            logger.debug("Error encoding bookmarkedAyahs: \(error)")
         }
 
         do {
-            dict["favoriteLetterData"] = try encoder.encode(self.favoriteLetters)
+            dict["favoriteLetterData"] = try Self.encoder.encode(self.favoriteLetters)
         } catch {
-            print("Error encoding favoriteLetters: \(error)")
+            logger.debug("Error encoding favoriteLetters: \(error)")
         }
         
         do {
-            dict["prayersICOIData"] = try encoder.encode(self.prayersICOI)
+            dict["prayersICOIData"] = try Self.encoder.encode(self.prayersICOI)
         } catch {
-            print("Error encoding prayers: \(error)")
+            logger.debug("Error encoding prayers: \(error)")
         }
         
         do {
             if let eventsICOI = self.eventsICOI {
-                dict["eventsICOIData"] = try encoder.encode(eventsICOI)
+                dict["eventsICOIData"] = try Self.encoder.encode(eventsICOI)
             }
         } catch {
-            print("Error encoding eventsICOI: \(error)")
+            logger.debug("Error encoding eventsICOI: \(error)")
         }
         
         do {
-            dict["businessesICOIData"] = try encoder.encode(self.businessesICOI)
+            dict["businessesICOIData"] = try Self.encoder.encode(self.businessesICOI)
         } catch {
-            print("Error encoding businessesICOI: \(error)")
+            logger.debug("Error encoding businessesICOI: \(error)")
         }
         
         return dict
     }
 
-    // Update Settings object from a dictionary
     func update(from dict: [String: Any]) {
-        let decoder = JSONDecoder()
         if let beginnerMode = dict["beginnerMode"] as? Bool {
             self.beginnerMode = beginnerMode
         }
@@ -1015,25 +1015,25 @@ final class Settings: NSObject, ObservableObject {
             self.lastReadAyah = lastReadAyah
         }
         if let favoriteSurahsData = dict["favoriteSurahsData"] as? Data {
-            self.favoriteSurahs = (try? decoder.decode([Int].self, from: favoriteSurahsData)) ?? []
+            self.favoriteSurahs = (try? Self.decoder.decode([Int].self, from: favoriteSurahsData)) ?? []
         }
         if let bookmarkedAyahsData = dict["bookmarkedAyahsData"] as? Data {
-            self.bookmarkedAyahs = (try? decoder.decode([BookmarkedAyah].self, from: bookmarkedAyahsData)) ?? []
+            self.bookmarkedAyahs = (try? Self.decoder.decode([BookmarkedAyah].self, from: bookmarkedAyahsData)) ?? []
         }
         if let favoriteLetterData = dict["favoriteLetterData"] as? Data {
-            self.favoriteLetters = (try? decoder.decode([LetterData].self, from: favoriteLetterData)) ?? []
+            self.favoriteLetters = (try? Self.decoder.decode([LetterData].self, from: favoriteLetterData)) ?? []
         }
         
         if let prayersICOIData = dict["prayersICOIData"] as? Data {
-            self.prayersICOI = try? decoder.decode(Prayers.self, from: prayersICOIData)
+            self.prayersICOI = try? Self.decoder.decode(Prayers.self, from: prayersICOIData)
         }
         
         if let eventsICOIData = dict["eventsICOIData"] as? Data {
-            self.eventsICOI = try? decoder.decode(Events.self, from: eventsICOIData)
+            self.eventsICOI = try? Self.decoder.decode(Events.self, from: eventsICOIData)
         }
         
         if let businessesICOIData = dict["businessesICOIData"] as? Data {
-            self.businessesICOI = try? decoder.decode(Businesses.self, from: businessesICOIData)
+            self.businessesICOI = try? Self.decoder.decode(Businesses.self, from: businessesICOIData)
         }
     }
     
@@ -1177,18 +1177,18 @@ final class Settings: NSObject, ObservableObject {
         get {
             guard let data = lastListenedSurahData else { return nil }
             do {
-                return try JSONDecoder().decode(LastListenedSurah.self, from: data)
+                return try Self.decoder.decode(LastListenedSurah.self, from: data)
             } catch {
-                print("Failed to decode last listened surah: \(error)")
+                logger.debug("Failed to decode last listened surah: \(error)")
                 return nil
             }
         }
         set {
             if let newValue = newValue {
                 do {
-                    lastListenedSurahData = try JSONEncoder().encode(newValue)
+                    lastListenedSurahData = try Self.encoder.encode(newValue)
                 } catch {
-                    print("Failed to encode last listened surah: \(error)")
+                    logger.debug("Failed to encode last listened surah: \(error)")
                 }
             } else {
                 lastListenedSurahData = nil
@@ -1196,58 +1196,36 @@ final class Settings: NSObject, ObservableObject {
         }
     }
     
-    @Published var favoriteSurahsData: Data {
-        didSet {
-            appGroupUserDefaults?.setValue(favoriteSurahsData, forKey: "favoriteSurahsData")
-        }
-    }
+    @AppStorage("favoriteSurahsData") private var favoriteSurahsData = Data()
     var favoriteSurahs: [Int] {
         get {
-            let decoder = JSONDecoder()
-            return (try? decoder.decode([Int].self, from: favoriteSurahsData)) ?? []
+            (try? Self.decoder.decode([Int].self, from: favoriteSurahsData)) ?? []
         }
         set {
-            let encoder = JSONEncoder()
-            favoriteSurahsData = (try? encoder.encode(newValue)) ?? Data()
+            favoriteSurahsData = (try? Self.encoder.encode(newValue)) ?? Data()
         }
     }
     
-    @Published var favoriteSurahsCopy: [Int] = []
-
-    @Published var bookmarkedAyahsData: Data {
-        didSet {
-            appGroupUserDefaults?.setValue(bookmarkedAyahsData, forKey: "bookmarkedAyahsData")
-        }
-    }
+    @AppStorage("bookmarkedAyahsData") private var bookmarkedAyahsData = Data()
     var bookmarkedAyahs: [BookmarkedAyah] {
         get {
-            let decoder = JSONDecoder()
-            return (try? decoder.decode([BookmarkedAyah].self, from: bookmarkedAyahsData)) ?? []
+            (try? Self.decoder.decode([BookmarkedAyah].self, from: bookmarkedAyahsData)) ?? []
         }
         set {
-            let encoder = JSONEncoder()
-            bookmarkedAyahsData = (try? encoder.encode(newValue)) ?? Data()
+            bookmarkedAyahsData = (try? Self.encoder.encode(newValue)) ?? Data()
         }
     }
-    
-    @Published var bookmarkedAyahsCopy: [BookmarkedAyah] = []
-    
+        
     @AppStorage("showBookmarks") var showBookmarks = true
     @AppStorage("showFavorites") var showFavorites = true
 
-    @Published var favoriteLetterData: Data {
-        didSet {
-            appGroupUserDefaults?.setValue(favoriteLetterData, forKey: "favoriteLetterData")
-        }
-    }
+    @AppStorage("favoriteLetterData") private var favoriteLetterData = Data()
     var favoriteLetters: [LetterData] {
         get {
-            let decoder = JSONDecoder()
-            return (try? decoder.decode([LetterData].self, from: favoriteLetterData)) ?? []
+            (try? Self.decoder.decode([LetterData].self, from: favoriteLetterData)) ?? []
         }
         set {
-            let encoder = JSONEncoder()
-            favoriteLetterData = (try? encoder.encode(newValue)) ?? Data()
+            favoriteLetterData = (try? Self.encoder.encode(newValue)) ?? Data()
         }
     }
     
@@ -1257,7 +1235,6 @@ final class Settings: NSObject, ObservableObject {
     @AppStorage("searchForSurahs") var searchForSurahs: Bool = true
     
     @AppStorage("reciter") var reciter: String = "Muhammad Al-Minshawi (Murattal)"
-    
     @AppStorage("reciteType") var reciteType = "Continue to Next"
     
     @AppStorage("showArabicText") var showArabicText: Bool = true
@@ -1298,34 +1275,20 @@ final class Settings: NSObject, ObservableObject {
         ]
     }
     
-    func toggleSurahFavorite(surah: Surah) {
+    func toggleSurahFavorite(surah: Int) {
         withAnimation {
             if isSurahFavorite(surah: surah) {
-                favoriteSurahs.removeAll(where: { $0 == surah.id })
+                favoriteSurahs.removeAll(where: { $0 == surah })
             } else {
-                favoriteSurahs.append(surah.id)
+                favoriteSurahs.append(surah)
             }
         }
     }
     
-    func toggleSurahFavoriteCopy(surah: Surah) {
-        withAnimation {
-            if isSurahFavoriteCopy(surah: surah) {
-                favoriteSurahsCopy.removeAll(where: { $0 == surah.id })
-            } else {
-                favoriteSurahsCopy.append(surah.id)
-            }
-        }
-    }
-
-    func isSurahFavorite(surah: Surah) -> Bool {
-        return favoriteSurahs.contains(surah.id)
+    func isSurahFavorite(surah: Int) -> Bool {
+        return favoriteSurahs.contains(surah)
     }
     
-    func isSurahFavoriteCopy(surah: Surah) -> Bool {
-        return favoriteSurahsCopy.contains(surah.id)
-    }
-
     func toggleBookmark(surah: Int, ayah: Int) {
         withAnimation {
             let bookmark = BookmarkedAyah(surah: surah, ayah: ayah)
@@ -1337,27 +1300,11 @@ final class Settings: NSObject, ObservableObject {
         }
     }
     
-    func toggleBookmarkCopy(surah: Int, ayah: Int) {
-        withAnimation {
-            let bookmark = BookmarkedAyah(surah: surah, ayah: ayah)
-            if let index = bookmarkedAyahsCopy.firstIndex(where: {$0.id == bookmark.id}) {
-                bookmarkedAyahsCopy.remove(at: index)
-            } else {
-                bookmarkedAyahsCopy.append(bookmark)
-            }
-        }
-    }
-
     func isBookmarked(surah: Int, ayah: Int) -> Bool {
         let bookmark = BookmarkedAyah(surah: surah, ayah: ayah)
         return bookmarkedAyahs.contains(where: {$0.id == bookmark.id})
     }
     
-    func isBookmarkedCopy(surah: Int, ayah: Int) -> Bool {
-        let bookmark = BookmarkedAyah(surah: surah, ayah: ayah)
-        return bookmarkedAyahsCopy.contains(where: {$0.id == bookmark.id})
-    }
-
     func toggleLetterFavorite(letterData: LetterData) {
         withAnimation {
             if isLetterFavorite(letterData: letterData) {
@@ -1371,28 +1318,20 @@ final class Settings: NSObject, ObservableObject {
     func isLetterFavorite(letterData: LetterData) -> Bool {
         return favoriteLetters.contains(where: {$0.id == letterData.id})
     }
-}
-
-func arabicNumberString(from number: Int) -> String {
-    let arabicNumbers = ["٠", "١", "٢", "٣", "٤", "٥", "٦", "٧", "٨", "٩"]
-    let numberString = String(number)
     
-    var arabicNumberString = ""
-    for character in numberString {
-        if let digit = Int(String(character)) {
-            arabicNumberString += arabicNumbers[digit]
+    private static let unwantedCharSet: CharacterSet = {
+        CharacterSet(charactersIn: "-[]()'\"").union(.nonBaseCharacters)
+    }()
+
+    func cleanSearch(_ text: String, whitespace: Bool = false) -> String {
+        var cleaned = String(text.unicodeScalars
+            .filter { !Self.unwantedCharSet.contains($0) }
+        ).lowercased()
+
+        if whitespace {
+            cleaned = cleaned.trimmingCharacters(in: .whitespacesAndNewlines)
         }
-    }
-    return arabicNumberString
-}
 
-struct CustomColorSchemeKey: EnvironmentKey {
-    static let defaultValue: ColorScheme? = nil
-}
-
-extension EnvironmentValues {
-    var customColorScheme: ColorScheme? {
-        get { self[CustomColorSchemeKey.self] }
-        set { self[CustomColorSchemeKey.self] = newValue }
+        return cleaned
     }
 }

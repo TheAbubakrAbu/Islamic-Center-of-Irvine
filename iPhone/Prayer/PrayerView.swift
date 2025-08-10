@@ -8,82 +8,73 @@ struct ICOIPrayerView: View {
     @State private var showingSettingsSheet = false
     
     @State private var activeAlert: ICOIAlertType?
-    
-    enum ICOIAlertType: Identifiable {
+
+    enum ICOIAlertType: Int, Identifiable {
         case notficationError
         case prayerTimeFetchError
         case showVisitWebsiteButton
         case jummuahRating
         case khateraRating
-        
-        var id: Int {
-            switch self {
-            case .notficationError:
-                return 0
-            case .prayerTimeFetchError:
-                return 1
-            case .showVisitWebsiteButton:
-                return 2
-            case .jummuahRating:
-                return 3
-            case .khateraRating:
-                return 4
-            }
-        }
+
+        var id: Int { rawValue }
     }
-    
+
     @AppStorage("lastJummuahRatingTimestamp") private var lastJummuahRatingTimestamp: Double?
-    
+
+    @inline(__always)
     private func askForJummuahRating() {
         lastJummuahRatingTimestamp = Date().timeIntervalSinceReferenceDate
         activeAlert = .jummuahRating
     }
-    
+
     @AppStorage("lastKhateraRatingTimestamp") private var lastKhateraRatingTimestamp: Double?
-    
+
+    @inline(__always)
     private func askForKhateraRating() {
         lastKhateraRatingTimestamp = Date().timeIntervalSinceReferenceDate
         activeAlert = .khateraRating
     }
-    
+
     private func promptForJummuahOrKhateraRatingIfNeeded() {
         #if !os(watchOS)
-        let today = Date()
+        let now = Date()
         let calendar = Calendar.current
-        let dayOfWeek = calendar.component(.weekday, from: today)
-        let isFriday = dayOfWeek == 6
-        
-        if isFriday {
-            let hour = calendar.component(.hour, from: today)
-            let minutes = calendar.component(.minute, from: today)
-            let isAfterTwoThirty = hour > 14
 
-            if isAfterTwoThirty {
-                if let lastAskedTimestamp = lastJummuahRatingTimestamp {
-                    let lastAskedDate = Date(timeIntervalSinceReferenceDate: lastAskedTimestamp)
-                    if !calendar.isDate(lastAskedDate, inSameDayAs: today) {
-                        askForJummuahRating()
-                        return
-                    }
-                } else {
+        // Friday flow (after 3pm, once per day)
+        if calendar.component(.weekday, from: now) == 6,
+           calendar.component(.hour, from: now) > 15 {
+            if let ts = lastJummuahRatingTimestamp {
+                let lastAskedDate = Date(timeIntervalSinceReferenceDate: ts)
+                if !calendar.isDate(lastAskedDate, inSameDayAs: now) {
                     askForJummuahRating()
                     return
                 }
+            } else {
+                askForJummuahRating()
+                return
             }
         }
-        
-        if let prayers = settings.prayersICOI {
-            let now = Date()
 
-            if let fajrIqamah = prayers.prayers.first(where: { $0.nameTransliteration.lowercased() == "fajr iqamah" })?.time,
-               let ishaIqamah = prayers.prayers.first(where: { $0.nameTransliteration.lowercased() == "isha iqamah" })?.time {
-                
-                let fajrRatingWindow = fajrIqamah.addingTimeInterval(10 * 60)...fajrIqamah.addingTimeInterval(50 * 60)
-                let ishaRatingWindow = ishaIqamah.addingTimeInterval(10 * 60)...ishaIqamah.addingTimeInterval(50 * 60)
-                
-                if (fajrRatingWindow.contains(now) || ishaRatingWindow.contains(now)) {
-                    if let lastAskedTimestamp = lastKhateraRatingTimestamp {
-                        let lastAskedDate = Date(timeIntervalSinceReferenceDate: lastAskedTimestamp)
+        // Khatera flow (10–50 min after Fajr/Isha Iqamah, once per day)
+        if let prayers = settings.prayersICOI {
+            let fajrIqamah = prayers.prayers.first {
+                $0.nameTransliteration.compare("Fajr Iqamah", options: .caseInsensitive) == .orderedSame
+            }?.time
+
+            let ishaIqamah = prayers.prayers.first {
+                $0.nameTransliteration.compare("Isha Iqamah", options: .caseInsensitive) == .orderedSame
+            }?.time
+
+            if let fajrIqamah, let ishaIqamah {
+                let tenMinutes: TimeInterval = 10 * 60
+                let fiftyMinutes: TimeInterval = 50 * 60
+
+                let fajrRatingWindow = fajrIqamah.addingTimeInterval(tenMinutes)...fajrIqamah.addingTimeInterval(fiftyMinutes)
+                let ishaRatingWindow = ishaIqamah.addingTimeInterval(tenMinutes)...ishaIqamah.addingTimeInterval(fiftyMinutes)
+
+                if fajrRatingWindow.contains(now) || ishaRatingWindow.contains(now) {
+                    if let ts = lastKhateraRatingTimestamp {
+                        let lastAskedDate = Date(timeIntervalSinceReferenceDate: ts)
                         if !calendar.isDate(lastAskedDate, inSameDayAs: now) {
                             askForKhateraRating()
                         }
@@ -94,6 +85,22 @@ struct ICOIPrayerView: View {
             }
         }
         #endif
+    }
+    
+    private func refreshICOI(forced: Bool = false) {
+        settings.requestNotificationAuthorization()
+
+        settings.fetchPrayerTimes(force: forced) {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                if settings.prayersICOI == nil {
+                    activeAlert = .prayerTimeFetchError
+                } else if !settings.notificationNeverAskAgain && settings.showNotificationAlert {
+                    activeAlert = .notficationError
+                } else if settings.prayersICOI != nil {
+                    promptForJummuahOrKhateraRatingIfNeeded()
+                }
+            }
+        }
     }
     
     var body: some View {
@@ -196,43 +203,13 @@ struct ICOIPrayerView: View {
                 #endif
             }
             .refreshable {
-                settings.requestNotificationAuthorization()
-                
-                settings.fetchPrayerTimes(force: true) {
-                    if settings.prayersICOI == nil {
-                        activeAlert = .prayerTimeFetchError
-                    } else if !settings.notificationNeverAskAgain && settings.showNotificationAlert {
-                        activeAlert = .notficationError
-                    } else if settings.prayersICOI != nil {
-                        promptForJummuahOrKhateraRatingIfNeeded()
-                    }
-                }
+                refreshICOI(forced: true)
             }
             .onAppear {
-                settings.requestNotificationAuthorization()
-                
-                settings.fetchPrayerTimes() {
-                    if settings.prayersICOI == nil {
-                        activeAlert = .prayerTimeFetchError
-                    } else if !settings.notificationNeverAskAgain && settings.showNotificationAlert {
-                        activeAlert = .notficationError
-                    } else if settings.prayersICOI != nil {
-                        promptForJummuahOrKhateraRatingIfNeeded()
-                    }
-                }
+                refreshICOI()
             }
             .onChange(of: scenePhase) { _ in
-                settings.requestNotificationAuthorization()
-                
-                settings.fetchPrayerTimes() {
-                    if settings.prayersICOI == nil {
-                        activeAlert = .prayerTimeFetchError
-                    } else if !settings.notificationNeverAskAgain && settings.showNotificationAlert {
-                        activeAlert = .notficationError
-                    } else if settings.prayersICOI != nil {
-                        promptForJummuahOrKhateraRatingIfNeeded()
-                    }
-                }
+                refreshICOI()
             }
             .navigationTitle("ICOI Prayers")
             .applyConditionalListStyle(defaultView: settings.defaultView)
@@ -241,7 +218,6 @@ struct ICOIPrayerView: View {
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Button {
                         settings.hapticFeedback()
-                        
                         showingSettingsSheet = true
                     } label: {
                         Image(systemName: "gear")

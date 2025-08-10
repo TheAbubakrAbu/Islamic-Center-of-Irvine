@@ -4,9 +4,13 @@
 
 Stay connected with the Islamic Irvine community through accurate prayer times, local Muslim business support, and essential Islamic tools, all in one app.
 
-I was a **17-year-old** high school student when this app was published on the App Store on **October 3, 2023**.
+Created by **Abubakr Elmallah**, who was a **17-year-old** high school student when this app was published on the App Store on **October 3, 2023**.
 
 [**Download ICOI on the App Store here**](https://apps.apple.com/us/app/islamic-center-of-irvine/id6463835936?platform=iphone)
+
+<a href="https://apps.apple.com/us/app/islamic-center-of-irvine/id6463835936?platform=iphone">
+  <img src="Resources/Logo.jpg" alt="Logo" width="120" style="border-radius:10px;"/>
+</a>
 
 ## Overview
 The ICOI App is designed to keep you connected with your faith and community. Whether it’s accessing accurate prayer times, engaging with the Quran, discovering local Muslim-owned businesses, or exploring essential Islamic tools, the ICOI App serves as your all-in-one resource.

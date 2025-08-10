@@ -2,8 +2,10 @@ import SwiftUI
 
 struct ICOIPrayerCountdown: View {
     @EnvironmentObject var settings: Settings
-    
     @Environment(\.scenePhase) private var scenePhase
+    
+    // Cache Calendar to avoid repeated lookups.
+    private let calendar = Calendar.current
     
     @State private var progressToNextPrayer: Double = 0.0
     @State private var interval: TimeInterval = 60.0
@@ -12,7 +14,6 @@ struct ICOIPrayerCountdown: View {
     func calculateProgress() -> Double {
         if let currentPrayer = settings.currentPrayerICOI, let nextPrayer = settings.nextPrayerICOI {
             let now = Date()
-            let calendar = Calendar.current
 
             let currentHour = calendar.component(.hour, from: currentPrayer.time)
             let nextHour = calendar.component(.hour, from: nextPrayer.time)
@@ -31,12 +32,14 @@ struct ICOIPrayerCountdown: View {
             let totalInterval = nextPrayerAdjusted.timeIntervalSince(currentPrayerAdjusted)
             let remainingInterval = nextPrayerAdjusted.timeIntervalSince(now)
 
-            // Ensure remainingInterval is non-negative and totalInterval >= remainingInterval
-            guard remainingInterval >= 0, totalInterval >= remainingInterval else {
+            // Ensure valid intervals
+            guard totalInterval > 0, remainingInterval >= 0, totalInterval >= remainingInterval else {
                 return 0
             }
 
-            return 1 - (remainingInterval / totalInterval)
+            // Clamp for numerical safety
+            let progress = 1 - (remainingInterval / totalInterval)
+            return min(max(progress, 0), 1)
         }
         return 0
     }
@@ -49,8 +52,6 @@ struct ICOIPrayerCountdown: View {
         if let currentPrayer = settings.currentPrayerICOI, let nextPrayer = settings.nextPrayerICOI {
             Section(header: Text("CURRENT PRAYER")) {
                 HStack {
-                    //Spacer()
-                    
                     VStack(alignment: .leading) {
                         HStack {
                             Image(systemName: currentPrayer.image)
@@ -127,8 +128,9 @@ struct ICOIPrayerCountdown: View {
                         
                         ProgressView(value: progressToNextPrayer, total: 1)
                             .onReceive(timer) { _ in
-                                progressToNextPrayer = calculateProgress()
-                                if progressToNextPrayer >= 1 {
+                                let newProgress = calculateProgress()
+                                progressToNextPrayer = newProgress
+                                if newProgress >= 1 {
                                     settings.fetchPrayerTimes()
                                     setupTimer()
                                 }
