@@ -6,7 +6,7 @@ import SwiftSoup
 
 let logger = Logger(subsystem: "com.Quran.Elmallah.Islamic-Pillars.Islamic-Center-of-Irvine", category: "ICOI")
 
-final class Settings: NSObject, ObservableObject {
+final class Settings: ObservableObject {
     static let shared = Settings()
     
     static let encoder: JSONEncoder = {
@@ -20,6 +20,16 @@ final class Settings: NSObject, ObservableObject {
         dec.dateDecodingStrategy = .millisecondsSince1970
         return dec
     }()
+    
+    private init() {
+        if self.reciter.starts(with: "ar") {
+            if let match = reciters.first(where: { $0.ayahIdentifier == self.reciter }) {
+                self.reciter = match.name
+            } else {
+                self.reciter = "Muhammad Al-Minshawi (Murattal)"
+            }
+        }
+    }
     
     func updateCurrentAndNextPrayer() {
         guard let todayPrayersICOI = prayersICOI else {
@@ -669,6 +679,30 @@ final class Settings: NSObject, ObservableObject {
         }
     }
     
+    func scheduleDailyRefreshNoon(using center: UNUserNotificationCenter) {
+        let cal = Calendar.current
+        let now = Date()
+
+        let todayNoon = cal.date(bySettingHour: 12, minute: 0, second: 0, of: now) ?? now
+        let firstTriggerDate = cal.date(byAdding: .day, value: 1, to: todayNoon) ?? todayNoon
+
+        let comps = cal.dateComponents([.year, .month, .day, .hour, .minute], from: firstTriggerDate)
+
+        let content = UNMutableNotificationContent()
+        content.title = "Islamic Center of Irvine (ICOI)"
+        content.body  = "Please open the app to refresh today’s prayer times and notifications."
+        content.sound = .default
+
+        let trigger = UNCalendarNotificationTrigger(dateMatching: comps, repeats: false)
+
+        let req = UNNotificationRequest(identifier: "DailyRefreshNoon", content: content, trigger: trigger)
+        center.add(req) { error in
+            if let e = error {
+                logger.debug("Error scheduling daily refresh: \(e.localizedDescription)")
+            }
+        }
+    }
+
     func schedulePrayerTimeNotifications() {
         #if !os(watchOS)
         guard let prayerObject = prayersICOI else { return }
@@ -761,6 +795,8 @@ final class Settings: NSObject, ObservableObject {
                 }
             }
         }
+        
+        scheduleDailyRefreshNoon(using: center)
         
         prayersICOI?.setNotification = true
         #endif

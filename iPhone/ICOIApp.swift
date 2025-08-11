@@ -79,14 +79,6 @@ struct IslamicCenterofIrvineApp: App {
                     settings.fetchBusinesses()
                 }
                 
-                if settings.reciter.starts(with: "ar") {
-                    if let match = reciters.first(where: { $0.ayahIdentifier == settings.reciter }) {
-                        settings.reciter = match.name
-                    } else {
-                        settings.reciter = "Muhammad Al-Minshawi (Murattal)"
-                    }
-                }
-                
                 if shouldShowRateAlert {
                     startTime = Date()
                     

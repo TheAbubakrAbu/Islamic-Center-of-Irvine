@@ -76,7 +76,7 @@ struct CreditsView: View {
                 }
                 
                 Section {
-                    Text("Version 3.6.0")
+                    VersionNumber()
                         .font(.caption)
                 }
                 
