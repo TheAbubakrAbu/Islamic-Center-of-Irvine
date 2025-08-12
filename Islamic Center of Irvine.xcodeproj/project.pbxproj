@@ -124,6 +124,7 @@
 		72CD0B6D2AE0C55600D37518 /* LinksView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 72CD0B6B2AE0C55600D37518 /* LinksView.swift */; };
 		72CD0B702AE0C57100D37518 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 72CD0B6F2AE0C57100D37518 /* SettingsView.swift */; };
 		72CD0B712AE0C57100D37518 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 72CD0B6F2AE0C57100D37518 /* SettingsView.swift */; };
+		72D50D362E4C027D005D6E58 /* NowPlayingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 720CCE4E2E3ACF91002DD82E /* NowPlayingView.swift */; };
 		72F5CBDA2D5EC8D500FF4374 /* SwiftSoup in Frameworks */ = {isa = PBXBuildFile; productRef = 72CAE14D2D438B1000C423C5 /* SwiftSoup */; };
 /* End PBXBuildFile section */
 
@@ -799,6 +800,7 @@
 				729402422D6704FF00EEC56D /* DismissKeyboard.swift in Sources */,
 				72CD0B692AE0C50D00D37518 /* EventsView.swift in Sources */,
 				729402462D67051200EEC56D /* ConditionalStyle.swift in Sources */,
+				72D50D362E4C027D005D6E58 /* NowPlayingView.swift in Sources */,
 				72ACDF552AA0385B006B1BF2 /* PrayerView.swift in Sources */,
 				72574CC12E49E8E500BFF138 /* PrayerSettingsView.swift in Sources */,
 				72827EDA2E3E01E800EBA534 /* QuranSettingsView.swift in Sources */,
