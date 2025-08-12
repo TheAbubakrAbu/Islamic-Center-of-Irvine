@@ -77,6 +77,8 @@ struct QuranView: View {
                             scrollToSurahID: $scrollToSurahID
                         )
                     }
+                    #else
+                    NowPlayingView(quranView: true)
                     #endif
 
                     if searchText.isEmpty, let lastReadSurah = lastReadSurah, let lastReadAyah = lastReadAyah {
