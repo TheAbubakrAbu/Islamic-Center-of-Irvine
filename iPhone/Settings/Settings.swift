@@ -921,7 +921,8 @@ final class Settings: ObservableObject {
     @AppStorage("hijriDateArabic") var hijriDateArabic: String = ""
     @AppStorage("hijriDateEnglish") var hijriDateEnglish: String = ""
     
-    @AppStorage("prayersICOIData") private var prayersICOIDataRaw: Data = Data() {
+    @AppStorage("prayersICOIData", store: UserDefaults(suiteName: "group.com.ICOI.AppGroup")!)
+    private var prayersICOIDataRaw: Data = Data() {
         didSet { objectWillChange.send() }
     }
 
@@ -989,88 +990,7 @@ final class Settings: ObservableObject {
             nextPrayerICOIData = try? Self.encoder.encode(nextPrayerICOI)
         }
     }
-    
-    func dictionaryRepresentation() -> [String: Any] {
-        var dict: [String: Any] = [
-            "beginnerMode": self.beginnerMode,
-            "lastReadSurah": self.lastReadSurah,
-            "lastReadAyah": self.lastReadAyah,
-        ]
         
-        do {
-            dict["favoriteSurahsData"] = try Self.encoder.encode(self.favoriteSurahs)
-        } catch {
-            logger.debug("Error encoding favoriteSurahs: \(error)")
-        }
-
-        do {
-            dict["bookmarkedAyahsData"] = try Self.encoder.encode(self.bookmarkedAyahs)
-        } catch {
-            logger.debug("Error encoding bookmarkedAyahs: \(error)")
-        }
-
-        do {
-            dict["favoriteLetterData"] = try Self.encoder.encode(self.favoriteLetters)
-        } catch {
-            logger.debug("Error encoding favoriteLetters: \(error)")
-        }
-        
-        do {
-            dict["prayersICOIData"] = try Self.encoder.encode(self.prayersICOI)
-        } catch {
-            logger.debug("Error encoding prayers: \(error)")
-        }
-        
-        do {
-            if let eventsICOI = self.eventsICOI {
-                dict["eventsICOIData"] = try Self.encoder.encode(eventsICOI)
-            }
-        } catch {
-            logger.debug("Error encoding eventsICOI: \(error)")
-        }
-        
-        do {
-            dict["businessesICOIData"] = try Self.encoder.encode(self.businessesICOI)
-        } catch {
-            logger.debug("Error encoding businessesICOI: \(error)")
-        }
-        
-        return dict
-    }
-
-    func update(from dict: [String: Any]) {
-        if let beginnerMode = dict["beginnerMode"] as? Bool {
-            self.beginnerMode = beginnerMode
-        }
-        if let lastReadSurah = dict["lastReadSurah"] as? Int {
-            self.lastReadSurah = lastReadSurah
-        }
-        if let lastReadAyah = dict["lastReadAyah"] as? Int {
-            self.lastReadAyah = lastReadAyah
-        }
-        if let favoriteSurahsData = dict["favoriteSurahsData"] as? Data {
-            self.favoriteSurahs = (try? Self.decoder.decode([Int].self, from: favoriteSurahsData)) ?? []
-        }
-        if let bookmarkedAyahsData = dict["bookmarkedAyahsData"] as? Data {
-            self.bookmarkedAyahs = (try? Self.decoder.decode([BookmarkedAyah].self, from: bookmarkedAyahsData)) ?? []
-        }
-        if let favoriteLetterData = dict["favoriteLetterData"] as? Data {
-            self.favoriteLetters = (try? Self.decoder.decode([LetterData].self, from: favoriteLetterData)) ?? []
-        }
-        
-        if let prayersICOIData = dict["prayersICOIData"] as? Data {
-            self.prayersICOI = try? Self.decoder.decode(Prayers.self, from: prayersICOIData)
-        }
-        
-        if let eventsICOIData = dict["eventsICOIData"] as? Data {
-            self.eventsICOI = try? Self.decoder.decode(Events.self, from: eventsICOIData)
-        }
-        
-        if let businessesICOIData = dict["businessesICOIData"] as? Data {
-            self.businessesICOI = try? Self.decoder.decode(Businesses.self, from: businessesICOIData)
-        }
-    }
-    
     @AppStorage("defaultView") var defaultView: Bool = true
     
     @AppStorage("colorSchemeString") var colorSchemeString: String = "system"
@@ -1279,7 +1199,8 @@ final class Settings: ObservableObject {
     @AppStorage("useFontArabic") var useFontArabic: Bool = true
     
     @AppStorage("showTransliteration") var showTransliteration: Bool = true
-    @AppStorage("showEnglishTranslation") var showEnglishTranslation: Bool = true
+    @AppStorage("showEnglishSaheeh") var showEnglishSaheeh: Bool = true
+    @AppStorage("showEnglishMustafa") var showEnglishMustafa: Bool = false
     
     @AppStorage("englishFontSize") var englishFontSize: Double = Double(UIFont.preferredFont(forTextStyle: .body).pointSize)
     
@@ -1309,36 +1230,6 @@ final class Settings: ObservableObject {
         ]
     }
     
-    func toggleSurahFavorite(surah: Int) {
-        withAnimation {
-            if isSurahFavorite(surah: surah) {
-                favoriteSurahs.removeAll(where: { $0 == surah })
-            } else {
-                favoriteSurahs.append(surah)
-            }
-        }
-    }
-    
-    func isSurahFavorite(surah: Int) -> Bool {
-        return favoriteSurahs.contains(surah)
-    }
-    
-    func toggleBookmark(surah: Int, ayah: Int) {
-        withAnimation {
-            let bookmark = BookmarkedAyah(surah: surah, ayah: ayah)
-            if let index = bookmarkedAyahs.firstIndex(where: {$0.id == bookmark.id}) {
-                bookmarkedAyahs.remove(at: index)
-            } else {
-                bookmarkedAyahs.append(bookmark)
-            }
-        }
-    }
-    
-    func isBookmarked(surah: Int, ayah: Int) -> Bool {
-        let bookmark = BookmarkedAyah(surah: surah, ayah: ayah)
-        return bookmarkedAyahs.contains(where: {$0.id == bookmark.id})
-    }
-    
     func toggleLetterFavorite(letterData: LetterData) {
         withAnimation {
             if isLetterFavorite(letterData: letterData) {
@@ -1351,21 +1242,5 @@ final class Settings: ObservableObject {
 
     func isLetterFavorite(letterData: LetterData) -> Bool {
         return favoriteLetters.contains(where: {$0.id == letterData.id})
-    }
-    
-    private static let unwantedCharSet: CharacterSet = {
-        CharacterSet(charactersIn: "-[]()'\"").union(.nonBaseCharacters)
-    }()
-
-    func cleanSearch(_ text: String, whitespace: Bool = false) -> String {
-        var cleaned = String(text.unicodeScalars
-            .filter { !Self.unwantedCharSet.contains($0) }
-        ).lowercased()
-
-        if whitespace {
-            cleaned = cleaned.trimmingCharacters(in: .whitespacesAndNewlines)
-        }
-
-        return cleaned
     }
 }

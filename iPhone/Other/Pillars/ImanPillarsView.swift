@@ -99,7 +99,7 @@ struct GodView: View {
                     .font(.body)
             }
         }
-        .applyConditionalListStyle(defaultView: true)
+        .applyConditionalListStyle(defaultView: settings.defaultView)
         .navigationTitle("One God")
     }
 }
@@ -193,7 +193,7 @@ struct AngelsView: View {
                     .font(.body)
             }
         }
-        .applyConditionalListStyle(defaultView: true)
+        .applyConditionalListStyle(defaultView: settings.defaultView)
         .navigationTitle("Angels")
     }
 }
@@ -267,7 +267,7 @@ struct BooksView: View {
                     .font(.body)
             }
         }
-        .applyConditionalListStyle(defaultView: true)
+        .applyConditionalListStyle(defaultView: settings.defaultView)
         .navigationTitle("Books")
     }
 }
@@ -357,7 +357,7 @@ struct ProphetsView: View {
                     .font(.caption)
             }
         }
-        .applyConditionalListStyle(defaultView: true)
+        .applyConditionalListStyle(defaultView: settings.defaultView)
         .navigationTitle("Prophets")
     }
 }
@@ -434,7 +434,7 @@ struct DayView: View {
                     .font(.body)
             }
         }
-        .applyConditionalListStyle(defaultView: true)
+        .applyConditionalListStyle(defaultView: settings.defaultView)
         .navigationTitle("Day of Judgment")
     }
 }
@@ -506,7 +506,7 @@ struct QadrView: View {
                     .font(.body)
             }
         }
-        .applyConditionalListStyle(defaultView: true)
+        .applyConditionalListStyle(defaultView: settings.defaultView)
         .navigationTitle("Qadr")
     }
 }

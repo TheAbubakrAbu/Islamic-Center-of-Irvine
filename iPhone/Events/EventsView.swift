@@ -171,7 +171,7 @@ struct ICOIEventsView: View {
                 #endif
             }
             .navigationTitle("ICOI Events")
-            .applyConditionalListStyle(defaultView: true)
+            .applyConditionalListStyle(defaultView: settings.defaultView)
             .refreshable {
                 settings.fetchEvents(force: true)
                 if settings.eventsICOI == nil {

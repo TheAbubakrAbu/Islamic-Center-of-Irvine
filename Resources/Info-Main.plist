@@ -19,5 +19,18 @@
 	</array>
 	<key>NSPhotoLibraryAddUsageDescription</key>
 	<string>Used to save wallpapers you choose to your Photo Library.</string>
+	<key>NSAppTransportSecurity</key>
+	<dict>
+		<key>NSExceptionDomains</key>
+		<dict>
+			<key>sc-webapp-p-1.ad.uci.edu</key>
+			<dict>
+				<key>NSExceptionAllowsInsecureHTTPLoads</key>
+				<true/>
+				<key>NSIncludesSubdomains</key>
+				<true/>
+			</dict>
+		</dict>
+	</dict>
 </dict>
 </plist>

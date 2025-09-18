@@ -12,6 +12,7 @@ struct AyahsView: View {
     @State private var scrollDown: Int? = nil
     @State private var didScrollDown = false
     @State private var showingSettingsSheet = false
+    @State private var showFloatingHeader = false
     @State private var showAlert = false
     
     let surah: Surah
@@ -31,15 +32,28 @@ struct AyahsView: View {
                     return rawArabic.contains(cleanQuery)
                         || clearArabic.contains(cleanQuery)
                         || settings.cleanSearch(a.textTransliteration).contains(cleanQuery)
-                        || settings.cleanSearch(a.textEnglish).contains(cleanQuery)
+                        || settings.cleanSearch(a.textEnglishSaheeh).contains(cleanQuery)
+                        || settings.cleanSearch(a.textEnglishMustafa).contains(cleanQuery)
                         || settings.cleanSearch(String(a.id)).contains(cleanQuery)
                         || settings.cleanSearch(arabicNumberString(from: a.id)).contains(cleanQuery)
                         || Int(cleanQuery) == a.id
                 }
                 
                 List {
-                    Section(header: SurahSectionHeader(surah: surah)) {
-                        if searchText.isEmpty {
+                    if searchText.isEmpty {
+                        Section(header:
+                            SurahSectionHeader(surah: surah)
+                                .onAppear {
+                                    withAnimation {
+                                        showFloatingHeader = false
+                                    }
+                                }
+                                .onDisappear {
+                                    withAnimation {
+                                        showFloatingHeader = true
+                                    }
+                                }
+                        ) {
                             VStack {
                                 if surah.id == 1 || surah.id == 9 {
                                     HeaderRow(
@@ -67,10 +81,10 @@ struct AyahsView: View {
                                 #endif
                             }
                         }
+                        #if !os(watchOS)
+                        .listRowSeparator(.hidden, edges: .bottom)
+                        #endif
                     }
-                    #if !os(watchOS)
-                    .listRowSeparator(.hidden, edges: .bottom)
-                    #endif
                     
                     ForEach(filteredAyahs, id: \.id) { ayah in
                         Group {
@@ -135,7 +149,6 @@ struct AyahsView: View {
                 }
                 .applyConditionalListStyle(defaultView: settings.defaultView)
                 .dismissKeyboardOnScroll()
-                
                 .onAppear {
                     if let sel = ayah, !didScrollDown {
                         didScrollDown = true
@@ -155,6 +168,27 @@ struct AyahsView: View {
                     if quranPlayer.isPlaying || quranPlayer.isPaused {
                         NowPlayingView(quranView: false)
                             .animation(.easeInOut, value: quranPlayer.isPlaying)
+                            .onTapGesture {
+                                guard
+                                    let curSurah = quranPlayer.currentSurahNumber,
+                                    let curAyah  = quranPlayer.currentAyahNumber,
+                                    curSurah == surah.id
+                                else { return }
+
+                                settings.hapticFeedback()
+
+                                if !searchText.isEmpty {
+                                    withAnimation {
+                                        searchText = ""
+                                        self.endEditing()
+                                    }
+                                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) {
+                                        withAnimation { proxy.scrollTo(curAyah, anchor: .top) }
+                                    }
+                                } else {
+                                    withAnimation { proxy.scrollTo(curAyah, anchor: .top) }
+                                }
+                            }
                     }
                     
                     HStack {
@@ -171,15 +205,32 @@ struct AyahsView: View {
         .environmentObject(quranPlayer)
         .onDisappear(perform: saveLastRead)
         .onChange(of: scenePhase) { _ in saveLastRead() }
-        
         #if !os(watchOS)
+        .overlay(alignment: .top) {
+            SurahSectionHeader(surah: surah)
+                .padding(.horizontal)
+                .padding(.vertical, 8)
+                .background(Color.clear.background(.ultraThinMaterial))
+                .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+                .shadow(color: .primary.opacity(0.25), radius: 2, x: 0, y: 0)
+                #if !os(watchOS)
+                .padding(.top, 6)
+                .padding(.horizontal, settings.defaultView == true ? 20 : 16)
+                #endif
+                .background(Color.clear)
+                .opacity(showFloatingHeader ? 1 : 0)
+                .padding(.horizontal, 55)
+                .zIndex(1)
+                .transition(.move(edge: .top).combined(with: .opacity))
+                .offset(y: showFloatingHeader ? 0 : -80)
+                .opacity(showFloatingHeader ? 1 : 0)
+                .animation(.easeInOut(duration: 0.35), value: showFloatingHeader)
+        }
         .navigationTitle(surah.nameEnglish)
         .navigationBarItems(trailing: navBarTitle)
         .sheet(isPresented: $showingSettingsSheet) { settingsSheet }
         .onChange(of: quranPlayer.showInternetAlert) { if $0 { showAlert = true; quranPlayer.showInternetAlert = false } }
-        .confirmationDialog("Internet Connection Error",
-                            isPresented: $showAlert,
-                            titleVisibility: .visible) {
+        .confirmationDialog("Internet Connection Error", isPresented: $showAlert, titleVisibility: .visible) {
             Button("OK", role: .cancel) { }
         } message: {
             Text("Unable to load the recitation due to an internet connection issue. Please check your connection and try again.")
@@ -236,6 +287,20 @@ struct AyahsView: View {
                     }
                 } label: {
                     Label("Repeat Surah", systemImage: "repeat")
+                }
+                
+                Button {
+                    settings.hapticFeedback()
+                    
+                    if let randomAyah = surah.ayahs.randomElement() {
+                        quranPlayer.playAyah(
+                            surahNumber: surah.id,
+                            ayahNumber: randomAyah.id,
+                            continueRecitation: true
+                        )
+                    }
+                } label: {
+                    Label("Play Random Ayah", systemImage: "shuffle.circle.fill")
                 }
             } label: {
                 playIcon()
@@ -296,16 +361,7 @@ struct AyahsView: View {
     }
     
     private var settingsSheet: some View {
-        NavigationView {
-            List {
-                SettingsQuranView(showEdits: false)
-                    .environmentObject(quranData)
-            }
-            .accentColor(settings.accentColor)
-            .preferredColorScheme(settings.colorScheme)
-            .navigationTitle("Al-Quran Settings")
-            .applyConditionalListStyle(defaultView: true)
-        }
+        NavigationView { SettingsQuranView(showEdits: false) }
     }
     #endif
     
@@ -326,21 +382,12 @@ struct RotatingGearView: View {
     @State private var rotation: Double = 0
     
     var body: some View {
-        #if !os(watchOS)
         Image(systemName: "gear")
-            .resizable()
-            .aspectRatio(contentMode: .fit)
-            .frame(width: 25, height: 25)
-            .foregroundColor(.secondary)
-            .rotationEffect(.degrees(rotation))
-            .onAppear {
-                withAnimation(.linear(duration: 2).repeatForever(autoreverses: false)) {
-                    rotation = 360
-                }
-            }
-        #else
-        Image(systemName: "gear")
+            #if !os(watchOS)
+            .font(.title3)
+            #else
             .font(.subheadline)
+            #endif
             .foregroundColor(.secondary)
             .rotationEffect(.degrees(rotation))
             .onAppear {
@@ -348,6 +395,5 @@ struct RotatingGearView: View {
                     rotation = 360
                 }
             }
-        #endif
     }
 }

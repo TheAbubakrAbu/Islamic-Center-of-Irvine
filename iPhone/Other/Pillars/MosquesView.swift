@@ -99,7 +99,7 @@ struct HaramView: View {
                         #endif
             }
         }
-        .applyConditionalListStyle(defaultView: true)
+        .applyConditionalListStyle(defaultView: settings.defaultView)
         .navigationTitle("Masjid Al-Haram")
     }
 }
@@ -167,7 +167,7 @@ struct NabawiView: View {
                     #endif
             }
         }
-        .applyConditionalListStyle(defaultView: true)
+        .applyConditionalListStyle(defaultView: settings.defaultView)
         .navigationTitle("Masjid An-Nabawi")
     }
 }
@@ -241,7 +241,7 @@ struct AqsaView: View {
                     #endif
             }
         }
-        .applyConditionalListStyle(defaultView: true)
+        .applyConditionalListStyle(defaultView: settings.defaultView)
         .navigationTitle("Masjid Al-Aqsa")
     }
 }

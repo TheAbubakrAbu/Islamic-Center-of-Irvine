@@ -64,7 +64,7 @@ struct PillarsView: View {
             
             PillarsOtherView()
         }
-        .applyConditionalListStyle(defaultView: true)
+        .applyConditionalListStyle(defaultView: settings.defaultView)
         .navigationTitle("Islamic Pillars")
     }
 }
@@ -206,7 +206,7 @@ struct GodPillarView: View {
                 }
             }
         }
-        .applyConditionalListStyle(defaultView: true)
+        .applyConditionalListStyle(defaultView: settings.defaultView)
         .navigationTitle("Does God Exist?")
     }
 }
@@ -237,7 +237,7 @@ struct IslamPillarView: View {
             Section(header: Text("THE FIVE PILLARS")) {
                 Text("Islam is built on five pillars, which are the fundamental acts of worship for every Muslim. The Prophet Muhammad (peace and blessings be upon him) said:")
                     .font(.body)
-                Text("“Verily, Al-Islam is founded on five (pillars): testifying the fact that there is no god but Allah (Shahaadah), establishment of prayer (Salah), payment of charity (Zakah), fast of Ramadan, and Pilgrimage to the House (Hajj)” (Sahih Muslim 16d).")
+                Text("“Verily, Islam is founded on five (pillars): testifying the fact that there is no god but Allah (Shahaadah), establishment of prayer (Salah), payment of charity (Zakah), fast of Ramadan, and Pilgrimage to the House (Hajj)” (Sahih Muslim 16d).")
                     .font(.body)
                     .foregroundColor(settings.accentColor)
                 
@@ -337,7 +337,7 @@ struct IslamPillarView: View {
                     .font(.body)
             }
         }
-        .applyConditionalListStyle(defaultView: true)
+        .applyConditionalListStyle(defaultView: settings.defaultView)
         .navigationTitle("What is Islam?")
     }
 }
@@ -426,7 +426,7 @@ struct AllahPillarView: View {
                     .font(.body)
             }
         }
-        .applyConditionalListStyle(defaultView: true)
+        .applyConditionalListStyle(defaultView: settings.defaultView)
         .navigationTitle("Who is Allah?")
     }
 }
@@ -501,7 +501,7 @@ struct QuranPillarView: View {
                     .font(.caption)
             }
         }
-        .applyConditionalListStyle(defaultView: true)
+        .applyConditionalListStyle(defaultView: settings.defaultView)
         .navigationTitle("What is the Quran?")
     }
 }
@@ -599,7 +599,7 @@ struct ProphetPillarView: View {
                     .font(.caption)
             }
         }
-        .applyConditionalListStyle(defaultView: true)
+        .applyConditionalListStyle(defaultView: settings.defaultView)
         .navigationTitle("Who is the Prophet?")
     }
 }
@@ -670,7 +670,7 @@ struct SunnahPillarView: View {
                     .font(.caption)
             }
         }
-        .applyConditionalListStyle(defaultView: true)
+        .applyConditionalListStyle(defaultView: settings.defaultView)
         .navigationTitle("What is the Sunnah?")
     }
 }
@@ -753,7 +753,7 @@ struct HadithPillarView: View {
                     .font(.caption)
             }
         }
-        .applyConditionalListStyle(defaultView: true)
+        .applyConditionalListStyle(defaultView: settings.defaultView)
         .navigationTitle("What are Hadiths?")
     }
 }

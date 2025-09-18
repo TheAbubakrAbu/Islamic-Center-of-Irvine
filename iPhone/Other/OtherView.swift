@@ -87,7 +87,7 @@ struct OtherView: View {
                 
                 AlIslamAppsSection()
             }
-            .applyConditionalListStyle(defaultView: true)
+            .applyConditionalListStyle(defaultView: settings.defaultView)
             .navigationTitle("Tools")
         }
         .navigationViewStyle(.stack)

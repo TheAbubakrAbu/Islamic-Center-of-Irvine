@@ -17,7 +17,7 @@ struct PillarsOtherView: View {
             }
             .padding(.vertical, 4)
             
-            NavigationLink(destination: AdhanView()) {
+            NavigationLink(destination: AdhanOtherView()) {
                 Text("Adhan (1st Call to Prayer)")
                     .font(.subheadline)
             }
@@ -143,7 +143,7 @@ struct WudhuView: View {
                     .font(.caption)
             }
         }
-        .applyConditionalListStyle(defaultView: true)
+        .applyConditionalListStyle(defaultView: settings.defaultView)
         .navigationTitle("Wudhu and Ghusl")
     }
 }
@@ -223,12 +223,12 @@ struct JummuahView: View {
                     .font(.body)
             }
         }
-        .applyConditionalListStyle(defaultView: true)
+        .applyConditionalListStyle(defaultView: settings.defaultView)
         .navigationTitle("Jummuah")
     }
 }
 
-struct AdhanView: View {
+struct AdhanOtherView: View {
     @EnvironmentObject var settings: Settings
 
     var body: some View {
@@ -324,7 +324,7 @@ struct AdhanView: View {
                     .font(.body)
             }
         }
-        .applyConditionalListStyle(defaultView: true)
+        .applyConditionalListStyle(defaultView: settings.defaultView)
         .navigationTitle("Adhan")
     }
 }
@@ -406,7 +406,7 @@ struct IqamahView: View {
                 .font(.body)
             }
         }
-        .applyConditionalListStyle(defaultView: true)
+        .applyConditionalListStyle(defaultView: settings.defaultView)
         .navigationTitle("Iqamah")
     }
 }
@@ -514,7 +514,7 @@ struct TakbiratView: View {
             }
         }
         .navigationTitle("Takbirat Al-Eid")
-        .applyConditionalListStyle(defaultView: true)
+        .applyConditionalListStyle(defaultView: settings.defaultView)
     }
 }
 
@@ -577,7 +577,7 @@ struct CalendarView: View {
             }
         }
         .navigationTitle("Hijri Calendar")
-        .applyConditionalListStyle(defaultView: true)
+        .applyConditionalListStyle(defaultView: settings.defaultView)
     }
 }
 
@@ -626,7 +626,7 @@ struct TajweedView: View {
             }
         }
         .navigationTitle("Tajweed")
-        .applyConditionalListStyle(defaultView: true)
+        .applyConditionalListStyle(defaultView: settings.defaultView)
     }
 }
 
@@ -674,7 +674,7 @@ struct JuzView: View {
             }
         }
         .navigationTitle("Juz")
-        .applyConditionalListStyle(defaultView: true)
+        .applyConditionalListStyle(defaultView: settings.defaultView)
     }
 }
 
@@ -735,7 +735,7 @@ struct FarewellView: View {
             }
         }
         .navigationTitle("Farewell Sermon")
-        .applyConditionalListStyle(defaultView: true)
+        .applyConditionalListStyle(defaultView: settings.defaultView)
     }
 }
 
@@ -825,7 +825,7 @@ struct SahabahView: View {
             }
         }
         .navigationTitle("The Sahabah")
-        .applyConditionalListStyle(defaultView: true)
+        .applyConditionalListStyle(defaultView: settings.defaultView)
     }
 }
 
@@ -959,7 +959,7 @@ struct WivesView: View {
             }
         }
         .navigationTitle("The Wives")
-        .applyConditionalListStyle(defaultView: true)
+        .applyConditionalListStyle(defaultView: settings.defaultView)
     }
 }
 
@@ -1092,7 +1092,7 @@ struct CaliphatesView: View {
             }
         }
         .navigationTitle("The Caliphates")
-        .applyConditionalListStyle(defaultView: true)
+        .applyConditionalListStyle(defaultView: settings.defaultView)
     }
 }
 
@@ -1164,6 +1164,6 @@ struct MadhabView: View {
             }
         }
         .navigationTitle("The 4 Madhabs")
-        .applyConditionalListStyle(defaultView: true)
+        .applyConditionalListStyle(defaultView: settings.defaultView)
     }
 }

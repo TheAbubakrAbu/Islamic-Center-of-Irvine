@@ -56,21 +56,9 @@ struct ICOISettingsView: View {
                         settings.fetchBusinesses(force: true)
                     })
                     
-                    #if !os(watchOS)
-                    Text("Syncing is available every 5 minutes.\n\nAll updates for prayers, events, and businesses occur automatically when you launch the app for the first time each day.\n\nPrayer times are specifically synced daily before Fajr to ensure accurate notifications.")
-                        .font(.caption)
-                        .foregroundColor(.secondary)
-                    
-                    Text("Notifications will not update automatically in the background overnight if your phone is in low power mode, offline (airplane mode), or turned off, since it needs an internet connection to retrieve new prayer times from the website.")
-                        .font(.caption)
-                        .fontWeight(.bold)
-                        .foregroundColor(.secondary)
-                        .padding(.vertical, 2)
-                    #else
                     Text("Syncing is available every 5 minutes.\n\nAll updates for prayers, events, and businesses occur automatically when you launch the app for the first time each day.")
                         .font(.caption)
                         .foregroundColor(.secondary)
-                    #endif
                 }
                 
                 Section(header: Text("APPEARANCE")) {
@@ -267,7 +255,7 @@ struct SettingsAppearanceView: View {
             Toggle("Default List View", isOn: $settings.defaultView.animation(.easeInOut))
                 .font(.subheadline)
             
-            Text("The default list view is the standard interface found in many of Apple's first party apps, including Notes. This setting only applies only to the prayer and Quran view.")
+            Text("The default list view is the standard interface found in many of Apple's first party apps, including Notes. This setting applies everywhere in the app except here in Settings.")
                 .font(.caption)
                 .foregroundColor(.secondary)
                 .padding(.vertical, 2)
@@ -293,7 +281,7 @@ struct VersionNumber: View {
                 Text("Version")
             }
             
-            Text("3.6.1")
+            Text(Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "1.0.0")
                 .foregroundColor(settings.accentColor)
                 .padding(.leading, -4)
         }

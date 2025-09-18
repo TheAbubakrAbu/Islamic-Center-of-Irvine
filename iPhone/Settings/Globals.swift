@@ -1,5 +1,12 @@
 import SwiftUI
 
+struct Prayers: Identifiable, Codable, Equatable {
+    var id = UUID()
+    let day: Date
+    let prayers: [Prayer]
+    var setNotification: Bool
+}
+
 struct Prayer: Identifiable, Codable, Equatable {
     var id = UUID()
     let nameArabic: String
@@ -14,20 +21,6 @@ struct Prayer: Identifiable, Codable, Equatable {
     static func ==(lhs: Prayer, rhs: Prayer) -> Bool {
         return lhs.id == rhs.id
     }
-}
-
-struct Prayers: Identifiable, Codable, Equatable {
-    var id = UUID()
-    let day: Date
-    let prayers: [Prayer]
-    var setNotification: Bool
-}
-
-struct ShareSettings: Equatable {
-    var arabic = false
-    var transliteration = false
-    var translation = false
-    var showFooter = false
 }
 
 struct Events: Codable {
@@ -63,6 +56,14 @@ extension Date {
         let calendar = Calendar.current
         return calendar.isDate(self, inSameDayAs: date)
     }
+}
+
+struct ShareSettings: Equatable {
+    var arabic = false
+    var transliteration = false
+    var englishSaheeh = false
+    var englishMustafa = false
+    var showFooter = false
 }
 
 struct CustomColorSchemeKey: EnvironmentKey {

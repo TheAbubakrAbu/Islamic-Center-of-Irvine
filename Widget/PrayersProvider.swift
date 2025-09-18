@@ -2,96 +2,138 @@ import WidgetKit
 import SwiftUI
 
 struct PrayersProvider: TimelineProvider {
-    var settings = Settings.shared
+    private let settings = Settings.shared
 
-    let appGroupUserDefaults = UserDefaults(suiteName: "group.com.ICOI.AppGroup")
+    private let appGroupStore = UserDefaults(suiteName: "group.com.ICOI.AppGroup")!
 
-    func getPrayersICOI() {
-        if let data = appGroupUserDefaults?.data(forKey: "prayersICOIData") {
-            let decoder = JSONDecoder()
-            if let prayers = try? decoder.decode(Prayers.self, from: data) {
-                settings.prayersICOI = prayers
-            }
-        }
+    private func loadPrayersICOIFromGroup() -> Prayers? {
+        guard let data = appGroupStore.data(forKey: "prayersICOIData"),
+              let prayers = try? Settings.decoder.decode(Prayers.self, from: data)
+        else { return nil }
+        return prayers
     }
-    
-    func updateAdhanAndIqamah(prayers: Prayers) -> (currentAdhan: Prayer?, nextAdhan: Prayer?, currentIqamah: Prayer?, nextIqamah: Prayer?) {
+
+    private func updateAdhanAndIqamah(prayers: Prayers) -> (currentAdhan: Prayer?, nextAdhan: Prayer?, currentIqamah: Prayer?, nextIqamah: Prayer?) {
         let now = Date()
-        
-        let adhansToday = prayers.prayers.filter { $0.nameTransliteration.contains("Adhan") }
-        let iqamahsToday = prayers.prayers.filter { $0.nameTransliteration.contains("Iqamah") }
-        
-        let currentAdhan = adhansToday.last { $0.time <= now }
-        let currentIqamah = iqamahsToday.last { $0.time <= now }
-        
-        var nextAdhan = adhansToday.first { $0.time > now }
-        var nextIqamah = iqamahsToday.first { $0.time > now }
-        
-        if nextAdhan == nil {
-            nextAdhan = getNextDayPrayer(prayers: adhansToday)
+
+        func lower(_ s: String?) -> String { (s ?? "").lowercased() }
+
+        func isJummuah(_ p: Prayer) -> Bool {
+            let t = lower(p.nameTransliteration)
+            let e = lower(p.nameEnglish)
+            return t.contains("jummu") || t.contains("jumma") || t.contains("jumu") ||
+                   e.contains("friday") || t.contains("khutbah") || e.contains("khutbah")
         }
-        
-        if nextIqamah == nil {
-            nextIqamah = getNextDayPrayer(prayers: iqamahsToday)
+
+        func isAdhan(_ p: Prayer) -> Bool {
+            let t = lower(p.nameTransliteration)
+            let e = lower(p.nameEnglish)
+            return t.contains("adhan") || e.contains("adhan")
         }
-        
+
+        func isIqamah(_ p: Prayer) -> Bool {
+            let t = lower(p.nameTransliteration)
+            let e = lower(p.nameEnglish)
+            return t.contains("iqama") || e.contains("iqama") || isJummuah(p)
+        }
+
+        let all = prayers.prayers.sorted { $0.time < $1.time }
+        let adhans  = all.filter(isAdhan)
+        let iqamahs = all.filter(isIqamah)
+
+        let currentAdhan  = adhans.last(where:  { $0.time <= now })
+        let currentIqamah = iqamahs.last(where: { $0.time <= now })
+
+        var nextAdhan  = adhans.first(where:  { $0.time > now })
+        var nextIqamah = iqamahs.first(where: { $0.time > now })
+
+        if nextAdhan == nil, let first = adhans.first { nextAdhan = nextDayVersion(of: first) }
+        if nextIqamah == nil, let first = iqamahs.first { nextIqamah = nextDayVersion(of: first) }
+
         return (currentAdhan, nextAdhan, currentIqamah, nextIqamah)
     }
 
-    func getNextDayPrayer(prayers: [Prayer]) -> Prayer? {
-        guard let firstPrayer = prayers.first else { return nil }
-        return Prayer(nameArabic: firstPrayer.nameArabic,
-                      nameTransliteration: firstPrayer.nameTransliteration,
-                      nameEnglish: firstPrayer.nameEnglish,
-                      time: Calendar.current.date(byAdding: .day, value: 1, to: firstPrayer.time)!,
-                      image: firstPrayer.image,
-                      rakah: firstPrayer.rakah,
-                      sunnahBefore: firstPrayer.sunnahBefore,
-                      sunnahAfter: firstPrayer.sunnahAfter)
+    private func nextDayVersion(of prayer: Prayer?) -> Prayer? {
+        guard let p = prayer,
+              let nextTime = Calendar.current.date(byAdding: .day, value: 1, to: p.time)
+        else { return nil }
+        return Prayer(
+            nameArabic: p.nameArabic,
+            nameTransliteration: p.nameTransliteration,
+            nameEnglish: p.nameEnglish,
+            time: nextTime,
+            image: p.image,
+            rakah: p.rakah,
+            sunnahBefore: p.sunnahBefore,
+            sunnahAfter: p.sunnahAfter
+        )
     }
-    
-    func placeholder(in context: Context) -> PrayersEntry {
-        getPrayersICOI()
-        
-        if let prayers = settings.prayersICOI, let current = settings.currentPrayerICOI, let next = settings.nextPrayerICOI {
-            let times = updateAdhanAndIqamah(prayers: prayers)
-            
-            return PrayersEntry(date: Date(), color1: settings.accentColor, color2: settings.accentColor2, prayers: prayers.prayers, currentPrayer: current, nextPrayer: next, currentAdhan: times.currentAdhan, nextAdhan: times.nextAdhan, currentIqamah: times.currentIqamah, nextIqamah: times.nextIqamah)
+
+    private func makeEntry(from prayers: Prayers?, fallbackDate: Date = Date()) -> PrayersEntry {
+        let p = prayers?.prayers ?? []
+        let current = settings.currentPrayerICOI
+        let next    = settings.nextPrayerICOI
+
+        let times = prayers.map(updateAdhanAndIqamah)
+        return PrayersEntry(
+            date: fallbackDate,
+            color1: settings.accentColor,
+            color2: settings.accentColor2,
+            prayers: p,
+            currentPrayer: current,
+            nextPrayer: next,
+            currentAdhan: times?.currentAdhan,
+            nextAdhan: times?.nextAdhan,
+            currentIqamah: times?.currentIqamah,
+            nextIqamah: times?.nextIqamah
+        )
+    }
+
+    private func nextRefreshDate(for prayers: Prayers?) -> Date {
+        let now = Date()
+        guard let list = prayers?.prayers, !list.isEmpty else {
+            // No data? Try again in ~30 minutes
+            return Calendar.current.date(byAdding: .minute, value: 30, to: now) ?? now.addingTimeInterval(1800)
         }
         
-        return PrayersEntry(date: Date(), color1: settings.accentColor, color2: settings.accentColor2, prayers: [], currentPrayer: nil, nextPrayer: nil, currentAdhan: nil, nextAdhan: nil, currentIqamah: nil, nextIqamah: nil)
+        // Refresh shortly after the next prayer boundary or in 30 min, whichever is sooner
+        let upcoming = list.filter { $0.time > now }.min(by: { $0.time < $1.time })?.time
+        let soft = Calendar.current.date(byAdding: .minute, value: 30, to: now) ?? now.addingTimeInterval(1800)
+        if let u = upcoming {
+            return min(u.addingTimeInterval(5), soft)
+        }
+        
+        return soft
+    }
+
+    func placeholder(in context: Context) -> PrayersEntry {
+        let prayers = settings.prayersICOI ?? loadPrayersICOIFromGroup()
+        return makeEntry(from: prayers)
     }
 
     func getSnapshot(in context: Context, completion: @escaping (PrayersEntry) -> Void) {
-        getPrayersICOI()
-        
+        if settings.prayersICOI == nil, let cached = loadPrayersICOIFromGroup() {
+            settings.prayersICOI = cached
+            settings.updateCurrentAndNextPrayer()
+        }
+
         settings.fetchPrayerTimes {
-            if let prayers = self.settings.prayersICOI, let current = self.settings.currentPrayerICOI, let next = self.settings.nextPrayerICOI {
-                let times = updateAdhanAndIqamah(prayers: prayers)
-                
-                let entry = PrayersEntry(date: Date(), color1: settings.accentColor, color2: settings.accentColor2, prayers: prayers.prayers, currentPrayer: current, nextPrayer: next, currentAdhan: times.currentAdhan, nextAdhan: times.nextAdhan, currentIqamah: times.currentIqamah, nextIqamah: times.nextIqamah)
-                
-                completion(entry)
-            }
+            let prayers = settings.prayersICOI ?? loadPrayersICOIFromGroup()
+            completion(makeEntry(from: prayers))
         }
     }
 
-    func getTimeline(in context: Context, completion: @escaping (Timeline<PrayersEntry>) -> ()) {
-        getPrayersICOI()
-        
-        settings.fetchPrayerTimes {
-            var entries: [PrayersEntry] = []
-            
-            if let prayers = self.settings.prayersICOI, let current = self.settings.currentPrayerICOI, let next = self.settings.nextPrayerICOI {
-                let times = updateAdhanAndIqamah(prayers: prayers)
-                
-                let entry = PrayersEntry(date: Date(), color1: settings.accentColor, color2: settings.accentColor2, prayers: prayers.prayers, currentPrayer: current, nextPrayer: next, currentAdhan: times.currentAdhan, nextAdhan: times.nextAdhan, currentIqamah: times.currentIqamah, nextIqamah: times.nextIqamah)
+    func getTimeline(in context: Context, completion: @escaping (Timeline<PrayersEntry>) -> Void) {
+        if settings.prayersICOI == nil, let cached = loadPrayersICOIFromGroup() {
+            settings.prayersICOI = cached
+            settings.updateCurrentAndNextPrayer()
+        }
 
-                entries.append(entry)
-                
-                let timeline = Timeline(entries: entries, policy: .after(entries.last?.date ?? Date()))
-                completion(timeline)
-            }
+        settings.fetchPrayerTimes {
+            let prayers = settings.prayersICOI ?? loadPrayersICOIFromGroup()
+            let entry = makeEntry(from: prayers)
+            let refresh = nextRefreshDate(for: prayers)
+            completion(Timeline(entries: [entry], policy: .after(refresh)))
         }
     }
 }
@@ -101,13 +143,13 @@ struct PrayersEntry: TimelineEntry {
     let color1: Color
     let color2: Color
     let prayers: [Prayer]
-    
+
     let currentPrayer: Prayer?
     let nextPrayer: Prayer?
-    
+
     let currentAdhan: Prayer?
     let nextAdhan: Prayer?
-    
+
     let currentIqamah: Prayer?
     let nextIqamah: Prayer?
 }

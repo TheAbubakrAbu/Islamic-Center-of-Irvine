@@ -304,7 +304,7 @@ struct ICOILinksView: View {
                 ICOIBusinessView()
             }
             .navigationTitle("ICOI Links")
-            .applyConditionalListStyle(defaultView: true)
+            .applyConditionalListStyle(defaultView: settings.defaultView)
             .refreshable {
                 settings.fetchBusinesses(force: true) {
                     if settings.businessesICOI == nil {

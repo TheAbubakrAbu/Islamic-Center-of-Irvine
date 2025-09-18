@@ -1,5 +1,4 @@
 import SwiftUI
-import WatchConnectivity
 import WidgetKit
 
 @main
@@ -10,10 +9,6 @@ struct IslamicCenterofIrvineApp: App {
     @StateObject private var namesData = NamesViewModel.shared
     
     @State private var isLaunching = true
-    
-    init() {
-        _ = WatchConnectivityManager.shared
-    }
     
     var body: some Scene {
         WindowGroup {
@@ -50,39 +45,6 @@ struct IslamicCenterofIrvineApp: App {
                     settings.fetchBusinesses()
                 }
             }
-        }
-        .onChange(of: settings.lastReadSurah) { newValue in
-            sendMessageToPhone()
-        }
-        .onChange(of: settings.lastReadAyah) { newValue in
-            sendMessageToPhone()
-        }
-        .onChange(of: settings.favoriteSurahs) { newSurahs in
-            sendMessageToPhone()
-        }
-        .onChange(of: settings.bookmarkedAyahs) { newBookmarks in
-            sendMessageToPhone()
-        }
-        .onChange(of: settings.favoriteLetters) { newValue in
-            sendMessageToPhone()
-        }
-    }
-    
-    func sendMessageToPhone() {
-        let settingsData = settings.dictionaryRepresentation()
-        let message = ["settings": settingsData]
-
-        if WCSession.default.isReachable {
-            // Old method: Directly send the message if the phone is reachable
-            logger.debug("Phone is reachable. Sending message to phone: \(message)")
-            WCSession.default.sendMessage(message, replyHandler: nil) { error in
-                // Handle any error that occurred while sending the message
-                logger.debug("Error sending message to phone: \(error.localizedDescription)")
-            }
-        } else {
-            // New method: If the phone is not reachable, use transferUserInfo to queue up the data
-            logger.debug("Phone is not reachable. Transferring user info to phone: \(message)")
-            WCSession.default.transferUserInfo(message)
         }
     }
 }
