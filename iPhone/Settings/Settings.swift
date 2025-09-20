@@ -689,7 +689,7 @@ final class Settings: ObservableObject {
         let comps = cal.dateComponents([.year, .month, .day, .hour, .minute], from: firstTriggerDate)
 
         let content = UNMutableNotificationContent()
-        content.title = "Islamic Center of Irvine (ICOI)"
+        content.title = "Islamic Center of Irvine"
         content.body  = "Please open the app to refresh today’s prayer times and notifications."
         content.sound = .default
 
@@ -780,7 +780,7 @@ final class Settings: ObservableObject {
             let components = DateComponents(hour: 15, minute: 0, weekday: 6)
             if let date = calendar.nextDate(after: Date(), matching: components, matchingPolicy: .nextTime) {
                 let content = UNMutableNotificationContent()
-                content.title = "Islamic Center of Irvine (ICOI)"
+                content.title = "Islamic Center of Irvine"
                 content.body = "Tap here if you want to rate the khutbah"
                 content.sound = UNNotificationSound.default
                 
@@ -805,7 +805,7 @@ final class Settings: ObservableObject {
     func scheduleNotification(for prayerTime: Prayer, preNotificationTime: Int?) {
         let center = UNUserNotificationCenter.current()
         let content = UNMutableNotificationContent()
-        content.title = "Islamic Center of Irvine (ICOI)"
+        content.title = "Islamic Center of Irvine"
         
         let calendar = Calendar.current
         let baseTime = prayerTime.time
@@ -844,7 +844,7 @@ final class Settings: ObservableObject {
         let khateraDate = prayerTime.time.addingTimeInterval(TimeInterval(minutesAfter * 60))
         
         let content = UNMutableNotificationContent()
-        content.title = "Islamic Center of Irvine (ICOI)"
+        content.title = "Islamic Center of Irvine"
         content.body = "Tap here to rate the \(name). You can turn this notification off in app."
         content.sound = .default
         

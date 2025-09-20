@@ -227,7 +227,7 @@ struct SyncButton: View {
                 .padding(8)
                 .foregroundColor(.white)
                 .background(canSync ? settings.accentColor : Color.gray)
-                .cornerRadius(10)
+                .cornerRadius(24)
                 .onTapGesture {
                     if canSync {
                         settings.hapticFeedback()

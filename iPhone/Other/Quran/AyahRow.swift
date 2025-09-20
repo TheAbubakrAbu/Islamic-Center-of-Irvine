@@ -83,13 +83,14 @@ struct AyahRow: View {
         
         ZStack {
             if let currentSurah = quranPlayer.currentSurahNumber, let currentAyah = quranPlayer.currentAyahNumber, currentSurah == surah.id {
-                RoundedRectangle(cornerRadius: 10)
+                RoundedRectangle(cornerRadius: 24)
                     .fill(
                         currentAyah == ayah.id
                         ? settings.accentColor.opacity(settings.defaultView ? 0.15 : 0.25)
                         : .white.opacity(0.0001)
                     )
                     .padding(.horizontal, -12)
+                    .padding(.vertical, -11)
                     .transition(.opacity)
                     .animation(.easeInOut, value: currentAyah == ayah.id)
             }
@@ -242,11 +243,11 @@ struct AyahRow: View {
                 }
                 .padding(10)
                 .background(
-                    RoundedRectangle(cornerRadius: 12)
+                    RoundedRectangle(cornerRadius: 24)
                         .fill(Color.secondary.opacity(0.08))
                 )
                 .overlay(
-                    RoundedRectangle(cornerRadius: 12)
+                    RoundedRectangle(cornerRadius: 24)
                         .stroke(settings.accentColor.opacity(0.25), lineWidth: 1)
                 )
                 .contentShape(Rectangle())

@@ -643,7 +643,6 @@ struct QuranView: View {
                     settings.hapticFeedback()
                     showingSettingsSheet = true
                 } label: { Image(systemName: "gear") }
-                .padding(.trailing, settings.defaultView ? 6 : 0)
             }
         }
         .sheet(isPresented: $showingSettingsSheet) {

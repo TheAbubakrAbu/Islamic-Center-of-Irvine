@@ -153,7 +153,7 @@ struct ICOIEventsView: View {
                     .padding(.vertical, 6)
                     .frame(maxWidth: .infinity)
                     .background(settings.accentColor)
-                    .cornerRadius(10)
+                    .cornerRadius(24)
                     .padding(.horizontal, 16)
                     .multilineTextAlignment(.center)
                     .padding(.bottom, 4)
@@ -257,7 +257,7 @@ struct DaySelectionView: View {
                         .padding(.vertical, 8)
                         .background(selectedDay == day ? Color.accentColor : Color.secondary.opacity(0.2))
                         .foregroundColor(selectedDay == day ? Color.white : Color.primary)
-                        .cornerRadius(10)
+                        .cornerRadius(24)
                         .minimumScaleFactor(0.5)
                 }
             }

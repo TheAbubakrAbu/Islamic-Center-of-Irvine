@@ -222,7 +222,6 @@ struct ICOIPrayerView: View {
                     } label: {
                         Image(systemName: "gear")
                     }
-                    .padding(.trailing, settings.defaultView ? 6 : 0)
                 }
             }
             .sheet(isPresented: $showingSettingsSheet) {

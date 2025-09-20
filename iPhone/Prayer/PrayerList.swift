@@ -52,9 +52,12 @@ struct ICOIPrayerList: View {
                     let titleColor: Color = isDimmedJummuah ? .secondary : .primary
                     
                     ZStack {
-                        RoundedRectangle(cornerRadius: 15)
+                        RoundedRectangle(cornerRadius: 24)
                             .fill(isHighlighted ? settings.accentColor.opacity(0.25) : .clear)
                             .padding(.horizontal, -12)
+                            #if !os(watchOS)
+                            .padding(.vertical, -11)
+                            #endif
                         
                         VStack(alignment: .leading) {
                             #if !os(watchOS)
