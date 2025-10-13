@@ -93,8 +93,6 @@ struct ICOIPrayerCountdown: View {
             
             Section(header: Text("UPCOMING PRAYER")) {
                 HStack {
-                    Spacer()
-                    
                     VStack(alignment: .trailing) {
                         HStack {
                             Text(nextPrayer.nameTransliteration)

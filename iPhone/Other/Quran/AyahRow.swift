@@ -90,7 +90,9 @@ struct AyahRow: View {
                         : .white.opacity(0.0001)
                     )
                     .padding(.horizontal, -12)
+                    #if !os(watchOS)
                     .padding(.vertical, -11)
+                    #endif
                     .transition(.opacity)
                     .animation(.easeInOut, value: currentAyah == ayah.id)
             }
@@ -243,11 +245,11 @@ struct AyahRow: View {
                 }
                 .padding(10)
                 .background(
-                    RoundedRectangle(cornerRadius: 24)
+                    RoundedRectangle(cornerRadius: 20)
                         .fill(Color.secondary.opacity(0.08))
                 )
                 .overlay(
-                    RoundedRectangle(cornerRadius: 24)
+                    RoundedRectangle(cornerRadius: 20)
                         .stroke(settings.accentColor.opacity(0.25), lineWidth: 1)
                 )
                 .contentShape(Rectangle())
@@ -273,6 +275,7 @@ struct AyahRow: View {
                 )
                 .multilineTextAlignment(.trailing)
                 .frame(maxWidth: .infinity, alignment: .trailing)
+                .lineLimit(nil)
             }
 
             if showTranslit {
@@ -286,6 +289,7 @@ struct AyahRow: View {
                 )
                 .multilineTextAlignment(.leading)
                 .frame(maxWidth: .infinity, alignment: .leading)
+                .lineLimit(nil)
             }
 
             if showEnglishSaheeh {
@@ -304,6 +308,7 @@ struct AyahRow: View {
                 }
                 .multilineTextAlignment(.leading)
                 .frame(maxWidth: .infinity, alignment: .leading)
+                .lineLimit(nil)
             }
 
             if showEnglishMustafa {
@@ -322,6 +327,7 @@ struct AyahRow: View {
                 }
                 .multilineTextAlignment(.leading)
                 .frame(maxWidth: .infinity, alignment: .leading)
+                .lineLimit(nil)
             }
         }
         .lineLimit(nil)
