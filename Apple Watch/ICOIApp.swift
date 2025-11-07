@@ -19,7 +19,7 @@ struct IslamicCenterofIrvineApp: App {
                     TabView {
                         ICOIPrayerView()
                         
-                        ICOIEventsView()
+                        //ICOIEventsView()
                         
                         ICOILinksView()
                         
@@ -41,7 +41,7 @@ struct IslamicCenterofIrvineApp: App {
             .onAppear {
                 withAnimation {
                     settings.fetchPrayerTimes()
-                    settings.fetchEvents()
+                    //settings.fetchEvents()
                     settings.fetchBusinesses()
                 }
             }

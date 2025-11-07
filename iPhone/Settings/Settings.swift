@@ -683,7 +683,6 @@ final class Settings: ObservableObject {
         let cal = Calendar.current
         let now = Date()
 
-        // --- FIX: make sure we look up Dhuhr Adhan correctly (was "Dhuhr" before) ---
         if let dhuhrAdhan = prayers.first(where: { $0.nameTransliteration == "Dhuhr Adhan" }) {
             if let preDhuhr = cal.date(byAdding: .minute, value: -30, to: dhuhrAdhan.time), preDhuhr > now {
                 let comps = cal.dateComponents([.year, .month, .day, .hour, .minute], from: preDhuhr)
@@ -702,38 +701,37 @@ final class Settings: ObservableObject {
             }
         }
 
-        // --- NEW: Reminder between Shurooq and Dhuhr Adhan (midpoint) ---
+        func shiftDays(_ date: Date, by days: Int) -> Date {
+            cal.date(byAdding: .day, value: days, to: date) ?? date.addingTimeInterval(TimeInterval(days * 86400))
+        }
+
         if let shurooq = prayers.first(where: { $0.nameTransliteration == "Shurooq" }),
            let dhuhrAdhan = prayers.first(where: { $0.nameTransliteration == "Dhuhr Adhan" }) {
 
-            let start = shurooq.time
-            let end   = dhuhrAdhan.time
-
-            if end > start {
-                let halfInterval = (end.timeIntervalSince1970 - start.timeIntervalSince1970) / 2.0
-                let midpoint = Date(timeIntervalSince1970: start.timeIntervalSince1970 + halfInterval)
-
+            for d in 1...2 {
+                let start = shiftDays(shurooq.time, by: d)
+                let end   = shiftDays(dhuhrAdhan.time, by: d)
+                guard end > start else { continue }
+                
+                let midpoint = Date(timeIntervalSince1970: (start.timeIntervalSince1970 + end.timeIntervalSince1970) / 2.0)
                 if midpoint > now {
                     let comps = cal.dateComponents([.year, .month, .day, .hour, .minute], from: midpoint)
                     let content = UNMutableNotificationContent()
                     content.title = "Islamic Center of Irvine"
-                    content.body  = "Midday check-in: open the app to ensure prayer times are fresh."
+                    content.body  = "Please open the app to refresh today’s prayer times and notifications."
                     content.sound = .default
 
                     let trig = UNCalendarNotificationTrigger(dateMatching: comps, repeats: false)
-                    let req  = UNNotificationRequest(identifier: "RefreshMidpointShurooqDhuhr", content: content, trigger: trig)
+                    let req  = UNNotificationRequest(identifier: "RefreshMidpointShurooqDhuhr+\(d)", content: content, trigger: trig)
                     center.add(req) { error in
                         if let e = error {
-                            logger.debug("Error scheduling midpoint refresh: \(e.localizedDescription)")
+                            logger.debug("Error scheduling midpoint +\(d): \(e.localizedDescription)")
                         }
                     }
                 }
             }
         }
 
-        // --- REMOVED: pre-Fajr refresh (per your request) ---
-
-        // --- Keep scheduling TOMORROW’s early prayers now, but ONLY if toggles are ON (A) ---
         let fajrAdhanToday   = prayers.first(where: { $0.nameTransliteration == "Fajr Adhan" })
         let fajrIqamahToday  = prayers.first(where: { $0.nameTransliteration == "Fajr Iqamah" })
         let shurooqToday     = prayers.first(where: { $0.nameTransliteration == "Shurooq" })
@@ -752,7 +750,6 @@ final class Settings: ObservableObject {
             )
         }
 
-        // Only schedule if those specific toggles are enabled
         if let fajrAdhanToday, adhanFajr {
             let fajrAdhanTomorrow = cloneForTomorrow(from: fajrAdhanToday, translit: "Fajr Adhan")
             scheduleNotification(for: fajrAdhanTomorrow, preNotificationTime: nil)
@@ -765,7 +762,7 @@ final class Settings: ObservableObject {
             }
             scheduleNotification(for: fajrIqamahTomorrow, preNotificationTime: nil)
         }
-
+        
         if let shurooqToday, sunriseTime {
             let shurooqTomorrow = cloneForTomorrow(from: shurooqToday, translit: "Shurooq")
             scheduleNotification(for: shurooqTomorrow, preNotificationTime: nil)
@@ -785,7 +782,7 @@ final class Settings: ObservableObject {
         
         var prayerTimes = prayerObject.prayers
         if !isFriday, prayerTimes.count >= 2 {
-            // Remove Jumuah slots on non-Fridays (preserves original behavior).
+            // Remove Jumuah slots on non-Fridays.
             prayerTimes.removeLast(2)
         }
         

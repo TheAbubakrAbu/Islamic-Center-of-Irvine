@@ -32,11 +32,11 @@ struct IslamicCenterofIrvineApp: App {
                                 Text("Prayers")
                             }
                         
-                        ICOIEventsView()
+                        /*ICOIEventsView()
                             .tabItem {
                                 Image(systemName: "calendar")
                                 Text("Events")
-                            }
+                            }*/
                         
                         ICOILinksView()
                             .tabItem {
@@ -70,7 +70,7 @@ struct IslamicCenterofIrvineApp: App {
             .onAppear {
                 withAnimation {
                     settings.fetchPrayerTimes()
-                    settings.fetchEvents()
+                    //settings.fetchEvents()
                     settings.fetchBusinesses()
                 }
                 
