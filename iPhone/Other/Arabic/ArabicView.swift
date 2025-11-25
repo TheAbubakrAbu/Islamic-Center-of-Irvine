@@ -14,12 +14,9 @@ struct ArabicView: View {
     private var filteredStandard: [LetterData] {
         guard !searchText.isEmpty else { return standardArabicLetters }
         let st = searchText.lowercased()
-        return standardArabicLetters.filter {
-            $0.letter.lowercased().contains(st) ||
-            $0.name.lowercased().contains(st)  ||
-            $0.transliteration.lowercased().contains(st)
-        }
+        return standardArabicLetters.filter { matchesSearch($0, st) }
     }
+    
     private var filteredOther: [LetterData] {
         guard !searchText.isEmpty else { return otherArabicLetters }
         let st = searchText.lowercased()
@@ -28,6 +25,33 @@ struct ArabicView: View {
             $0.name.lowercased().contains(st)  ||
             $0.transliteration.lowercased().contains(st)
         }
+    }
+    
+    private func matchesSearch(_ letter: LetterData, _ st: String) -> Bool {
+        var parts: [String] = [
+            letter.letter.lowercased(),
+            letter.name.lowercased(),
+            letter.transliteration.lowercased()
+        ]
+
+        if let w = letter.weight {
+            switch w {
+            case .heavy:
+                parts += ["heavy", "tafkhim", "tafkhīm", "isti'la", "istila", "isti‘la"]
+            case .light:
+                parts += ["light", "tarqiq", "tarqīq"]
+            case .conditional:
+                parts += ["conditional"]
+            case .followsPrevious:
+                parts += ["follows previous", "follows", "previous"]
+            }
+        }
+
+        if let rule = letter.weightRule?.lowercased() {
+            parts.append(rule)
+        }
+
+        return parts.contains { $0.contains(st) }
     }
 
     var body: some View {
@@ -40,7 +64,7 @@ struct ArabicView: View {
                         }
                     }
                 }
-                
+
                 if searchText.isEmpty {
                     if groupingType == "normal" {
                         Section("STANDARD ARABIC LETTERS") {
@@ -59,22 +83,27 @@ struct ArabicView: View {
                             }
                         }
                     }
-                    
+
                     Section("SPECIAL ARABIC LETTERS") {
                         ForEach(otherArabicLetters, id: \.letter) {
                             ArabicLetterRow(letterData: $0)
                         }
                     }
-                    
+
                     Section("ARABIC NUMBERS") {
                         ForEach(numbers, id: \.number) { ArabicNumberRow(numberData: $0) }
                     }
-                    
+
                     tajweedSection
                 } else {
-                    Section("SEARCH RESULTS") {
-                        ForEach(filteredStandard) { ArabicLetterRow(letterData: $0) }
-                        ForEach(filteredOther)   { ArabicLetterRow(letterData: $0) }
+                    Section("SEARCH RESULTS (\(filteredStandard.count + filteredOther.count))") {
+                        ForEach(filteredStandard) {
+                            ArabicLetterRow(letterData: $0)
+                        }
+                        
+                        ForEach(filteredOther) {
+                            ArabicLetterRow(letterData: $0)
+                        }
                     }
                 }
             }
@@ -83,7 +112,7 @@ struct ArabicView: View {
             #endif
             .applyConditionalListStyle(defaultView: settings.defaultView)
             .dismissKeyboardOnScroll()
-            
+
             #if !os(watchOS)
             Picker("Grouping", selection: $groupingType.animation(.easeInOut)) {
                 Text("Normal Grouping").tag("normal")
@@ -91,7 +120,7 @@ struct ArabicView: View {
             }
             .pickerStyle(.segmented)
             .padding(.horizontal)
-            
+
             SearchBar(text: $searchText.animation(.easeInOut))
                 .padding(.horizontal, 8)
             #endif
@@ -231,4 +260,9 @@ struct StopInfoRow: View {
                 .foregroundColor(color)
         }
     }
+}
+
+#Preview {
+    ArabicView()
+        .environmentObject(Settings.shared)
 }

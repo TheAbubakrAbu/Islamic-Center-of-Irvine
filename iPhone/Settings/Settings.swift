@@ -28,6 +28,8 @@ final class Settings: ObservableObject {
             } else {
                 self.reciter = "Muhammad Al-Minshawi (Murattal)"
             }
+        } else if self.reciter.isEmpty {
+            self.reciter = "Muhammad Al-Minshawi (Murattal)"
         }
     }
     
