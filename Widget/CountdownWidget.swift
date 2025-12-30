@@ -29,10 +29,10 @@ struct PrayerEntryView: View {
     }
     
     func formattedName(for name: String) -> String {
-        if name == "First Jummuah" {
-            return "1st Jummuah"
-        } else if name == "Second Jummuah" {
-            return "2nd Jummuah"
+        if name == "First Jumuah" {
+            return "1st Jumuah"
+        } else if name == "Second Jumuah" {
+            return "2nd Jumuah"
         } else {
             return name
         }

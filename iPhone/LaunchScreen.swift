@@ -62,30 +62,31 @@ struct LaunchScreen: View {
             .opacity(opacity)
         }
         .onAppear {
-            triggerHapticFeedback(.soft)
-            
-            withAnimation(.easeInOut(duration: 0.5)) {
-                size = 1.25
-                opacity = 1.0
-                gradientSize = 3.0
-                
+            Task { @MainActor in
                 triggerHapticFeedback(.soft)
-            }
 
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) {
+                withAnimation(.easeInOut(duration: 0.5)) {
+                    size = 1.25
+                    opacity = 1.0
+                    gradientSize = 3.0
+                }
+
+                try? await Task.sleep(nanoseconds: 800_000_000)
+
                 triggerHapticFeedback(.soft)
-                
                 withAnimation(.easeOut(duration: 0.5)) {
                     size = 1.0
                     gradientSize = 0.0
                 }
 
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.75) {
-                    triggerHapticFeedback(.soft)
+                await QuranData.shared.waitUntilLoaded()
+                await waitForPrayerTimesOrTimeout(seconds: 10)
 
-                    withAnimation {
-                        self.isLaunching = false
-                    }
+                try? await Task.sleep(nanoseconds: 700_000_000)
+
+                triggerHapticFeedback(.soft)
+                withAnimation {
+                    isLaunching = false
                 }
             }
         }
@@ -113,4 +114,39 @@ struct LaunchScreen: View {
     enum HapticFeedbackType {
         case soft, light, medium, heavy
     }
+    
+    @MainActor
+    func waitForPrayerTimesOrTimeout(seconds: Double = 10) async {
+        await withTaskGroup(of: Void.self) { group in
+            // Task A: prayer fetch completes
+            group.addTask {
+                await settings.fetchPrayerTimesAsync(force: false, notification: false)
+            }
+
+            // Task B: timeout
+            group.addTask {
+                try? await Task.sleep(nanoseconds: UInt64(seconds * 1_000_000_000))
+            }
+
+            // First one to finish wins
+            await group.next()
+            group.cancelAll()
+        }
+    }
+}
+
+extension Settings {
+    @MainActor
+    func fetchPrayerTimesAsync(force: Bool = false, notification: Bool = false) async {
+        await withCheckedContinuation { continuation in
+            fetchPrayerTimes(force: force, notification: notification) {
+                continuation.resume()
+            }
+        }
+    }
+}
+
+#Preview {
+    LaunchScreen(isLaunching: .constant(true))
+        .environmentObject(Settings.shared)
 }

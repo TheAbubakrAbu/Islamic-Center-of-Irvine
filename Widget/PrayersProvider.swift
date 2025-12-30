@@ -18,7 +18,7 @@ struct PrayersProvider: TimelineProvider {
 
         func lower(_ s: String?) -> String { (s ?? "").lowercased() }
 
-        func isJummuah(_ p: Prayer) -> Bool {
+        func isJumuah(_ p: Prayer) -> Bool {
             let t = lower(p.nameTransliteration)
             let e = lower(p.nameEnglish)
             return t.contains("jummu") || t.contains("jumma") || t.contains("jumu") ||
@@ -34,7 +34,7 @@ struct PrayersProvider: TimelineProvider {
         func isIqamah(_ p: Prayer) -> Bool {
             let t = lower(p.nameTransliteration)
             let e = lower(p.nameEnglish)
-            return t.contains("iqama") || e.contains("iqama") || isJummuah(p)
+            return t.contains("iqama") || e.contains("iqama") || isJumuah(p)
         }
 
         let all = prayers.prayers.sorted { $0.time < $1.time }

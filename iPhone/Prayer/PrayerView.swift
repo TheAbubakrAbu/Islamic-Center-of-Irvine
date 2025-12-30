@@ -13,18 +13,18 @@ struct ICOIPrayerView: View {
         case notficationError
         case prayerTimeFetchError
         case showVisitWebsiteButton
-        case jummuahRating
+        case jumuahRating
         case khateraRating
 
         var id: Int { rawValue }
     }
 
-    @AppStorage("lastJummuahRatingTimestamp") private var lastJummuahRatingTimestamp: Double?
+    @AppStorage("lastJumuahRatingTimestamp") private var lastJumuahRatingTimestamp: Double?
 
     @inline(__always)
-    private func askForJummuahRating() {
-        lastJummuahRatingTimestamp = Date().timeIntervalSinceReferenceDate
-        activeAlert = .jummuahRating
+    private func askForJumuahRating() {
+        lastJumuahRatingTimestamp = Date().timeIntervalSinceReferenceDate
+        activeAlert = .jumuahRating
     }
 
     @AppStorage("lastKhateraRatingTimestamp") private var lastKhateraRatingTimestamp: Double?
@@ -35,7 +35,7 @@ struct ICOIPrayerView: View {
         activeAlert = .khateraRating
     }
 
-    private func promptForJummuahOrKhateraRatingIfNeeded() {
+    private func promptForJumuahOrKhateraRatingIfNeeded() {
         #if !os(watchOS)
         let now = Date()
         let calendar = Calendar.current
@@ -43,14 +43,14 @@ struct ICOIPrayerView: View {
         // Friday flow (after 3pm, once per day)
         if calendar.component(.weekday, from: now) == 6,
            calendar.component(.hour, from: now) > 15 {
-            if let ts = lastJummuahRatingTimestamp {
+            if let ts = lastJumuahRatingTimestamp {
                 let lastAskedDate = Date(timeIntervalSinceReferenceDate: ts)
                 if !calendar.isDate(lastAskedDate, inSameDayAs: now) {
-                    askForJummuahRating()
+                    askForJumuahRating()
                     return
                 }
             } else {
-                askForJummuahRating()
+                askForJumuahRating()
                 return
             }
         }
@@ -97,7 +97,7 @@ struct ICOIPrayerView: View {
                 } else if !settings.notificationNeverAskAgain && settings.showNotificationAlert {
                     activeAlert = .notficationError
                 } else if settings.prayersICOI != nil {
-                    promptForJummuahOrKhateraRatingIfNeeded()
+                    promptForJumuahOrKhateraRatingIfNeeded()
                 }
             }
         }
@@ -274,7 +274,7 @@ struct ICOIPrayerView: View {
                     
                     Button("OK", role: .cancel) { }
 
-                case .jummuahRating:
+                case .jumuahRating:
                     #if !os(watchOS)
                     Button("Yes") {
                         if let url = URL(string: "https://forms.gle/tRzMiv8dvTH9mG877") {
@@ -311,8 +311,8 @@ struct ICOIPrayerView: View {
                     Text("Please check your internet connection. The website may be temporarily unavailable.")
                 case .showVisitWebsiteButton:
                     Text("Please check your internet connection. The website may be temporarily unavailable.")
-                case .jummuahRating:
-                    Text("If you attended Jummuah today, do you want to rate the khutbah?")
+                case .jumuahRating:
+                    Text("If you attended Jumuah today, do you want to rate the khutbah?")
                 case .khateraRating:
                     Text("Would you like to rate the khatera?")
                 case .none:

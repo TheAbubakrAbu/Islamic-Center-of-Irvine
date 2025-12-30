@@ -48,9 +48,9 @@ struct ICOISettingsView: View {
                         settings.fetchPrayerTimes(force: true)
                     })
                     
-                    SyncButton(title: "Events:", lastUpdated: settings.eventsICOI?.day, syncAction: {
-                        settings.fetchEvents(force: true)
-                    })
+//                    SyncButton(title: "Events:", lastUpdated: settings.eventsICOI?.day, syncAction: {
+//                        settings.fetchEvents(force: true)
+//                    })
                     
                     SyncButton(title: "Businesses:", lastUpdated: settings.businessesICOI?.day, syncAction: {
                         settings.fetchBusinesses(force: true)

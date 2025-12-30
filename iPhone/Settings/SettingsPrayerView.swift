@@ -22,9 +22,9 @@ struct NotificationView: View {
                         settings.iqamahAsr &&
                         settings.iqamahMaghrib &&
                         settings.iqamahIsha &&
-                        settings.firstJummuah &&
-                        settings.secondJummuah &&
-                        settings.ratingJummuah &&
+                        settings.firstJumuah &&
+                        settings.secondJumuah &&
+                        settings.ratingJumuah &&
                         settings.sunriseTime &&
                         settings.khateraFajr &&
                         settings.khateraIsha
@@ -43,10 +43,10 @@ struct NotificationView: View {
                             settings.iqamahMaghrib = newValue
                             settings.iqamahIsha = newValue
                             
-                            settings.firstJummuah = newValue
-                            settings.secondJummuah = newValue
+                            settings.firstJumuah = newValue
+                            settings.secondJumuah = newValue
                             
-                            settings.ratingJummuah = newValue
+                            settings.ratingJumuah = newValue
                             
                             settings.sunriseTime = newValue
                             
@@ -64,8 +64,8 @@ struct NotificationView: View {
                         settings.adhanAsr &&
                         settings.adhanMaghrib &&
                         settings.adhanIsha &&
-                        settings.firstJummuah &&
-                        settings.secondJummuah
+                        settings.firstJumuah &&
+                        settings.secondJumuah
                     },
                     set: { newValue in
                         withAnimation {
@@ -74,8 +74,8 @@ struct NotificationView: View {
                             settings.adhanAsr = newValue
                             settings.adhanMaghrib = newValue
                             settings.adhanIsha = newValue
-                            settings.firstJummuah = newValue
-                            settings.secondJummuah = newValue
+                            settings.firstJumuah = newValue
+                            settings.secondJumuah = newValue
                         }
                     }
                 ))
@@ -110,8 +110,8 @@ struct NotificationView: View {
                             settings.iqamahAsrPreNotification = newValue
                             settings.iqamahMaghribPreNotification = newValue
                             settings.iqamahIshaPreNotification = newValue
-                            settings.firstJummuahPreNotification = newValue
-                            settings.secondJummuahPreNotification = newValue
+                            settings.firstJumuahPreNotification = newValue
+                            settings.secondJumuahPreNotification = newValue
                         }
                     }
                 ), in: 0...30, step: 5) {
@@ -135,15 +135,15 @@ struct NotificationView: View {
                     .foregroundColor(.secondary)
             }
             
-            PrayerSettingsSection(prayerName: "Fajr", adhanTime: $settings.adhanFajr, iqamahTime: $settings.iqamahFajr, iqamahPreNotification: $settings.iqamahFajrPreNotification, jummuahPreNotification: .constant(0))
-            PrayerSettingsSection(prayerName: "Shurooq", adhanTime: $settings.sunriseTime, iqamahTime: $settings.sunriseTime, iqamahPreNotification: .constant(0), jummuahPreNotification: .constant(0))
-            PrayerSettingsSection(prayerName: "Dhuhr", adhanTime: $settings.adhanDhuhr, iqamahTime: $settings.iqamahDhuhr, iqamahPreNotification: $settings.iqamahDhuhrPreNotification, jummuahPreNotification: .constant(0))
+            PrayerSettingsSection(prayerName: "Fajr", adhanTime: $settings.adhanFajr, iqamahTime: $settings.iqamahFajr, iqamahPreNotification: $settings.iqamahFajrPreNotification, jumuahPreNotification: .constant(0))
+            PrayerSettingsSection(prayerName: "Shurooq", adhanTime: $settings.sunriseTime, iqamahTime: $settings.sunriseTime, iqamahPreNotification: .constant(0), jumuahPreNotification: .constant(0))
+            PrayerSettingsSection(prayerName: "Dhuhr", adhanTime: $settings.adhanDhuhr, iqamahTime: $settings.iqamahDhuhr, iqamahPreNotification: $settings.iqamahDhuhrPreNotification, jumuahPreNotification: .constant(0))
             
-            PrayerSettingsSection(prayerName: "Jummuah", adhanTime: $settings.firstJummuah, iqamahTime: $settings.secondJummuah, iqamahPreNotification: $settings.firstJummuahPreNotification, jummuahPreNotification: $settings.secondJummuahPreNotification)
+            PrayerSettingsSection(prayerName: "Jumuah", adhanTime: $settings.firstJumuah, iqamahTime: $settings.secondJumuah, iqamahPreNotification: $settings.firstJumuahPreNotification, jumuahPreNotification: $settings.secondJumuahPreNotification)
                                   
-            PrayerSettingsSection(prayerName: "Asr", adhanTime: $settings.adhanAsr, iqamahTime: $settings.iqamahAsr, iqamahPreNotification: $settings.iqamahAsrPreNotification, jummuahPreNotification: .constant(0))
-            PrayerSettingsSection(prayerName: "Maghrib", adhanTime: $settings.adhanMaghrib, iqamahTime: $settings.iqamahMaghrib, iqamahPreNotification: $settings.iqamahMaghribPreNotification, jummuahPreNotification: .constant(0))
-            PrayerSettingsSection(prayerName: "Isha", adhanTime: $settings.adhanIsha, iqamahTime: $settings.iqamahIsha, iqamahPreNotification: $settings.iqamahIshaPreNotification, jummuahPreNotification: .constant(0))
+            PrayerSettingsSection(prayerName: "Asr", adhanTime: $settings.adhanAsr, iqamahTime: $settings.iqamahAsr, iqamahPreNotification: $settings.iqamahAsrPreNotification, jumuahPreNotification: .constant(0))
+            PrayerSettingsSection(prayerName: "Maghrib", adhanTime: $settings.adhanMaghrib, iqamahTime: $settings.iqamahMaghrib, iqamahPreNotification: $settings.iqamahMaghribPreNotification, jumuahPreNotification: .constant(0))
+            PrayerSettingsSection(prayerName: "Isha", adhanTime: $settings.adhanIsha, iqamahTime: $settings.iqamahIsha, iqamahPreNotification: $settings.iqamahIshaPreNotification, jumuahPreNotification: .constant(0))
         }
         .onAppear {
             settings.requestNotificationAuthorization()
@@ -188,19 +188,19 @@ struct PrayerSettingsSection: View {
     @Binding var adhanTime: Bool
     @Binding var iqamahTime: Bool
     @Binding var iqamahPreNotification: Int
-    @Binding var jummuahPreNotification: Int
+    @Binding var jumuahPreNotification: Int
     
     var body: some View {
         Section(header: Text(prayerName.uppercased())) {
             if prayerName == "Shurooq" {
                 Toggle("Shurooq (Sunrise) Notification", isOn: $adhanTime.animation(.easeInOut))
                     .font(.subheadline)
-            } else if prayerName == "Jummuah" {
-                Toggle("First Jummuah Notification", isOn: $adhanTime.animation(.easeInOut))
+            } else if prayerName == "Jumuah" {
+                Toggle("First Jumuah Notification", isOn: $adhanTime.animation(.easeInOut))
                     .font(.subheadline)
                 
                 Stepper(value: $iqamahPreNotification.animation(.easeInOut), in: 0...30, step: 5) {
-                    Text("1st Jummuah Prenotification:")
+                    Text("1st Jumuah Prenotification:")
                         .font(.subheadline)
                     
                     Text("\(iqamahPreNotification) minute\(iqamahPreNotification != 1 ? "s" : "")")
@@ -208,22 +208,22 @@ struct PrayerSettingsSection: View {
                         .foregroundColor(settings.accentColor)
                 }
             
-                Toggle("Second Jummuah Notification", isOn: $iqamahTime.animation(.easeInOut))
+                Toggle("Second Jumuah Notification", isOn: $iqamahTime.animation(.easeInOut))
                     .font(.subheadline)
                 
-                Stepper(value: $jummuahPreNotification.animation(.easeInOut), in: 0...30, step: 5) {
-                    Text("2nd Jummuah Prenotification:")
+                Stepper(value: $jumuahPreNotification.animation(.easeInOut), in: 0...30, step: 5) {
+                    Text("2nd Jumuah Prenotification:")
                         .font(.subheadline)
                     
-                    Text("\(jummuahPreNotification) minute\(jummuahPreNotification != 1 ? "s" : "")")
+                    Text("\(jumuahPreNotification) minute\(jumuahPreNotification != 1 ? "s" : "")")
                         .font(.subheadline)
                         .foregroundColor(settings.accentColor)
                 }
                 
-                Toggle("Jummuah Rating Notification at 3:00", isOn: $settings.ratingJummuah.animation(.easeInOut))
+                Toggle("Jumuah Rating Notification at 3:00", isOn: $settings.ratingJumuah.animation(.easeInOut))
                     .font(.subheadline)
                 
-                Text("On Fridays, Dhuhr notifications are not sent and are instead replaced with Jummuah notifications.")
+                Text("On Fridays, Dhuhr notifications are not sent and are instead replaced with Jumuah notifications.")
                     .font(.caption)
                     .foregroundColor(.secondary)
                     .padding(.vertical, 2)

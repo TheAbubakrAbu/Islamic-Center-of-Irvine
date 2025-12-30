@@ -15,10 +15,6 @@ struct IslamicCenterofIrvineApp: App {
 
     @State private var isLaunching = true
     
-    @AppStorage("timeSpent") private var timeSpent: Double = 0
-    @AppStorage("shouldShowRateAlert") private var shouldShowRateAlert: Bool = true
-    @State private var startTime: Date?
-    
     var body: some Scene {
         WindowGroup {
             Group {
@@ -58,48 +54,21 @@ struct IslamicCenterofIrvineApp: App {
                     }
                 }
             }
-            .environmentObject(settings)
             .environmentObject(quranData)
             .environmentObject(quranPlayer)
             .environmentObject(namesData)
+            .environmentObject(settings)
             .accentColor(settings.accentColor)
             .tint(settings.accentColor)
             .preferredColorScheme(settings.colorScheme)
             .transition(.opacity)
             .animation(.easeInOut, value: isLaunching)
+            .appReviewPrompt()
             .onAppear {
                 withAnimation {
                     settings.fetchPrayerTimes()
                     //settings.fetchEvents()
                     settings.fetchBusinesses()
-                }
-                
-                if shouldShowRateAlert {
-                    startTime = Date()
-                    
-                    let remainingTime = max(180 - timeSpent, 0)
-                    if remainingTime == 0 {
-                        guard let windowScene = UIApplication.shared.connectedScenes
-                            .first(where: { $0.activationState == .foregroundActive }) as? UIWindowScene else {
-                            return
-                        }
-                        SKStoreReviewController.requestReview(in: windowScene)
-                        shouldShowRateAlert = false
-                    } else {
-                        DispatchQueue.main.asyncAfter(deadline: .now() + remainingTime) {
-                            guard let windowScene = UIApplication.shared.connectedScenes
-                                .first(where: { $0.activationState == .foregroundActive }) as? UIWindowScene else {
-                                return
-                            }
-                            SKStoreReviewController.requestReview(in: windowScene)
-                            shouldShowRateAlert = false
-                        }
-                    }
-                }
-            }
-            .onDisappear {
-                if shouldShowRateAlert, let startTime = startTime {
-                    timeSpent += Date().timeIntervalSince(startTime)
                 }
             }
         }

@@ -154,7 +154,7 @@ struct ProphetQuote: View {
                     .multilineTextAlignment(.center)
                     .foregroundColor(settings.accentColor2)
                 
-                Text("Farewell Sermon\nJummuah, 9 Dhul-Hijjah 10 AH\nFriday, 6 March 632 CE")
+                Text("Farewell Sermon\nJumuah, 9 Dhul-Hijjah 10 AH\nFriday, 6 March 632 CE")
                     .font(.caption)
                     .foregroundColor(.secondary)
                     .multilineTextAlignment(.center)
@@ -164,7 +164,7 @@ struct ProphetQuote: View {
         #if !os(watchOS)
         .contextMenu {
             Button(action: {
-                UIPasteboard.general.string = "All mankind is from Adam and Eve, an Arab has no superiority over a non-Arab nor a non-Arab has any superiority over an Arab; also a white has no superiority over a black, nor a black has any superiority over a white except by piety and good action."
+                UIPasteboard.general.string = "All mankind is from Adam and Eve, an Arab has no superiority over a non-Arab nor a non-Arab has any superiority over an Arab; also a white has no superiority over a black, nor a black has any superiority over a white except by piety and good action.\n\n– Farewell Sermon\nJumuah, 9 Dhul-Hijjah 10 AH\nFriday, 6 March 632 CE"
             }) {
                 Text("Copy Text")
                 Image(systemName: "doc.on.doc")

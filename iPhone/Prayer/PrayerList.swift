@@ -28,7 +28,7 @@ struct ICOIPrayerList: View {
             let isFriday = calendar.component(.weekday, from: Date()) == 6
             
             let currentShortenedTransliterationFirst = settings.currentPrayerICOI?.nameTransliteration.split(separator: " ").first ?? ""
-            let isJummuahCurrent = settings.currentPrayerICOI?.nameTransliteration.contains("Jummuah") ?? false
+            let isJumuahCurrent = settings.currentPrayerICOI?.nameTransliteration.contains("Jumuah") ?? false
             
             Section(header: Text("PRAYER TIMES")) {
                 ForEach(0..<halfCount, id: \.self) { i in
@@ -41,15 +41,15 @@ struct ICOIPrayerList: View {
                     let parts1 = prayer1.nameTransliteration.split(separator: " ")
                     let shortenedTransliteration1 = parts1.first ?? ""
                     let shortenedTransliteration3 = parts1.last ?? ""
-                    let isJummuahAtIndex = prayer1.nameTransliteration.contains("Jummuah")
+                    let isJumuahAtIndex = prayer1.nameTransliteration.contains("Jumuah")
                     
-                    let isHighlighted = (shortenedTransliteration1 == currentShortenedTransliterationFirst) || (isJummuahCurrent && isJummuahAtIndex)
+                    let isHighlighted = (shortenedTransliteration1 == currentShortenedTransliterationFirst) || (isJumuahCurrent && isJumuahAtIndex)
                     
                     let isShurooq = (shortenedTransliteration1 == "Shurooq")
-                    let isJummuahTitle = (shortenedTransliteration3 == "Jummuah")
-                    let isDimmedJummuah = (!isFriday && isJummuahTitle)
-                    let iconColor: Color = isShurooq ? .primary : (isDimmedJummuah ? .secondary : settings.accentColor)
-                    let titleColor: Color = isDimmedJummuah ? .secondary : .primary
+                    let isJumuahTitle = (shortenedTransliteration3 == "Jumuah")
+                    let isDimmedJumuah = (!isFriday && isJumuahTitle)
+                    let iconColor: Color = isShurooq ? .primary : (isDimmedJumuah ? .secondary : settings.accentColor)
+                    let titleColor: Color = isDimmedJumuah ? .secondary : .primary
                     
                     ZStack {
                         RoundedRectangle(cornerRadius: 24)
@@ -71,11 +71,11 @@ struct ICOIPrayerList: View {
                                     .padding(.trailing, 8)
                                 
                                 VStack(alignment: .leading) {
-                                    Text(isJummuahTitle ? shortenedTransliteration3 : shortenedTransliteration1)
+                                    Text(isJumuahTitle ? shortenedTransliteration3 : shortenedTransliteration1)
                                         .font(.headline)
                                         .foregroundColor(titleColor)
                                     
-                                    Text(isJummuahTitle ? "Friday" : prayer1.nameEnglish)
+                                    Text(isJumuahTitle ? "Friday" : prayer1.nameEnglish)
                                         .font(.subheadline)
                                         .foregroundColor(titleColor)
                                 }
@@ -91,7 +91,7 @@ struct ICOIPrayerList: View {
                                         Text("\(prayer1.time, style: .time)")
                                             .foregroundColor(.secondary)
                                             .font(.subheadline)
-                                    } else if isJummuahTitle {
+                                    } else if isJumuahTitle {
                                         HStack(spacing: 0) {
                                             Text("1st:")
                                             
@@ -141,11 +141,11 @@ struct ICOIPrayerList: View {
                                     .padding(.trailing, 8)
                                 
                                 VStack(alignment: .leading) {
-                                    Text(isJummuahTitle ? shortenedTransliteration3 : shortenedTransliteration1)
+                                    Text(isJumuahTitle ? shortenedTransliteration3 : shortenedTransliteration1)
                                         .font(.headline)
                                         .foregroundColor(titleColor)
                                     
-                                    Text(isJummuahTitle ?  "Friday" : prayer1.nameEnglish)
+                                    Text(isJumuahTitle ?  "Friday" : prayer1.nameEnglish)
                                         .font(.subheadline)
                                         .foregroundColor(titleColor)
                                 }
@@ -158,7 +158,7 @@ struct ICOIPrayerList: View {
                                     Text("Fajr ends \(prayer1.time, style: .time)")
                                         .foregroundColor(.secondary)
                                         .font(.subheadline)
-                                } else if isJummuahTitle {
+                                } else if isJumuahTitle {
                                     Text("First: \(prayer1.time, style: .time)")
                                         .foregroundColor(.secondary)
                                         .font(.subheadline)

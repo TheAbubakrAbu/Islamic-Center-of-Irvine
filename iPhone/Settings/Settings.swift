@@ -239,7 +239,7 @@ final class Settings: ObservableObject {
                                 prayers.append(
                                     Prayer(
                                         nameArabic: "\(index + 1 == 1 ? "الجُمُعَة الأُوَل" : "الجُمُعَة الثَانِي")",
-                                        nameTransliteration: "\(index + 1 == 1 ? "First" : "Second") Jummuah",
+                                        nameTransliteration: "\(index + 1 == 1 ? "First" : "Second") Jumuah",
                                         nameEnglish: "\(index + 1 == 1 ? "First" : "Second") Friday",
                                         time: jumuahTime,
                                         image: "sun.max.fill",
@@ -318,7 +318,7 @@ final class Settings: ObservableObject {
                         prayers.append(
                             Prayer(
                                 nameArabic: "\(index + 1 == 1 ? "الجُمُعَة الأُوَل" : "الجُمُعَة الثَانِي")",
-                                nameTransliteration: "\(index + 1 == 1 ? "First" : "Second") Jummuah",
+                                nameTransliteration: "\(index + 1 == 1 ? "First" : "Second") Jumuah",
                                 nameEnglish: "\(index + 1 == 1 ? "First" : "Second") Friday",
                                 time: jumuahTime,
                                 image: "sun.max.fill",
@@ -808,12 +808,12 @@ final class Settings: ObservableObject {
             case "Dhuhr Iqamah":
                 notification = iqamahDhuhr
                 preNotificationTime = iqamahDhuhrPreNotification
-            case "First Jummuah":
-                notification = firstJummuah
-                preNotificationTime = firstJummuahPreNotification
-            case "Second Jummuah":
-                notification = secondJummuah
-                preNotificationTime = secondJummuahPreNotification
+            case "First Jumuah":
+                notification = firstJumuah
+                preNotificationTime = firstJumuahPreNotification
+            case "Second Jumuah":
+                notification = secondJumuah
+                preNotificationTime = secondJumuahPreNotification
             case "Asr Adhan":
                 notification = adhanAsr
             case "Asr Iqamah":
@@ -844,7 +844,7 @@ final class Settings: ObservableObject {
             }
         }
         
-        if ratingJummuah {
+        if ratingJumuah {
             let components = DateComponents(hour: 15, minute: 0, weekday: 6)
             if let date = calendar.nextDate(after: Date(), matching: components, matchingPolicy: .nextTime) {
                 let content = UNMutableNotificationContent()
@@ -855,10 +855,10 @@ final class Settings: ObservableObject {
                 let triggerComponents = calendar.dateComponents([.year, .month, .day, .hour, .minute], from: date)
                 let trigger = UNCalendarNotificationTrigger(dateMatching: triggerComponents, repeats: false)
                 
-                let request = UNNotificationRequest(identifier: "jummuahRating", content: content, trigger: trigger)
+                let request = UNNotificationRequest(identifier: "jumuahRating", content: content, trigger: trigger)
                 center.add(request) { error in
                     if let e = error {
-                        logger.debug("Error scheduling jummuahRating: \(e.localizedDescription)")
+                        logger.debug("Error scheduling jumuahRating: \(e.localizedDescription)")
                     }
                 }
             }
@@ -1117,15 +1117,15 @@ final class Settings: ObservableObject {
         didSet { fetchPrayerTimes(notification: true) }
     }
     
-    @AppStorage("firstJummuah") var firstJummuah: Bool = true {
+    @AppStorage("firstJumuah") var firstJumuah: Bool = true {
         didSet { fetchPrayerTimes(notification: true) }
     }
 
-    @AppStorage("secondJummuah") var secondJummuah: Bool = true {
+    @AppStorage("secondJumuah") var secondJumuah: Bool = true {
         didSet { fetchPrayerTimes(notification: true) }
     }
     
-    @AppStorage("ratingJummuah") var ratingJummuah: Bool = true {
+    @AppStorage("ratingJumuah") var ratingJumuah: Bool = true {
         didSet { fetchPrayerTimes(notification: true) }
     }
     
@@ -1169,11 +1169,11 @@ final class Settings: ObservableObject {
         didSet { fetchPrayerTimes(notification: true) }
     }
 
-    @AppStorage("firstJummuahPreNotification") var firstJummuahPreNotification: Int = 0 {
+    @AppStorage("firstJumuahPreNotification") var firstJumuahPreNotification: Int = 0 {
         didSet { fetchPrayerTimes(notification: true) }
     }
 
-    @AppStorage("secondJummuahPreNotification") var secondJummuahPreNotification: Int = 0 {
+    @AppStorage("secondJumuahPreNotification") var secondJumuahPreNotification: Int = 0 {
         didSet { fetchPrayerTimes(notification: true) }
     }
 
@@ -1240,6 +1240,9 @@ final class Settings: ObservableObject {
         
     @AppStorage("showBookmarks") var showBookmarks = true
     @AppStorage("showFavorites") var showFavorites = true
+    
+    @AppStorage("shareShowAyahInformation") var showAyahInformation: Bool = true
+    @AppStorage("shareShowSurahInformation") var showSurahInformation: Bool = false
 
     @AppStorage("favoriteLetterData") private var favoriteLetterData = Data()
     var favoriteLetters: [LetterData] {
