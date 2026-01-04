@@ -324,3 +324,8 @@ struct ICOIPrayerView: View {
         .navigationViewStyle(.stack)
     }
 }
+
+#Preview {
+    ICOIPrayerView()
+        .environmentObject(Settings.shared)
+}

@@ -1,123 +1,14 @@
 import SwiftUI
 
-struct OtherView: View {
+struct IslamView: View {
     @EnvironmentObject var settings: Settings
+    @EnvironmentObject var quranData: QuranData
     @EnvironmentObject var namesData: NamesViewModel
     
     var body: some View {
         NavigationView {
             List {
-                Section(header: Text("ISLAMIC RESOURCES")) {
-                    NavigationLink(destination: QuranView()) {
-                        Label(
-                            title: { Text("The Holy Quran") },
-                            icon: {
-                                Image(systemName: "character.book.closed.ar")
-                                    .accentColor(settings.accentColor)
-                            }
-                        )
-                        .padding(.vertical, 4)
-                        .accentColor(settings.accentColor)
-                    }
-                    
-                    NavigationLink(destination: ArabicView()) {
-                        Label(
-                            title: { Text("Arabic Alphabet") },
-                            icon: {
-                                Image(systemName: "textformat.size.ar")
-                                    .accentColor(settings.accentColor)
-                            }
-                        )
-                        .padding(.vertical, 4)
-                        .accentColor(settings.accentColor)
-                    }
-                    
-                    NavigationLink(destination: AdhkarView()) {
-                        Label(
-                            title: { Text("Common Adhkar") },
-                            icon: {
-                                Image(systemName: "book.closed")
-                                    .accentColor(settings.accentColor)
-                            }
-                        )
-                        .padding(.vertical, 4)
-                        .accentColor(settings.accentColor)
-                    }
-                    
-                    NavigationLink(destination: DuaView()) {
-                        Label(
-                            title: { Text("Common Duas") },
-                            icon: {
-                                Image(systemName: "text.book.closed")
-                                    .accentColor(settings.accentColor)
-                            }
-                        )
-                        .padding(.vertical, 4)
-                        .accentColor(settings.accentColor)
-                    }
-                    
-                    NavigationLink(destination: TasbihView()) {
-                        Label(
-                            title: { Text("Tasbih Counter") },
-                            icon: {
-                                Image(systemName: "circles.hexagonpath.fill")
-                                    .accentColor(settings.accentColor)
-                            }
-                        )
-                        .padding(.vertical, 4)
-                        .accentColor(settings.accentColor)
-                    }
-                    
-                    NavigationLink(destination: NamesView().environmentObject(namesData)) {
-                        Label(
-                            title: { Text("99 Names of Allah") },
-                            icon: {
-                                Image(systemName: "signature")
-                                    .accentColor(settings.accentColor)
-                            }
-                        )
-                        .padding(.vertical, 4)
-                        .accentColor(settings.accentColor)
-                    }
-                    
-                    #if !os(watchOS)
-                    NavigationLink(destination: DateView()) {
-                        Label(
-                            title: { Text("Hijri Calendar Converter") },
-                            icon: {
-                                Image(systemName: "calendar")
-                                    .accentColor(settings.accentColor)
-                            }
-                        )
-                        .padding(.vertical, 4)
-                        .accentColor(settings.accentColor)
-                    }
-                    #endif
-                    
-                    NavigationLink(destination: WallpaperView()) {
-                        Label(
-                            title: { Text("Islamic Wallpapers") },
-                            icon: {
-                                Image(systemName: "photo.on.rectangle")
-                                    .accentColor(settings.accentColor)
-                            }
-                        )
-                        .padding(.vertical, 4)
-                        .accentColor(settings.accentColor)
-                    }
-                    
-                    NavigationLink(destination: PillarsView()) {
-                        Label(
-                            title: { Text("Islamic Pillars and Basics") },
-                            icon: {
-                                Image(systemName: "moon.stars")
-                                    .accentColor(settings.accentColor)
-                            }
-                        )
-                        .padding(.vertical, 4)
-                        .accentColor(settings.accentColor)
-                    }
-                }
+                ToolsView()
                 
                 ProphetQuote()
                 
@@ -125,8 +16,78 @@ struct OtherView: View {
             }
             .applyConditionalListStyle(defaultView: settings.defaultView)
             .navigationTitle("Tools")
+            
+            ArabicView()
         }
-        .navigationViewStyle(.stack)
+    }
+}
+
+struct PillarsView: View {
+    @EnvironmentObject var settings: Settings
+    
+    var body: some View {
+        List {
+            Section(header: Text("THE BASICS")) {
+                NavigationLink(destination: GodPillarView()) {
+                    Text("Does God Exist?")
+                        .foregroundColor(settings.accentColor)
+                        .font(.headline)
+                }
+                .padding(.vertical, 4)
+                
+                NavigationLink(destination: IslamPillarView()) {
+                    Text("What is Islam?")
+                        .foregroundColor(settings.accentColor)
+                        .font(.headline)
+                }
+                .padding(.vertical, 4)
+                
+                NavigationLink(destination: AllahPillarView()) {
+                    Text("Who is Allah?")
+                        .foregroundColor(settings.accentColor)
+                        .font(.headline)
+                }
+                .padding(.vertical, 4)
+                
+                NavigationLink(destination: QuranPillarView()) {
+                    Text("What is the Quran?")
+                        .foregroundColor(settings.accentColor)
+                        .font(.headline)
+                }
+                .padding(.vertical, 4)
+                
+                NavigationLink(destination: ProphetPillarView()) {
+                    Text("Who is Prophet Muhammad?")
+                        .foregroundColor(settings.accentColor)
+                        .font(.headline)
+                }
+                .padding(.vertical, 4)
+                
+                NavigationLink(destination: SunnahPillarView()) {
+                    Text("What is the Sunnah?")
+                        .foregroundColor(settings.accentColor)
+                        .font(.headline)
+                }
+                .padding(.vertical, 4)
+                
+                NavigationLink(destination: HadithPillarView()) {
+                    Text("What are Hadiths?")
+                        .foregroundColor(settings.accentColor)
+                        .font(.headline)
+                }
+                .padding(.vertical, 4)
+            }
+            
+            IslamicPillarsView()
+            
+            ImanPillarsView()
+                                
+            MosquesView()
+            
+            PillarsOtherView()
+        }
+        .applyConditionalListStyle(defaultView: settings.defaultView)
+        .navigationTitle("Islamic Pillars")
     }
 }
 
@@ -258,4 +219,11 @@ private struct Card: View {
         }
         .buttonStyle(PlainButtonStyle())
     }
+}
+
+#Preview {
+    IslamView()
+        .environmentObject(Settings.shared)
+        .environmentObject(QuranData.shared)
+        .environmentObject(QuranPlayer.shared)
 }

@@ -22,31 +22,63 @@ struct IslamicCenterofIrvineApp: App {
                     LaunchScreen(isLaunching: $isLaunching)
                 } else {
                     TabView {
-                        ICOIPrayerView()
+                        VStack {
+                            ICOIPrayerView()
+                            
+                            if quranPlayer.isPlaying || quranPlayer.isPaused {
+                                NowPlayingView(quranView: false)
+                                    .animation(.easeInOut, value: quranPlayer.isPlaying)
+                                    .padding(.bottom, 9)
+                            }
+                        }
+                        .tabItem {
+                            Image(systemName: "moon.stars.fill")
+                            Text("Prayers")
+                        }
+                        
+                        VStack {
+                            ICOILinksView()
+                            
+                            if quranPlayer.isPlaying || quranPlayer.isPaused {
+                                NowPlayingView(quranView: false)
+                                    .animation(.easeInOut, value: quranPlayer.isPlaying)
+                                    .padding(.bottom, 9)
+                            }
+                        }
+                        .tabItem {
+                            Image(systemName: "link")
+                            Text("Links")
+                        }
+                        
+                        QuranView()
                             .tabItem {
-                                Image(systemName: "moon.stars.fill")
-                                Text("Prayers")
+                                Image(systemName: "character.book.closed.ar")
+                                Text("Quran")
                             }
                         
-                        /*ICOIEventsView()
-                            .tabItem {
-                                Image(systemName: "calendar")
-                                Text("Events")
-                            }*/
-                        
-                        ICOILinksView()
-                            .tabItem {
-                                Image(systemName: "link")
-                                Text("Links")
+                        VStack {
+                            IslamView()
+                            
+                            if quranPlayer.isPlaying || quranPlayer.isPaused {
+                                NowPlayingView(quranView: false)
+                                    .animation(.easeInOut, value: quranPlayer.isPlaying)
+                                    .padding(.bottom, 9)
                             }
+                        }
+                        .tabItem {
+                            Image(systemName: "ellipsis.circle.fill")
+                            Text("Tools")
+                        }
                         
-                        OtherView()
-                            .tabItem {
-                                Image(systemName: "ellipsis.circle.fill")
-                                Text("Tools")
+                        VStack {
+                            ICOISettingsView()
+                            
+                            if quranPlayer.isPlaying || quranPlayer.isPaused {
+                                NowPlayingView(quranView: false)
+                                    .animation(.easeInOut, value: quranPlayer.isPlaying)
+                                    .padding(.bottom, 9)
                             }
-                        
-                        ICOISettingsView()
+                        }
                             .tabItem {
                                 Image(systemName: "gearshape.fill")
                                 Text("Settings")
@@ -67,7 +99,6 @@ struct IslamicCenterofIrvineApp: App {
             .onAppear {
                 withAnimation {
                     settings.fetchPrayerTimes()
-                    //settings.fetchEvents()
                     settings.fetchBusinesses()
                 }
             }

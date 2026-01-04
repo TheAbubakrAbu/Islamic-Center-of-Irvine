@@ -29,6 +29,10 @@
 		720DEC532D209FE3006EA342 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 72974BD72A9EDB7F00D8BD8E /* Assets.xcassets */; };
 		720DEC542D209FE3006EA342 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 72974BD72A9EDB7F00D8BD8E /* Assets.xcassets */; };
 		720DEC612D2455E7006EA342 /* CreditsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 720DEC5F2D2455E7006EA342 /* CreditsView.swift */; };
+		724012DC2F0AAE0400851820 /* ToolsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 724012DB2F0AAE0400851820 /* ToolsView.swift */; };
+		724012DD2F0AAE0400851820 /* ToolsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 724012DB2F0AAE0400851820 /* ToolsView.swift */; };
+		724012E62F0AB11100851820 /* IslamBasicsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 724012E52F0AB11100851820 /* IslamBasicsView.swift */; };
+		724012E72F0AB11100851820 /* IslamBasicsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 724012E52F0AB11100851820 /* IslamBasicsView.swift */; };
 		7247DBA02CD4DBEB000803F2 /* Hafs.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 7247DB9F2CD4DBEB000803F2 /* Hafs.ttf */; };
 		7247DBA12CD4DBEB000803F2 /* Hafs.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 7247DB9F2CD4DBEB000803F2 /* Hafs.ttf */; };
 		7247DBAC2CD4DEA7000803F2 /* Indopak.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 7247DBAB2CD4DEA7000803F2 /* Indopak.ttf */; };
@@ -85,10 +89,8 @@
 		729114E82AF772E500A4EB2B /* LockScreen2Iqamah.swift in Sources */ = {isa = PBXBuildFile; fileRef = 722044BA2AF7723F00EEF184 /* LockScreen2Iqamah.swift */; };
 		729114EA2AF774D600A4EB2B /* LockScreen1Adhan.swift in Sources */ = {isa = PBXBuildFile; fileRef = 729114E92AF774D600A4EB2B /* LockScreen1Adhan.swift */; };
 		729114EC2AF7751500A4EB2B /* LockScreen1Iqamah.swift in Sources */ = {isa = PBXBuildFile; fileRef = 729114EB2AF7751500A4EB2B /* LockScreen1Iqamah.swift */; };
-		729115032AF8123F00A4EB2B /* OtherView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 729115022AF8123F00A4EB2B /* OtherView.swift */; };
-		729115042AF8123F00A4EB2B /* OtherView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 729115022AF8123F00A4EB2B /* OtherView.swift */; };
-		729115212AF8176D00A4EB2B /* ToolsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 729115162AF8176D00A4EB2B /* ToolsView.swift */; };
-		729115222AF8176D00A4EB2B /* ToolsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 729115162AF8176D00A4EB2B /* ToolsView.swift */; };
+		729115032AF8123F00A4EB2B /* IslamView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 729115022AF8123F00A4EB2B /* IslamView.swift */; };
+		729115042AF8123F00A4EB2B /* IslamView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 729115022AF8123F00A4EB2B /* IslamView.swift */; };
 		729115232AF8176D00A4EB2B /* 99_Names_Of_Allah.json in Resources */ = {isa = PBXBuildFile; fileRef = 729115172AF8176D00A4EB2B /* 99_Names_Of_Allah.json */; };
 		729115242AF8176D00A4EB2B /* 99_Names_Of_Allah.json in Resources */ = {isa = PBXBuildFile; fileRef = 729115172AF8176D00A4EB2B /* 99_Names_Of_Allah.json */; };
 		729402422D6704FF00EEC56D /* DismissKeyboard.swift in Sources */ = {isa = PBXBuildFile; fileRef = 729402412D6704FF00EEC56D /* DismissKeyboard.swift */; };
@@ -105,12 +107,10 @@
 		72974BEA2A9EDBC400D8BD8E /* PrayerList.swift in Sources */ = {isa = PBXBuildFile; fileRef = 72974BE62A9EDBC400D8BD8E /* PrayerList.swift */; };
 		72974BEC2A9EDBE400D8BD8E /* Settings.swift in Sources */ = {isa = PBXBuildFile; fileRef = 72974BEB2A9EDBE400D8BD8E /* Settings.swift */; };
 		72AC94312E3F5AFA00F7B2DF /* PillarsOtherView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 72AC94302E3F5AFA00F7B2DF /* PillarsOtherView.swift */; };
-		72AC94322E3F5AFA00F7B2DF /* PillarsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 72AC942B2E3F5AFA00F7B2DF /* PillarsView.swift */; };
 		72AC94342E3F5AFA00F7B2DF /* ImanPillarsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 72AC942E2E3F5AFA00F7B2DF /* ImanPillarsView.swift */; };
 		72AC94352E3F5AFA00F7B2DF /* IslamicPillarsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 72AC942D2E3F5AFA00F7B2DF /* IslamicPillarsView.swift */; };
 		72AC94362E3F5AFA00F7B2DF /* MosquesView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 72AC942F2E3F5AFA00F7B2DF /* MosquesView.swift */; };
 		72AC94372E3F5AFA00F7B2DF /* PillarsOtherView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 72AC94302E3F5AFA00F7B2DF /* PillarsOtherView.swift */; };
-		72AC94382E3F5AFA00F7B2DF /* PillarsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 72AC942B2E3F5AFA00F7B2DF /* PillarsView.swift */; };
 		72AC943A2E3F5AFA00F7B2DF /* ImanPillarsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 72AC942E2E3F5AFA00F7B2DF /* ImanPillarsView.swift */; };
 		72AC943B2E3F5AFA00F7B2DF /* IslamicPillarsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 72AC942D2E3F5AFA00F7B2DF /* IslamicPillarsView.swift */; };
 		72AC943C2E3F5AFA00F7B2DF /* MosquesView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 72AC942F2E3F5AFA00F7B2DF /* MosquesView.swift */; };
@@ -217,6 +217,8 @@
 		720CCE702E3AD0EC002DD82E /* ArabicLetterView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ArabicLetterView.swift; sourceTree = "<group>"; };
 		720DEC5F2D2455E7006EA342 /* CreditsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CreditsView.swift; sourceTree = "<group>"; };
 		722044BA2AF7723F00EEF184 /* LockScreen2Iqamah.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LockScreen2Iqamah.swift; sourceTree = "<group>"; };
+		724012DB2F0AAE0400851820 /* ToolsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ToolsView.swift; sourceTree = "<group>"; };
+		724012E52F0AB11100851820 /* IslamBasicsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IslamBasicsView.swift; sourceTree = "<group>"; };
 		7247DB9F2CD4DBEB000803F2 /* Hafs.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = Hafs.ttf; sourceTree = "<group>"; };
 		7247DBAB2CD4DEA7000803F2 /* Indopak.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = Indopak.ttf; sourceTree = "<group>"; };
 		72537C292F0437CB00829F59 /* AppReview.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppReview.swift; sourceTree = "<group>"; };
@@ -246,8 +248,7 @@
 		728E2F792E6EEC4300F2C24C /* quran.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = quran.json; sourceTree = "<group>"; };
 		729114E92AF774D600A4EB2B /* LockScreen1Adhan.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LockScreen1Adhan.swift; sourceTree = "<group>"; };
 		729114EB2AF7751500A4EB2B /* LockScreen1Iqamah.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LockScreen1Iqamah.swift; sourceTree = "<group>"; };
-		729115022AF8123F00A4EB2B /* OtherView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OtherView.swift; sourceTree = "<group>"; };
-		729115162AF8176D00A4EB2B /* ToolsView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ToolsView.swift; sourceTree = "<group>"; };
+		729115022AF8123F00A4EB2B /* IslamView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IslamView.swift; sourceTree = "<group>"; };
 		729115172AF8176D00A4EB2B /* 99_Names_Of_Allah.json */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.json; path = 99_Names_Of_Allah.json; sourceTree = "<group>"; };
 		729402412D6704FF00EEC56D /* DismissKeyboard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DismissKeyboard.swift; sourceTree = "<group>"; };
 		729402442D67051200EEC56D /* ConditionalStyle.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConditionalStyle.swift; sourceTree = "<group>"; };
@@ -262,7 +263,6 @@
 		72974BE52A9EDBC400D8BD8E /* BusinessView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = BusinessView.swift; sourceTree = "<group>"; };
 		72974BE62A9EDBC400D8BD8E /* PrayerList.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = PrayerList.swift; sourceTree = "<group>"; };
 		72974BEB2A9EDBE400D8BD8E /* Settings.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = Settings.swift; sourceTree = "<group>"; };
-		72AC942B2E3F5AFA00F7B2DF /* PillarsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PillarsView.swift; sourceTree = "<group>"; };
 		72AC942D2E3F5AFA00F7B2DF /* IslamicPillarsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IslamicPillarsView.swift; sourceTree = "<group>"; };
 		72AC942E2E3F5AFA00F7B2DF /* ImanPillarsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ImanPillarsView.swift; sourceTree = "<group>"; };
 		72AC942F2E3F5AFA00F7B2DF /* MosquesView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MosquesView.swift; sourceTree = "<group>"; };
@@ -375,15 +375,15 @@
 			path = JSONs;
 			sourceTree = "<group>";
 		};
-		729115012AF8123000A4EB2B /* Other */ = {
+		729115012AF8123000A4EB2B /* Tools */ = {
 			isa = PBXGroup;
 			children = (
-				729115022AF8123F00A4EB2B /* OtherView.swift */,
-				729114ED2AF811BC00A4EB2B /* Quran */,
+				729115022AF8123F00A4EB2B /* IslamView.swift */,
+				724012DB2F0AAE0400851820 /* ToolsView.swift */,
 				7291151C2AF8176D00A4EB2B /* Arabic */,
 				729115142AF8176D00A4EB2B /* Pillars */,
 			);
-			path = Other;
+			path = Tools;
 			sourceTree = "<group>";
 		};
 		729115072AF816A700A4EB2B /* Fonts */ = {
@@ -398,8 +398,7 @@
 		729115142AF8176D00A4EB2B /* Pillars */ = {
 			isa = PBXGroup;
 			children = (
-				72AC942B2E3F5AFA00F7B2DF /* PillarsView.swift */,
-				729115162AF8176D00A4EB2B /* ToolsView.swift */,
+				724012E52F0AB11100851820 /* IslamBasicsView.swift */,
 				72AC942D2E3F5AFA00F7B2DF /* IslamicPillarsView.swift */,
 				72AC942E2E3F5AFA00F7B2DF /* ImanPillarsView.swift */,
 				72AC942F2E3F5AFA00F7B2DF /* MosquesView.swift */,
@@ -464,7 +463,8 @@
 				7285A3562A9FC7E000D8B118 /* Prayer */,
 				72CD0B662AE0C4F200D37518 /* Events */,
 				72CD0B6A2AE0C54700D37518 /* Links */,
-				729115012AF8123000A4EB2B /* Other */,
+				729114ED2AF811BC00A4EB2B /* Quran */,
+				729115012AF8123000A4EB2B /* Tools */,
 				72CD0B6E2AE0C56500D37518 /* Settings */,
 			);
 			path = iPhone;
@@ -759,11 +759,11 @@
 				7294024E2D67058200EEC56D /* ButtonURL.swift in Sources */,
 				7285A3532A9FAEAF00D8B118 /* LaunchScreen.swift in Sources */,
 				72842C202BF0A2D300295DA0 /* CalendarView.swift in Sources */,
+				724012E72F0AB11100851820 /* IslamBasicsView.swift in Sources */,
 				7285A3552A9FC7DA00D8B118 /* PrayerView.swift in Sources */,
 				72974BEC2A9EDBE400D8BD8E /* Settings.swift in Sources */,
 				72974BEA2A9EDBC400D8BD8E /* PrayerList.swift in Sources */,
 				72CD0B682AE0C50D00D37518 /* EventsView.swift in Sources */,
-				729115212AF8176D00A4EB2B /* ToolsView.swift in Sources */,
 				72974BE72A9EDBC400D8BD8E /* PrayerCountdown.swift in Sources */,
 				728E2EF42E6E066600F2C24C /* SettingsQuran.swift in Sources */,
 				72974BD42A9EDB7D00D8BD8E /* ICOIApp.swift in Sources */,
@@ -784,13 +784,13 @@
 				728E2F782E6EEC3800F2C24C /* QuranView.swift in Sources */,
 				729402492D67054200EEC56D /* SearchBar.swift in Sources */,
 				72974BE92A9EDBC400D8BD8E /* BusinessView.swift in Sources */,
-				729115032AF8123F00A4EB2B /* OtherView.swift in Sources */,
+				729115032AF8123F00A4EB2B /* IslamView.swift in Sources */,
 				729402432D6704FF00EEC56D /* DismissKeyboard.swift in Sources */,
 				72AC94312E3F5AFA00F7B2DF /* PillarsOtherView.swift in Sources */,
-				72AC94322E3F5AFA00F7B2DF /* PillarsView.swift in Sources */,
 				72AC94342E3F5AFA00F7B2DF /* ImanPillarsView.swift in Sources */,
 				72AC94352E3F5AFA00F7B2DF /* IslamicPillarsView.swift in Sources */,
 				72AC94362E3F5AFA00F7B2DF /* MosquesView.swift in Sources */,
+				724012DD2F0AAE0400851820 /* ToolsView.swift in Sources */,
 				72537C2C2F04389E00829F59 /* QuranStructs.swift in Sources */,
 				720DEC612D2455E7006EA342 /* CreditsView.swift in Sources */,
 				720CCE6D2E3AD0C9002DD82E /* Globals.swift in Sources */,
@@ -818,11 +818,11 @@
 				72ACDF552AA0385B006B1BF2 /* PrayerView.swift in Sources */,
 				72574CC12E49E8E500BFF138 /* SettingsPrayerView.swift in Sources */,
 				72827EDA2E3E01E800EBA534 /* SettingsQuranView.swift in Sources */,
-				729115222AF8176D00A4EB2B /* ToolsView.swift in Sources */,
+				724012E62F0AB11100851820 /* IslamBasicsView.swift in Sources */,
 				72ACDF562AA0385B006B1BF2 /* PrayerList.swift in Sources */,
 				72ACDF432AA0381D006B1BF2 /* ICOIApp.swift in Sources */,
 				72ACDF542AA0384D006B1BF2 /* BusinessView.swift in Sources */,
-				729115042AF8123F00A4EB2B /* OtherView.swift in Sources */,
+				729115042AF8123F00A4EB2B /* IslamView.swift in Sources */,
 				72CD0B6D2AE0C55600D37518 /* LinksView.swift in Sources */,
 				72CD0B712AE0C57100D37518 /* SettingsView.swift in Sources */,
 				728E2F612E6EEC3800F2C24C /* NowPlayingView.swift in Sources */,
@@ -832,12 +832,12 @@
 				728E2F662E6EEC3800F2C24C /* ProfanityFilter.swift in Sources */,
 				728E2F672E6EEC3800F2C24C /* QuranData.swift in Sources */,
 				728E2F682E6EEC3800F2C24C /* SurahRows.swift in Sources */,
+				724012DC2F0AAE0400851820 /* ToolsView.swift in Sources */,
 				728E2F692E6EEC3800F2C24C /* QuranPlayer.swift in Sources */,
 				728E2F6A2E6EEC3800F2C24C /* AyahsView.swift in Sources */,
 				728E2F6B2E6EEC3800F2C24C /* AyahRow.swift in Sources */,
 				728E2F6C2E6EEC3800F2C24C /* QuranView.swift in Sources */,
 				72AC94372E3F5AFA00F7B2DF /* PillarsOtherView.swift in Sources */,
-				72AC94382E3F5AFA00F7B2DF /* PillarsView.swift in Sources */,
 				72AC943A2E3F5AFA00F7B2DF /* ImanPillarsView.swift in Sources */,
 				72AC943B2E3F5AFA00F7B2DF /* IslamicPillarsView.swift in Sources */,
 				72AC943C2E3F5AFA00F7B2DF /* MosquesView.swift in Sources */,
@@ -905,7 +905,7 @@
 					"@executable_path/../../Frameworks",
 				);
 				MACOSX_DEPLOYMENT_TARGET = 11.0;
-				MARKETING_VERSION = 4.1.3;
+				MARKETING_VERSION = 4.1.4;
 				PRODUCT_BUNDLE_IDENTIFIER = "com.Quran.Elmallah.Islamic-Pillars.Islamic-Center-of-Irvine.ICOI1";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = iphoneos;
@@ -936,7 +936,7 @@
 					"@executable_path/../../Frameworks",
 				);
 				MACOSX_DEPLOYMENT_TARGET = 11.0;
-				MARKETING_VERSION = 4.1.3;
+				MARKETING_VERSION = 4.1.4;
 				PRODUCT_BUNDLE_IDENTIFIER = "com.Quran.Elmallah.Islamic-Pillars.Islamic-Center-of-Irvine.ICOI1";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = iphoneos;
@@ -1112,7 +1112,7 @@
 				LD_RUNPATH_SEARCH_PATHS = "@executable_path/Frameworks";
 				"LD_RUNPATH_SEARCH_PATHS[sdk=macosx*]" = "@executable_path/../Frameworks";
 				MACOSX_DEPLOYMENT_TARGET = 11.0;
-				MARKETING_VERSION = 4.1.3;
+				MARKETING_VERSION = 4.1.4;
 				PRODUCT_BUNDLE_IDENTIFIER = "com.Quran.Elmallah.Islamic-Pillars.Islamic-Center-of-Irvine";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = iphoneos;
@@ -1158,7 +1158,7 @@
 				LD_RUNPATH_SEARCH_PATHS = "@executable_path/Frameworks";
 				"LD_RUNPATH_SEARCH_PATHS[sdk=macosx*]" = "@executable_path/../Frameworks";
 				MACOSX_DEPLOYMENT_TARGET = 11.0;
-				MARKETING_VERSION = 4.1.3;
+				MARKETING_VERSION = 4.1.4;
 				PRODUCT_BUNDLE_IDENTIFIER = "com.Quran.Elmallah.Islamic-Pillars.Islamic-Center-of-Irvine";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = iphoneos;
@@ -1193,7 +1193,7 @@
 					"@executable_path/Frameworks",
 				);
 				MACOSX_DEPLOYMENT_TARGET = 11.0;
-				MARKETING_VERSION = 4.1.3;
+				MARKETING_VERSION = 4.1.4;
 				PRODUCT_BUNDLE_IDENTIFIER = "com.Quran.Elmallah.Islamic-Pillars.Islamic-Center-of-Irvine.watchkitapp";
 				PRODUCT_NAME = ICOI;
 				SDKROOT = watchos;
@@ -1226,7 +1226,7 @@
 					"@executable_path/Frameworks",
 				);
 				MACOSX_DEPLOYMENT_TARGET = 11.0;
-				MARKETING_VERSION = 4.1.3;
+				MARKETING_VERSION = 4.1.4;
 				PRODUCT_BUNDLE_IDENTIFIER = "com.Quran.Elmallah.Islamic-Pillars.Islamic-Center-of-Irvine.watchkitapp";
 				PRODUCT_NAME = ICOI;
 				SDKROOT = watchos;
@@ -1259,7 +1259,7 @@
 					"@executable_path/../../../../Frameworks",
 				);
 				MACOSX_DEPLOYMENT_TARGET = 11.0;
-				MARKETING_VERSION = 4.1.3;
+				MARKETING_VERSION = 4.1.4;
 				PRODUCT_BUNDLE_IDENTIFIER = "com.Quran.Elmallah.Islamic-Pillars.Islamic-Center-of-Irvine.watchkitapp.ICOI2";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = watchos;
@@ -1291,7 +1291,7 @@
 					"@executable_path/../../../../Frameworks",
 				);
 				MACOSX_DEPLOYMENT_TARGET = 11.0;
-				MARKETING_VERSION = 4.1.3;
+				MARKETING_VERSION = 4.1.4;
 				PRODUCT_BUNDLE_IDENTIFIER = "com.Quran.Elmallah.Islamic-Pillars.Islamic-Center-of-Irvine.watchkitapp.ICOI2";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = watchos;

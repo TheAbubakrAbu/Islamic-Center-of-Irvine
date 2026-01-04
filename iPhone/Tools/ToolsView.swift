@@ -3,6 +3,113 @@ import SwiftUI
 import Photos
 #endif
 
+struct ToolsView: View {
+    @EnvironmentObject var settings: Settings
+    @EnvironmentObject var namesData: NamesViewModel
+            
+    var body: some View {
+        Section(header: Text("ISLAMIC RESOURCES")) {
+            NavigationLink(destination: ArabicView()) {
+                Label(
+                    title: { Text("Arabic Alphabet") },
+                    icon: {
+                        Image(systemName: "textformat.size.ar")
+                            .foregroundColor(settings.accentColor)
+                    }
+                )
+                .padding(.vertical, 4)
+                .accentColor(settings.accentColor)
+            }
+            
+            NavigationLink(destination: AdhkarView()) {
+                Label(
+                    title: { Text("Common Adhkar") },
+                    icon: {
+                        Image(systemName: "book.closed")
+                            .foregroundColor(settings.accentColor)
+                    }
+                )
+                .padding(.vertical, 4)
+                .accentColor(settings.accentColor)
+            }
+
+            NavigationLink(destination: DuaView()) {
+                Label(
+                    title: { Text("Common Duas") },
+                    icon: {
+                        Image(systemName: "text.book.closed")
+                            .foregroundColor(settings.accentColor)
+                    }
+                )
+                .padding(.vertical, 4)
+                .accentColor(settings.accentColor)
+            }
+
+            NavigationLink(destination: TasbihView()) {
+                Label(
+                    title: { Text("Tasbih Counter") },
+                    icon: {
+                        Image(systemName: "circles.hexagonpath.fill")
+                            .foregroundColor(settings.accentColor)
+                    }
+                )
+                .padding(.vertical, 4)
+                .accentColor(settings.accentColor)
+            }
+
+            NavigationLink(destination: NamesView()) {
+                Label(
+                    title: { Text("99 Names of Allah") },
+                    icon: {
+                        Image(systemName: "signature")
+                            .foregroundColor(settings.accentColor)
+                    }
+                )
+                .padding(.vertical, 4)
+                .accentColor(settings.accentColor)
+            }
+            
+            #if !os(watchOS)
+            NavigationLink(destination: DateView()) {
+                Label(
+                    title: { Text("Hijri Calendar Converter") },
+                    icon: {
+                        Image(systemName: "calendar")
+                            .foregroundColor(settings.accentColor)
+                    }
+                )
+                .padding(.vertical, 4)
+                .accentColor(settings.accentColor)
+            }
+            #endif
+
+            NavigationLink(destination: WallpaperView()) {
+                Label(
+                    title: { Text("Islamic Wallpapers") },
+                    icon: {
+                        Image(systemName: "photo.on.rectangle")
+                            .foregroundColor(settings.accentColor)
+                    }
+                )
+                .padding(.vertical, 4)
+                .accentColor(settings.accentColor)
+            }
+            
+            NavigationLink(destination: PillarsView()) {
+                Label(
+                    title: { Text("Islamic Pillars and Basics") },
+                    icon: {
+                        Image(systemName: "moon.stars")
+                            .foregroundColor(settings.accentColor)
+                    }
+                )
+                .padding(.vertical, 4)
+                .accentColor(settings.accentColor)
+            }
+        }
+    }
+}
+
 struct AdhkarRow: View {
     @EnvironmentObject var settings: Settings
     
@@ -769,4 +876,11 @@ private struct WallpaperCell: View {
                 #endif
         }
     }
+}
+
+#Preview {
+    IslamView()
+        .environmentObject(Settings.shared)
+        .environmentObject(QuranData.shared)
+        .environmentObject(QuranPlayer.shared)
 }

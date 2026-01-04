@@ -167,3 +167,8 @@ struct ICOIPrayerCountdown: View {
         }
     }
 }
+
+#Preview {
+    ICOIPrayerView()
+        .environmentObject(Settings.shared)
+}

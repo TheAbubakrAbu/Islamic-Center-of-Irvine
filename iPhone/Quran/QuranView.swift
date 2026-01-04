@@ -11,7 +11,6 @@ struct QuranView: View {
     
     @State private var verseHits: [VerseIndexEntry] = []
     @State private var hasMoreHits = true
-    @State private var showAyahSearch = false
     @State private var blockAyahSearchAfterZero = false
     @State private var zeroResultQueryLength = 0
     private let hitPageSize = 5
@@ -88,7 +87,45 @@ struct QuranView: View {
     }
      
     var body: some View {
-        content
+        Group {
+            #if os(iOS)
+            if #available(iOS 16.0, *) {
+                if useStackOnThisDevice {
+                    NavigationStack(path: $path) {
+                        content
+                            .navigationDestination(for: QuranRoute.self) { route in
+                                switch route {
+                                case let .ayahs(surahID, ayah):
+                                    if let s = quranData.quran.first(where: { $0.id == surahID }) {
+                                        AyahsView(surah: s, ayah: ayah)
+                                    } else {
+                                        AyahsView(surah: quranData.quran[0])
+                                    }
+                                }
+                            }
+                    }
+                } else {
+                    NavigationView {
+                        content
+                        detailFallback
+                    }
+                    .navigationViewStyle(.columns)
+                }
+            } else {
+                if UIDevice.current.userInterfaceIdiom == .pad {
+                    NavigationView {
+                        content
+                        detailFallback
+                    }
+                    .navigationViewStyle(.columns)
+                } else {
+                    NavigationView { content }
+                }
+            }
+            #else
+            NavigationView { content }
+            #endif
+        }
         .confirmationDialog(
             "Internet Connection Error",
             isPresented: $quranPlayer.showInternetAlert,
@@ -292,7 +329,11 @@ struct QuranView: View {
                                     SurahRow(surah: surah)
                                 }
                                 .id("surah_\(surah.id)")
-                                .onAppear { if surah.id == scrollToSurahID { scrollToSurahID = -1 } }
+                                .onAppear {
+                                    if surah.id == scrollToSurahID {
+                                        scrollToSurahID = -1
+                                    }
+                                }
                                 .rightSwipeActions(
                                     surahID: surah.id,
                                     surahName: surah.nameTransliteration,
@@ -492,41 +533,7 @@ struct QuranView: View {
                                 .multilineTextAlignment(.center)
                             }
                         }
-                        .onAppear {
-                            showAyahSearch = true
-                            let q = searchText.trimmingCharacters(in: .whitespacesAndNewlines)
-                            guard verseHits.isEmpty, !q.isEmpty else { return }
-
-                            if blockAyahSearchAfterZero && q.count > zeroResultQueryLength { return }
-
-                            let (first, more) = fetchHits(query: q, limit: hitPageSize, offset: 0)
-                            withAnimation {
-                                verseHits = first
-                                hasMoreHits = more
-                                if first.isEmpty {
-                                    blockAyahSearchAfterZero = true
-                                    zeroResultQueryLength = q.count
-                                } else {
-                                    blockAyahSearchAfterZero = false
-                                }
-                            }
-                        }
-                        .onDisappear {
-                            withAnimation {
-                                showAyahSearch = false
-                                blockAyahSearchAfterZero = false
-                            }
-                        }
                         .onChange(of: searchText) { txt in
-                            guard showAyahSearch else {
-                                withAnimation {
-                                    verseHits = []
-                                    hasMoreHits = false
-                                    blockAyahSearchAfterZero = false
-                                }
-                                return
-                            }
-
                             let q = txt.trimmingCharacters(in: .whitespacesAndNewlines)
 
                             guard !q.isEmpty else {

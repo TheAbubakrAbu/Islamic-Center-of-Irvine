@@ -31,26 +31,19 @@ struct ICOISettingsView: View {
                 }
                 #endif
 
-                Section(header: Text("QURAN")) {
+                Section(header: Text("AL-QURAN")) {
                     NavigationLink(destination:
-                        List {
-                            SettingsQuranView(showEdits: true).environmentObject(quranData)
-                        }
-                        .applyConditionalListStyle(defaultView: true)
-                        .navigationTitle("Quran Settings")
+                        SettingsQuranView(showEdits: true)
                     ) {
                         Label("Quran Settings", systemImage: "character.book.closed.ar")
                     }
+                    .accentColor(settings.accentColor)
                 }
                 
                 Section(header: Text("LAST UPDATED")) {
                     SyncButton(title: "Prayers:", lastUpdated: settings.prayersICOI?.day, syncAction: {
                         settings.fetchPrayerTimes(force: true)
                     })
-                    
-//                    SyncButton(title: "Events:", lastUpdated: settings.eventsICOI?.day, syncAction: {
-//                        settings.fetchEvents(force: true)
-//                    })
                     
                     SyncButton(title: "Businesses:", lastUpdated: settings.businessesICOI?.day, syncAction: {
                         settings.fetchBusinesses(force: true)

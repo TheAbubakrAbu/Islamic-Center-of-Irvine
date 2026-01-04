@@ -18,12 +18,12 @@ struct IslamicCenterofIrvineApp: App {
                 } else {
                     TabView {
                         ICOIPrayerView()
-                        
-                        //ICOIEventsView()
-                        
+                                                
                         ICOILinksView()
                         
-                        OtherView()
+                        QuranView()
+                        
+                        IslamView()
                         
                         ICOISettingsView()
                     }
@@ -41,7 +41,6 @@ struct IslamicCenterofIrvineApp: App {
             .onAppear {
                 withAnimation {
                     settings.fetchPrayerTimes()
-                    //settings.fetchEvents()
                     settings.fetchBusinesses()
                 }
             }

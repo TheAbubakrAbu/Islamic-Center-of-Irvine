@@ -1,4 +1,5 @@
 import SwiftUI
+import Foundation
 import os
 import WidgetKit
 import UserNotifications
@@ -38,25 +39,70 @@ final class Settings: ObservableObject {
             logger.debug("Failed to get today's ICOI prayer times")
             return
         }
-        
+
         let calendar = Calendar.current
         let now = Date()
-        let isFriday = calendar.component(.weekday, from: now) == 6
-        
-        var prayersICOIToday = todayPrayersICOI.prayers
-        
-        // On non-Fridays, remove the last two entries (Jumuah slots) efficiently and safely.
-        if !isFriday, prayersICOIToday.count >= 2 {
-            prayersICOIToday.removeLast(2)
-        }
-                
-        let currentICOI = prayersICOIToday.last(where: { $0.time <= now })
-        let nextICOI = prayersICOIToday.first(where: { $0.time > now })
 
-        if let next = nextICOI {
-            nextPrayerICOI = next
-        } else if let firstPrayerToday = prayersICOIToday.first,
-                  let firstPrayerTomorrow = calendar.date(byAdding: .day, value: 1, to: firstPrayerToday.time) {
+        // -------- Today list (remove Jumuah if not Friday TODAY) --------
+        var todayList = todayPrayersICOI.prayers
+        let isFridayToday = (calendar.component(.weekday, from: now) == 6)
+        if !isFridayToday, todayList.count >= 2 {
+            todayList.removeLast(2)
+        }
+
+        // Current + next within today
+        let currentToday = todayList.last(where: { $0.time <= now })
+        let nextToday = todayList.first(where: { $0.time > now })
+
+        // If we have a next prayer today, use it
+        if let nextToday {
+            nextPrayerICOI = nextToday
+            currentPrayerICOI = currentToday ?? todayList.last
+            return
+        }
+
+        // -------- Otherwise, try tomorrow cache (real data) --------
+        if let tmr = prayersICOITomorrow, !tmr.prayers.isEmpty {
+            // Ensure it's actually tomorrow (not stale)
+            if let expectedTomorrow = calendar.date(byAdding: .day, value: 1, to: todayPrayersICOI.day),
+               tmr.day.isSameDay(as: expectedTomorrow) {
+
+                var tmrList = tmr.prayers
+                let isFridayTmr = (calendar.component(.weekday, from: tmr.day) == 6)
+                if !isFridayTmr, tmrList.count >= 2 {
+                    tmrList.removeLast(2)
+                }
+
+                if let firstTomorrow = tmrList.first {
+                    nextPrayerICOI = firstTomorrow
+                    currentPrayerICOI = currentToday ?? todayList.last
+                    return
+                }
+            }
+        }
+
+        // -------- Otherwise, try day-after cache --------
+        if let da = prayersICOIDayAfterTomorrow, !da.prayers.isEmpty {
+            if let expectedDayAfter = calendar.date(byAdding: .day, value: 2, to: todayPrayersICOI.day),
+               da.day.isSameDay(as: expectedDayAfter) {
+
+                var daList = da.prayers
+                let isFridayDA = (calendar.component(.weekday, from: da.day) == 6)
+                if !isFridayDA, daList.count >= 2 {
+                    daList.removeLast(2)
+                }
+
+                if let firstDayAfter = daList.first {
+                    nextPrayerICOI = firstDayAfter
+                    currentPrayerICOI = currentToday ?? todayList.last
+                    return
+                }
+            }
+        }
+
+        // -------- Final fallback: old behavior (fake Fajr tomorrow) --------
+        if let firstPrayerToday = todayList.first,
+           let firstPrayerTomorrow = calendar.date(byAdding: .day, value: 1, to: firstPrayerToday.time) {
             nextPrayerICOI = Prayer(
                 nameArabic: "أذان الفجر",
                 nameTransliteration: "Fajr Adhan",
@@ -69,7 +115,7 @@ final class Settings: ObservableObject {
             )
         }
 
-        currentPrayerICOI = currentICOI ?? prayersICOIToday.last
+        currentPrayerICOI = currentToday ?? todayList.last
     }
     
     @inlinable
@@ -165,83 +211,388 @@ final class Settings: ObservableObject {
             self.hijriDateEnglish = hijriDateFormatterEnglish.string(from: refDate)
         }
     }
-    
+
     func getICOIPrayerTimes(completion: @escaping (Prayers?) -> Void) {
-        guard let url = URL(string: "https://timing.athanplus.com/masjid/widgets/embed?theme=3&masjid_id=6adJkrKk&color=7A0C05&labeljumuah1=Jumuah%201") else {
+        guard let url = URL(string: "https://themasjidapp.org/80220/prayers") else {
             logger.debug("Invalid URL")
             DispatchQueue.main.async { completion(nil) }
             return
         }
-        
+
         let task = URLSession.shared.dataTask(with: url) { data, _, error in
-            guard error == nil, let data = data, let html = String(data: data, encoding: .utf8) else {
+            guard error == nil,
+                  let data = data,
+                  let html = String(data: data, encoding: .utf8) else {
                 logger.debug("Failed to load ICOI prayer data.")
                 DispatchQueue.main.async { completion(nil) }
                 return
             }
-            
+
+            // Time parsing (e.g. "5:31AM")
             struct Cache {
-                static let formatter: DateFormatter = {
+                static let timeFormatter: DateFormatter = {
                     let f = DateFormatter()
                     f.locale = Locale(identifier: "en_US_POSIX")
-                    f.dateFormat = "h:mm a"
+                    f.dateFormat = "h:mma"
                     return f
                 }()
             }
-            let formatter = Cache.formatter
-            
-            var prayers: [Prayer] = []
-            prayers.reserveCapacity(16)
-            
-            let weekday = Calendar.current.component(.weekday, from: Date())
-            let isFriday = weekday == 6
-            
+            let timeFormatter = Cache.timeFormatter
+
+            // =========================================================
+            // Helpers
+            // =========================================================
+            func isoNow(_ date: Date, in tz: TimeZone) -> String {
+                let f = ISO8601DateFormatter()
+                f.timeZone = tz
+                f.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+                return f.string(from: date)
+            }
+
+            func normalizeTimeText(_ raw: String) -> String {
+                raw
+                    .replacingOccurrences(of: "<[^>]+>", with: "", options: .regularExpression)
+                    .trimmingCharacters(in: .whitespacesAndNewlines)
+                    .uppercased()
+                    .replacingOccurrences(of: " ", with: "")
+            }
+
+            func isPlaceholderTime(_ raw: String) -> Bool {
+                let cleaned = normalizeTimeText(raw)
+                return cleaned.isEmpty || cleaned == "—" || cleaned == "-" || cleaned == "NULL" || cleaned == "NIL"
+            }
+
+            /// Backfill lookup for sparse iqamas (and safe for adhan too).
+            func backfillTimeString(
+                table: [String: Any]?,
+                startKey: Int,
+                field: String,
+                maxLookback: Int,
+                label: String
+            ) -> (value: String?, foundKey: Int?) {
+                guard let table else { return (nil, nil) }
+
+                for delta in 0...maxLookback {
+                    let k = startKey - delta
+                    guard k >= 1 else { break }
+
+                    guard let dayDict = table[String(k)] as? [String: Any] else { continue }
+                    if let s = dayDict[field] as? String, !isPlaceholderTime(s) {
+                        if delta == 0 {
+                            logger.debug("✅ \(label) \(field) found on key=\(k): \(normalizeTimeText(s))")
+                        } else {
+                            logger.debug("↩️ \(label) \(field) missing on key=\(startKey), backfilled from key=\(k): \(normalizeTimeText(s))")
+                        }
+                        return (s, k)
+                    }
+                }
+
+                logger.debug("❌ \(label) \(field) not found for key=\(startKey) within lookback=\(maxLookback)")
+                return (nil, nil)
+            }
+
+            /// Combine a time string like "5:31AM" into a Date on `baseDay` (in masjid tz calendar).
+            func createPrayerDate(from timeText: String, calendar: Calendar, baseDay: Date) -> Date? {
+                let cleaned = normalizeTimeText(timeText)
+                if isPlaceholderTime(cleaned) { return nil }
+
+                guard let time = timeFormatter.date(from: cleaned) else { return nil }
+
+                return calendar.date(
+                    bySettingHour: calendar.component(.hour, from: time),
+                    minute: calendar.component(.minute, from: time),
+                    second: 0,
+                    of: baseDay
+                )
+            }
+
+            /// Always returns: Fajr pair, 2x Sunrise, Dhuhr pair, Asr pair, Maghrib pair, Isha pair,
+            /// and adds 2x Jumuah at the end on non-Fridays (based on THAT day’s weekday).
+            func buildDayPrayers(
+                targetDate: Date,
+                dayKeyInt: Int,
+                calendar: Calendar,
+                imported: [String: Any]?,
+                iqamas: [String: Any]?,
+                events: [[String: Any]]?
+            ) -> [Prayer] {
+                let baseDay = calendar.startOfDay(for: targetDate)
+                let weekday = calendar.component(.weekday, from: targetDate)
+                let isFridayForThatDay = (weekday == 6)
+
+                logger.debug("---- BuildDay ---- date=\(isoNow(targetDate, in: calendar.timeZone)) key=\(dayKeyInt) isFriday=\(isFridayForThatDay)")
+
+                var out: [Prayer] = []
+                out.reserveCapacity(16)
+
+                // Adhan fields (imported): fajr, sunrise, zuhr, asr, maghrib, isha
+                let fajrAdhanS    = backfillTimeString(table: imported, startKey: dayKeyInt, field: "fajr",    maxLookback: 30, label: "Adhan").value
+                let sunriseS      = backfillTimeString(table: imported, startKey: dayKeyInt, field: "sunrise", maxLookback: 30, label: "Adhan").value
+                let zuhrAdhanS    = backfillTimeString(table: imported, startKey: dayKeyInt, field: "zuhr",    maxLookback: 30, label: "Adhan").value
+                let asrAdhanS     = backfillTimeString(table: imported, startKey: dayKeyInt, field: "asr",     maxLookback: 30, label: "Adhan").value
+                let maghribAdhanS = backfillTimeString(table: imported, startKey: dayKeyInt, field: "maghrib", maxLookback: 30, label: "Adhan").value
+                let ishaAdhanS    = backfillTimeString(table: imported, startKey: dayKeyInt, field: "isha",    maxLookback: 30, label: "Adhan").value
+
+                // Iqamah fields (iqamas): fajr, dhuhr, asr, maghrib, isha
+                let fajrIqamaS    = backfillTimeString(table: iqamas, startKey: dayKeyInt, field: "fajr",    maxLookback: 60, label: "Iqama").value
+                let dhuhrIqamaS   = backfillTimeString(table: iqamas, startKey: dayKeyInt, field: "dhuhr",   maxLookback: 60, label: "Iqama").value
+                let asrIqamaS     = backfillTimeString(table: iqamas, startKey: dayKeyInt, field: "asr",     maxLookback: 60, label: "Iqama").value
+                let maghribIqamaS = backfillTimeString(table: iqamas, startKey: dayKeyInt, field: "maghrib", maxLookback: 60, label: "Iqama").value
+                let ishaIqamaS    = backfillTimeString(table: iqamas, startKey: dayKeyInt, field: "isha",    maxLookback: 60, label: "Iqama").value
+
+                // Fajr
+                if let fajrAdhanS, let fajrIqamaS,
+                   let adhanTime = createPrayerDate(from: fajrAdhanS, calendar: calendar, baseDay: baseDay),
+                   let iqamahTime = createPrayerDate(from: fajrIqamaS, calendar: calendar, baseDay: baseDay) {
+                    self.appendPrayer(for: "Fajr", adhanTime: adhanTime, iqamahTime: iqamahTime, into: &out)
+                } else {
+                    logger.debug("⚠️ Missing Fajr pair: adhan=\(fajrAdhanS ?? "nil") iqama=\(fajrIqamaS ?? "nil")")
+                }
+
+                // Sunrise x2
+                if let sunriseS,
+                   let sunriseTime = createPrayerDate(from: sunriseS, calendar: calendar, baseDay: baseDay) {
+                    out.append(Prayer(nameArabic: "الشروق", nameTransliteration: "Shurooq", nameEnglish: "Sunrise",
+                                      time: sunriseTime, image: "sunrise.fill", rakah: 0, sunnahBefore: 0, sunnahAfter: 0))
+                    out.append(Prayer(nameArabic: "الشروق", nameTransliteration: "Shurooq", nameEnglish: "Sunrise",
+                                      time: sunriseTime, image: "sunrise.fill", rakah: 0, sunnahBefore: 0, sunnahAfter: 0))
+                } else {
+                    logger.debug("⚠️ Missing Sunrise: \(sunriseS ?? "nil")")
+                }
+
+                // Dhuhr (adhan key is zuhr)
+                if let zuhrAdhanS, let dhuhrIqamaS,
+                   let adhanTime = createPrayerDate(from: zuhrAdhanS, calendar: calendar, baseDay: baseDay),
+                   let iqamahTime = createPrayerDate(from: dhuhrIqamaS, calendar: calendar, baseDay: baseDay) {
+                    self.appendPrayer(for: "Dhuhr", adhanTime: adhanTime, iqamahTime: iqamahTime, into: &out)
+                } else {
+                    logger.debug("⚠️ Missing Dhuhr pair: adhan=\(zuhrAdhanS ?? "nil") iqama=\(dhuhrIqamaS ?? "nil")")
+                }
+
+                // Asr
+                if let asrAdhanS, let asrIqamaS,
+                   let adhanTime = createPrayerDate(from: asrAdhanS, calendar: calendar, baseDay: baseDay),
+                   let iqamahTime = createPrayerDate(from: asrIqamaS, calendar: calendar, baseDay: baseDay) {
+                    self.appendPrayer(for: "Asr", adhanTime: adhanTime, iqamahTime: iqamahTime, into: &out)
+                } else {
+                    logger.debug("⚠️ Missing Asr pair: adhan=\(asrAdhanS ?? "nil") iqama=\(asrIqamaS ?? "nil")")
+                }
+
+                // Maghrib
+                if let maghribAdhanS, let maghribIqamaS,
+                   let adhanTime = createPrayerDate(from: maghribAdhanS, calendar: calendar, baseDay: baseDay),
+                   let iqamahTime = createPrayerDate(from: maghribIqamaS, calendar: calendar, baseDay: baseDay) {
+                    self.appendPrayer(for: "Maghrib", adhanTime: adhanTime, iqamahTime: iqamahTime, into: &out)
+                } else {
+                    logger.debug("⚠️ Missing Maghrib pair: adhan=\(maghribAdhanS ?? "nil") iqama=\(maghribIqamaS ?? "nil")")
+                }
+
+                // Isha
+                if let ishaAdhanS, let ishaIqamaS,
+                   let adhanTime = createPrayerDate(from: ishaAdhanS, calendar: calendar, baseDay: baseDay),
+                   let iqamahTime = createPrayerDate(from: ishaIqamaS, calendar: calendar, baseDay: baseDay) {
+                    self.appendPrayer(for: "Isha", adhanTime: adhanTime, iqamahTime: iqamahTime, into: &out)
+                } else {
+                    logger.debug("⚠️ Missing Isha pair: adhan=\(ishaAdhanS ?? "nil") iqama=\(ishaIqamaS ?? "nil")")
+                }
+
+                // Jumuah events (same behavior)
+                if let events = events {
+                    let jumuahEvents = events
+                        .filter { ($0["isJuma"] as? Bool) == true }
+                        .sorted { ($0["order"] as? Int ?? 0) < ($1["order"] as? Int ?? 0) }
+
+                    for (index, e) in jumuahEvents.enumerated() {
+                        let timeDesc = (e["timeDesc"] as? String ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
+                        if let t = createPrayerDate(from: timeDesc, calendar: calendar, baseDay: baseDay) {
+                            out.append(
+                                Prayer(
+                                    nameArabic: index == 0 ? "الجُمُعَة الأُوَل" : "الجُمُعَة الثَانِي",
+                                    nameTransliteration: "\(index == 0 ? "First" : "Second") Jumuah",
+                                    nameEnglish: "\(index == 0 ? "First" : "Second") Friday",
+                                    time: t,
+                                    image: "sun.max.fill",
+                                    rakah: 2,
+                                    sunnahBefore: 0,
+                                    sunnahAfter: 4
+                                )
+                            )
+                        }
+                    }
+                }
+
+                // On NON-Fridays for that day, move Jumuah to end (your exact existing style)
+                if !isFridayForThatDay {
+                    let jumuahPrayers = out.filter { $0.nameTransliteration.contains("Jumuah") }
+                    out.removeAll { $0.nameTransliteration.contains("Jumuah") }
+                    out.append(contentsOf: jumuahPrayers)
+                }
+
+                // Final sanity logs
+                let sunriseCount = out.filter { $0.nameEnglish == "Sunrise" }.count
+                logger.debug("BuildDay result count=\(out.count) sunriseCount=\(sunriseCount)")
+
+                return out
+            }
+
+            // =========================================================
+            // Parse & build (prefer NEXT_DATA)
+            // =========================================================
             do {
                 let document = try SwiftSoup.parse(html)
-                
-                let rows = try document.select("table.full-table-sec tr.no-border").array()
-                let todayRows = Array(rows.prefix(6))
-                
+
+                if let nextDataEl = try document.select("script#__NEXT_DATA__").first() {
+                    let nextDataString = try nextDataEl.html()
+
+                    if let nextData = nextDataString.data(using: .utf8),
+                       let json = try JSONSerialization.jsonObject(with: nextData) as? [String: Any] {
+
+                        let props = json["props"] as? [String: Any]
+                        let pageProps = props?["pageProps"] as? [String: Any]
+                        let masjid = pageProps?["masjid"] as? [String: Any]
+
+                        let tzID = masjid?["timezone"] as? String ?? "America/Los_Angeles"
+                        let tz = TimeZone(identifier: tzID) ?? .current
+
+                        var calendar = Calendar(identifier: .gregorian)
+                        calendar.timeZone = tz
+
+                        let now = Date()
+
+                        guard let dayOfYearToday = calendar.ordinality(of: .day, in: .year, for: now) else {
+                            throw NSError(domain: "ICOI", code: 1, userInfo: [NSLocalizedDescriptionKey: "Failed to compute dayOfYear"])
+                        }
+
+                        // Tables
+                        let azanParams = masjid?["azanParams"] as? [String: Any]
+                        let imported = (azanParams?["imported"] as? [String: Any])
+                        let iqamas = (masjid?["iqamas"] as? [String: Any])
+                        let events = (masjid?["events"] as? [[String: Any]])
+
+                        logger.debug("========== ICOI NEXT_DATA DEBUG ==========")
+                        logger.debug("Masjid timezone: \(tzID)")
+                        logger.debug("Now (masjid tz): \(isoNow(now, in: tz))")
+                        logger.debug("Computed dayOfYear key today: \(dayOfYearToday)")
+                        logger.debug("Imported table present? \(imported != nil)")
+                        logger.debug("Iqamas table present? \(iqamas != nil)")
+                        logger.debug("Events present? \(events != nil)")
+                        logger.debug("=========================================")
+
+                        if imported == nil {
+                            logger.debug("❌ NEXT_DATA: imported table missing. Falling back to HTML.")
+                        } else {
+                            // Build 3 days
+                            let todayDate = now
+                            let tomorrowDate = calendar.date(byAdding: .day, value: 1, to: todayDate) ?? todayDate.addingTimeInterval(86400)
+                            let dayAfterDate = calendar.date(byAdding: .day, value: 2, to: todayDate) ?? todayDate.addingTimeInterval(86400 * 2)
+
+                            let keyToday = dayOfYearToday
+                            let keyTomorrow = calendar.ordinality(of: .day, in: .year, for: tomorrowDate) ?? (keyToday + 1)
+                            let keyDayAfter = calendar.ordinality(of: .day, in: .year, for: dayAfterDate) ?? (keyToday + 2)
+
+                            logger.debug("📅 Building keys: today=\(keyToday) tomorrow=\(keyTomorrow) dayAfter=\(keyDayAfter)")
+
+                            let prayersToday = buildDayPrayers(
+                                targetDate: todayDate,
+                                dayKeyInt: keyToday,
+                                calendar: calendar,
+                                imported: imported,
+                                iqamas: iqamas,
+                                events: events
+                            )
+
+                            let prayersTomorrow = buildDayPrayers(
+                                targetDate: tomorrowDate,
+                                dayKeyInt: keyTomorrow,
+                                calendar: calendar,
+                                imported: imported,
+                                iqamas: iqamas,
+                                events: events
+                            )
+
+                            let prayersDayAfter = buildDayPrayers(
+                                targetDate: dayAfterDate,
+                                dayKeyInt: keyDayAfter,
+                                calendar: calendar,
+                                imported: imported,
+                                iqamas: iqamas,
+                                events: events
+                            )
+
+                            // Completeness check (today must be good or we fallback)
+                            let englishNames = prayersToday.map(\.nameEnglish)
+                            let hasCore =
+                                englishNames.contains("Dawn") &&
+                                englishNames.contains("Noon") &&
+                                englishNames.contains("Afternoon") &&
+                                englishNames.contains("Sunset") &&
+                                englishNames.contains("Night")
+
+                            let sunriseCount = prayersToday.filter { $0.nameEnglish == "Sunrise" }.count
+                            let hasSunriseTwice = (sunriseCount >= 2)
+
+                            logger.debug("NEXT_DATA today count=\(prayersToday.count) hasCore=\(hasCore) sunriseCount=\(sunriseCount)")
+
+                            if hasCore && hasSunriseTwice {
+                                logger.debug("✅ Getting ICOI prayer times (NEXT_DATA + backfilled iqamas) + next 2 days")
+
+                                DispatchQueue.main.async {
+                                    // A) Two variables for each next day (same Prayers style)
+                                    self.prayersICOITomorrow = Prayers(day: tomorrowDate, prayers: prayersTomorrow, setNotification: false)
+                                    self.prayersICOIDayAfterTomorrow = Prayers(day: dayAfterDate, prayers: prayersDayAfter, setNotification: false)
+
+                                    // Today (original completion)
+                                    completion(Prayers(day: todayDate, prayers: prayersToday, setNotification: false))
+                                }
+                                return
+                            } else {
+                                logger.debug("⚠️ NEXT_DATA today incomplete after backfill. Falling back to HTML.")
+                            }
+                        }
+                    }
+                }
+
+                // =========================================================
+                // HTML fallback (kept simple: today only)
+                // =========================================================
+                var prayers: [Prayer] = []
+                prayers.reserveCapacity(16)
+
+                let rows = try document.select("tbody tr").array()
+
                 let calendar = Calendar.current
                 let currentDate = Date()
-                
-                let jumuahList = try document.select("ul.testing-sec li").array()
-                let firstTwoJumuahs = Array(jumuahList.prefix(2))
-                
-                var jumuahTimes: [Date] = []
-                jumuahTimes.reserveCapacity(2)
-                
-                for row in todayRows {
-                    let name = try row.select("td").first()?.text()
-                    let adhanTimeText = try row.select("td.one-span span").text()
-                    let iqamahTimeText = try row.select("td b").text()
-                    let sunriseTimeText = try row.select("td.cnter-jummah span").text()
-                    
-                    if let name = name,
-                       let adhanTime = formatter.date(from: adhanTimeText),
-                       let iqamahTime = formatter.date(from: iqamahTimeText) {
-                        
-                        if isFriday && name == "Dhuhr" {
-                            for li in firstTwoJumuahs {
-                                let timeText = try li.select("b").first()?.text() ?? ""
-                                if let jumuahTime = formatter.date(from: timeText.trimmingCharacters(in: .whitespacesAndNewlines)) {
-                                    let jumuahDate = calendar.date(
-                                        bySettingHour: calendar.component(.hour, from: jumuahTime),
-                                        minute: calendar.component(.minute, from: jumuahTime),
-                                        second: 0,
-                                        of: currentDate
-                                    ) ?? currentDate
-                                    jumuahTimes.append(jumuahDate)
-                                }
-                            }
-                            
-                            for (index, jumuahTime) in jumuahTimes.enumerated() {
+                let weekday = Calendar.current.component(.weekday, from: currentDate)
+                let isFriday = weekday == 6
+
+                // Use device calendar for fallback (matches your prior behavior)
+                for row in rows {
+                    let cells = try row.select("td").array()
+                    guard cells.count >= 2 else { continue }
+
+                    let nameCell = try cells[0].text().trimmingCharacters(in: .whitespacesAndNewlines)
+
+                    if nameCell.lowercased().contains("jumuah") {
+                        let timesText = try cells[1].text()
+                        let times = timesText.split(separator: ",").map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
+
+                        for (index, timeStr) in times.enumerated() {
+                            let cleaned = normalizeTimeText(String(timeStr))
+                            if isPlaceholderTime(cleaned) { continue }
+                            if let time = timeFormatter.date(from: cleaned) {
+                                let t = calendar.date(
+                                    bySettingHour: calendar.component(.hour, from: time),
+                                    minute: calendar.component(.minute, from: time),
+                                    second: 0,
+                                    of: currentDate
+                                ) ?? currentDate
+
                                 prayers.append(
                                     Prayer(
-                                        nameArabic: "\(index + 1 == 1 ? "الجُمُعَة الأُوَل" : "الجُمُعَة الثَانِي")",
-                                        nameTransliteration: "\(index + 1 == 1 ? "First" : "Second") Jumuah",
-                                        nameEnglish: "\(index + 1 == 1 ? "First" : "Second") Friday",
-                                        time: jumuahTime,
+                                        nameArabic: index == 0 ? "الجُمُعَة الأُوَل" : "الجُمُعَة الثَانِي",
+                                        nameTransliteration: "\(index == 0 ? "First" : "Second") Jumuah",
+                                        nameEnglish: "\(index == 0 ? "First" : "Second") Friday",
+                                        time: t,
                                         image: "sun.max.fill",
                                         rakah: 2,
                                         sunnahBefore: 0,
@@ -249,120 +600,104 @@ final class Settings: ObservableObject {
                                     )
                                 )
                             }
-                        } else {
-                            let adhanDate = calendar.date(
-                                bySettingHour: calendar.component(.hour, from: adhanTime),
-                                minute: calendar.component(.minute, from: adhanTime),
-                                second: 0,
-                                of: currentDate
-                            ) ?? currentDate
-                            
-                            let iqamahDate = calendar.date(
-                                bySettingHour: calendar.component(.hour, from: iqamahTime),
-                                minute: calendar.component(.minute, from: iqamahTime),
-                                second: 0,
-                                of: currentDate
-                            ) ?? currentDate
-                            
-                            self.appendPrayer(for: name, adhanTime: adhanDate, iqamahTime: iqamahDate, into: &prayers)
                         }
-                    } else if let sunriseDate = formatter.date(from: sunriseTimeText) {
-                        let sunriseDateComponent = calendar.date(
-                            bySettingHour: calendar.component(.hour, from: sunriseDate),
-                            minute: calendar.component(.minute, from: sunriseDate),
+                        continue
+                    }
+
+                    guard cells.count >= 3 else { continue }
+
+                    let beginsText = try cells[1].text()
+                    let iqamaText = try cells[2].text()
+
+                    if nameCell.lowercased().contains("sunrise") {
+                        let cleaned = normalizeTimeText(beginsText)
+                        if !isPlaceholderTime(cleaned), let time = timeFormatter.date(from: cleaned) {
+                            let sunriseTime = calendar.date(
+                                bySettingHour: calendar.component(.hour, from: time),
+                                minute: calendar.component(.minute, from: time),
+                                second: 0,
+                                of: currentDate
+                            ) ?? currentDate
+
+                            prayers.append(Prayer(nameArabic: "الشروق", nameTransliteration: "Shurooq", nameEnglish: "Sunrise",
+                                                  time: sunriseTime, image: "sunrise.fill", rakah: 0, sunnahBefore: 0, sunnahAfter: 0))
+                            prayers.append(Prayer(nameArabic: "الشروق", nameTransliteration: "Shurooq", nameEnglish: "Sunrise",
+                                                  time: sunriseTime, image: "sunrise.fill", rakah: 0, sunnahBefore: 0, sunnahAfter: 0))
+                        }
+                        continue
+                    }
+
+                    if iqamaText != "—" {
+                        let beginsClean = normalizeTimeText(beginsText)
+                        let iqamaClean = normalizeTimeText(iqamaText)
+
+                        guard !isPlaceholderTime(beginsClean), !isPlaceholderTime(iqamaClean) else { continue }
+                        guard let adhanTime = timeFormatter.date(from: beginsClean),
+                              let iqamahTime = timeFormatter.date(from: iqamaClean) else { continue }
+
+                        let adhanDate = calendar.date(
+                            bySettingHour: calendar.component(.hour, from: adhanTime),
+                            minute: calendar.component(.minute, from: adhanTime),
                             second: 0,
                             of: currentDate
                         ) ?? currentDate
-                        prayers.append(
-                            Prayer(
-                                nameArabic: "الشروق",
-                                nameTransliteration: "Shurooq",
-                                nameEnglish: "Sunrise",
-                                time: sunriseDateComponent,
-                                image: "sunrise.fill",
-                                rakah: 0,
-                                sunnahBefore: 0,
-                                sunnahAfter: 0
-                            )
-                        )
-                        prayers.append(
-                            Prayer(
-                                nameArabic: "الشروق",
-                                nameTransliteration: "Shurooq",
-                                nameEnglish: "Sunrise",
-                                time: sunriseDateComponent,
-                                image: "sunrise.fill",
-                                rakah: 0,
-                                sunnahBefore: 0,
-                                sunnahAfter: 0
-                            )
-                        )
+
+                        let iqamaDate = calendar.date(
+                            bySettingHour: calendar.component(.hour, from: iqamahTime),
+                            minute: calendar.component(.minute, from: iqamahTime),
+                            second: 0,
+                            of: currentDate
+                        ) ?? currentDate
+
+                        self.appendPrayer(for: nameCell, adhanTime: adhanDate, iqamahTime: iqamaDate, into: &prayers)
                     }
                 }
-                
+
                 if !isFriday {
-                    for li in firstTwoJumuahs {
-                        let timeText = try li.select("b").first()?.text() ?? ""
-                        if let jumuahTime = formatter.date(from: timeText.trimmingCharacters(in: .whitespacesAndNewlines)) {
-                            let jumuahDate = calendar.date(
-                                bySettingHour: calendar.component(.hour, from: jumuahTime),
-                                minute: calendar.component(.minute, from: jumuahTime),
-                                second: 0,
-                                of: currentDate
-                            ) ?? currentDate
-                            jumuahTimes.append(jumuahDate)
-                        }
-                    }
-                    
-                    for (index, jumuahTime) in jumuahTimes.enumerated() {
-                        prayers.append(
-                            Prayer(
-                                nameArabic: "\(index + 1 == 1 ? "الجُمُعَة الأُوَل" : "الجُمُعَة الثَانِي")",
-                                nameTransliteration: "\(index + 1 == 1 ? "First" : "Second") Jumuah",
-                                nameEnglish: "\(index + 1 == 1 ? "First" : "Second") Friday",
-                                time: jumuahTime,
-                                image: "sun.max.fill",
-                                rakah: 2,
-                                sunnahBefore: 0,
-                                sunnahAfter: 4
-                            )
-                        )
-                    }
+                    let jumuahPrayers = prayers.filter { $0.nameTransliteration.contains("Jumuah") }
+                    prayers.removeAll { $0.nameTransliteration.contains("Jumuah") }
+                    prayers.append(contentsOf: jumuahPrayers)
                 }
-                
-                logger.debug("Getting ICOI prayer times")
+
+                logger.debug("Getting ICOI prayer times (HTML fallback)")
+
                 DispatchQueue.main.async {
-                    let newPrayers = Prayers(day: currentDate, prayers: prayers, setNotification: false)
-                    completion(newPrayers)
+                    // If we had to fallback, clear the next-day cached variables (so you don’t show stale next days)
+                    self.prayersICOITomorrow = nil
+                    self.prayersICOIDayAfterTomorrow = nil
+
+                    completion(Prayers(day: currentDate, prayers: prayers, setNotification: false))
                 }
             } catch {
                 logger.debug("Error parsing HTML: \(error)")
                 DispatchQueue.main.async { completion(nil) }
             }
         }
-        
+
         task.resume()
     }
 
     func appendPrayer(for name: String, adhanTime: Date, iqamahTime: Date, into prayers: inout [Prayer]) {
-        switch name {
-        case "Fajr":
+        let prayerName = name.capitalized
+        
+        switch prayerName {
+        case let n where n.contains("Fajr"):
             prayers.append(Prayer(nameArabic: "أذان الفجر", nameTransliteration: "Fajr Adhan", nameEnglish: "Dawn", time: adhanTime, image: "sunrise", rakah: 2, sunnahBefore: 2, sunnahAfter: 0))
             prayers.append(Prayer(nameArabic: "إقامة الفجر", nameTransliteration: "Fajr Iqamah", nameEnglish: "Dawn", time: iqamahTime, image: "sunrise", rakah: 2, sunnahBefore: 2, sunnahAfter: 0))
             
-        case "Dhuhr":
+        case let n where n.contains("Dhuhr"):
             prayers.append(Prayer(nameArabic: "أذان الظهر", nameTransliteration: "Dhuhr Adhan", nameEnglish: "Noon", time: adhanTime, image: "sun.max", rakah: 4, sunnahBefore: 4, sunnahAfter: 2))
             prayers.append(Prayer(nameArabic: "إقامة الظهر", nameTransliteration: "Dhuhr Iqamah", nameEnglish: "Noon", time: iqamahTime, image: "sun.max", rakah: 4, sunnahBefore: 4, sunnahAfter: 2))
             
-        case "Asr":
+        case let n where n.contains("Asr"):
             prayers.append(Prayer(nameArabic: "أذان العصر", nameTransliteration: "Asr Adhan", nameEnglish: "Afternoon", time: adhanTime, image: "sun.min", rakah: 4, sunnahBefore: 0, sunnahAfter: 0))
             prayers.append(Prayer(nameArabic: "إقامة العصر", nameTransliteration: "Asr Iqamah", nameEnglish: "Afternoon", time: iqamahTime, image: "sun.min", rakah: 4, sunnahBefore: 0, sunnahAfter: 0))
             
-        case "Maghrib":
+        case let n where n.contains("Maghrib"):
             prayers.append(Prayer(nameArabic: "أذان المغرب", nameTransliteration: "Maghrib Adhan", nameEnglish: "Sunset", time: adhanTime, image: "sunset", rakah: 3, sunnahBefore: 0, sunnahAfter: 2))
             prayers.append(Prayer(nameArabic: "إقامة المغرب", nameTransliteration: "Maghrib Iqamah", nameEnglish: "Sunset", time: iqamahTime, image: "sunset", rakah: 3, sunnahBefore: 0, sunnahAfter: 2))
             
-        case "Isha":
+        case let n where n.contains("Isha"):
             prayers.append(Prayer(nameArabic: "أذان العشاء", nameTransliteration: "Isha Adhan", nameEnglish: "Night", time: adhanTime, image: "moon", rakah: 4, sunnahBefore: 0, sunnahAfter: 2))
             prayers.append(Prayer(nameArabic: "إقامة العشاء", nameTransliteration: "Isha Iqamah", nameEnglish: "Night", time: iqamahTime, image: "moon", rakah: 4, sunnahBefore: 0, sunnahAfter: 2))
             
@@ -370,7 +705,7 @@ final class Settings: ObservableObject {
             logger.debug("Unknown prayer name: \(name)")
         }
     }
-
+    
     func fetchPrayerTimes(force: Bool = false, notification: Bool = false, completion: (() -> Void)? = nil) {
         var hasUpdatedDates = false
         
@@ -685,6 +1020,9 @@ final class Settings: ObservableObject {
         let cal = Calendar.current
         let now = Date()
 
+        // ---------------------------------------------------------
+        // Keep your existing refresh reminders (unchanged)
+        // ---------------------------------------------------------
         if let dhuhrAdhan = prayers.first(where: { $0.nameTransliteration == "Dhuhr Adhan" }) {
             if let preDhuhr = cal.date(byAdding: .minute, value: -30, to: dhuhrAdhan.time), preDhuhr > now {
                 let comps = cal.dateComponents([.year, .month, .day, .hour, .minute], from: preDhuhr)
@@ -710,11 +1048,11 @@ final class Settings: ObservableObject {
         if let shurooq = prayers.first(where: { $0.nameTransliteration == "Shurooq" }),
            let dhuhrAdhan = prayers.first(where: { $0.nameTransliteration == "Dhuhr Adhan" }) {
 
-            for d in 1...2 {
+            for d in 2...3 {
                 let start = shiftDays(shurooq.time, by: d)
                 let end   = shiftDays(dhuhrAdhan.time, by: d)
                 guard end > start else { continue }
-                
+
                 let midpoint = Date(timeIntervalSince1970: (start.timeIntervalSince1970 + end.timeIntervalSince1970) / 2.0)
                 if midpoint > now {
                     let comps = cal.dateComponents([.year, .month, .day, .hour, .minute], from: midpoint)
@@ -734,6 +1072,27 @@ final class Settings: ObservableObject {
             }
         }
 
+        // ---------------------------------------------------------
+        // CHANGE: Only do "tomorrow Fajr/Shurooq clone" fallback
+        // if we do NOT already have *VALID* cached tomorrow/day-after.
+        // ---------------------------------------------------------
+        func hasValidCachedDay(_ obj: Prayers?, expectedOffsetDays: Int) -> Bool {
+            guard let obj, !obj.prayers.isEmpty else { return false }
+            guard let base = prayersICOI?.day else { return false }
+            guard let expected = cal.date(byAdding: .day, value: expectedOffsetDays, to: base) else { return false }
+            return obj.day.isSameDay(as: expected)
+        }
+
+        let hasTomorrow = hasValidCachedDay(prayersICOITomorrow, expectedOffsetDays: 1)
+        let hasDayAfter = hasValidCachedDay(prayersICOIDayAfterTomorrow, expectedOffsetDays: 2)
+
+        guard !(hasTomorrow || hasDayAfter) else {
+            return
+        }
+
+        // ---------------------------------------------------------
+        // Your existing fallback cloning (unchanged), now gated
+        // ---------------------------------------------------------
         let fajrAdhanToday   = prayers.first(where: { $0.nameTransliteration == "Fajr Adhan" })
         let fajrIqamahToday  = prayers.first(where: { $0.nameTransliteration == "Fajr Iqamah" })
         let shurooqToday     = prayers.first(where: { $0.nameTransliteration == "Shurooq" })
@@ -764,7 +1123,7 @@ final class Settings: ObservableObject {
             }
             scheduleNotification(for: fajrIqamahTomorrow, preNotificationTime: nil)
         }
-        
+
         if let shurooqToday, sunriseTime {
             let shurooqTomorrow = cloneForTomorrow(from: shurooqToday, translit: "Shurooq")
             scheduleNotification(for: shurooqTomorrow, preNotificationTime: nil)
@@ -774,87 +1133,126 @@ final class Settings: ObservableObject {
     func schedulePrayerTimeNotifications() {
         #if !os(watchOS)
         guard let prayerObject = prayersICOI else { return }
-        
+
         let center = UNUserNotificationCenter.current()
         center.removeAllPendingNotificationRequests()
         center.removeAllDeliveredNotifications()
-        
+
         let calendar = Calendar.current
-        let isFriday = (calendar.component(.weekday, from: Date()) == 6)
-        
-        var prayerTimes = prayerObject.prayers
-        if !isFriday, prayerTimes.count >= 2 {
-            // Remove Jumuah slots on non-Fridays.
-            prayerTimes.removeLast(2)
-        }
-        
-        for prayerTime in prayerTimes {
-            let notification: Bool
-            var preNotificationTime: Int?
-            
-            switch prayerTime.nameTransliteration {
-            case "Fajr Adhan":
-                notification = adhanFajr
-            case "Fajr Iqamah":
-                notification = iqamahFajr
-                preNotificationTime = iqamahFajrPreNotification
-                if khateraFajr {
-                    scheduleKhateraNotification(for: prayerTime, minutesAfter: 30, name: "Fajr Khatera")
+
+        // Schedules one day's prayers
+        func scheduleDay(_ prayersObj: Prayers) {
+            var list = prayersObj.prayers
+
+            // Friday logic based on THAT day
+            let isFridayForThatDay = (calendar.component(.weekday, from: prayersObj.day) == 6)
+
+            // Remove Jumuah slots on non-Fridays
+            if !isFridayForThatDay, list.count >= 2 {
+                list.removeLast(2)
+            }
+
+            // Prevent Shurooq scheduling twice (because the list intentionally contains 2)
+            var shurooqScheduledKeys = Set<String>()
+            shurooqScheduledKeys.reserveCapacity(2)
+
+            for prayerTime in list {
+                if prayerTime.nameTransliteration == "Shurooq" {
+                    let comps = calendar.dateComponents([.year, .month, .day, .hour, .minute], from: prayerTime.time)
+                    let key = "Shurooq-\(comps.year ?? 0)-\(comps.month ?? 0)-\(comps.day ?? 0)-\(comps.hour ?? 0)-\(comps.minute ?? 0)"
+                    if !shurooqScheduledKeys.insert(key).inserted { continue }
                 }
-            case "Shurooq":
-                notification = sunriseTime
-            case "Dhuhr Adhan":
-                notification = adhanDhuhr
-            case "Dhuhr Iqamah":
-                notification = iqamahDhuhr
-                preNotificationTime = iqamahDhuhrPreNotification
-            case "First Jumuah":
-                notification = firstJumuah
-                preNotificationTime = firstJumuahPreNotification
-            case "Second Jumuah":
-                notification = secondJumuah
-                preNotificationTime = secondJumuahPreNotification
-            case "Asr Adhan":
-                notification = adhanAsr
-            case "Asr Iqamah":
-                notification = iqamahAsr
-                preNotificationTime = iqamahAsrPreNotification
-            case "Maghrib Adhan":
-                notification = adhanMaghrib
-            case "Maghrib Iqamah":
-                notification = iqamahMaghrib
-                preNotificationTime = iqamahMaghribPreNotification
-            case "Isha Adhan":
-                notification = adhanIsha
-            case "Isha Iqamah":
-                notification = iqamahIsha
-                preNotificationTime = iqamahIshaPreNotification
-                if khateraIsha {
-                    scheduleKhateraNotification(for: prayerTime, minutesAfter: 30, name: "Isha Khatera")
+
+                let notification: Bool
+                var preNotificationTime: Int?
+
+                switch prayerTime.nameTransliteration {
+                case "Fajr Adhan":
+                    notification = adhanFajr
+
+                case "Fajr Iqamah":
+                    notification = iqamahFajr
+                    preNotificationTime = iqamahFajrPreNotification
+                    if khateraFajr {
+                        scheduleKhateraNotification(for: prayerTime, minutesAfter: 30, name: "Fajr Khatera")
+                    }
+
+                case "Shurooq":
+                    notification = sunriseTime
+
+                case "Dhuhr Adhan":
+                    notification = adhanDhuhr
+
+                case "Dhuhr Iqamah":
+                    notification = iqamahDhuhr
+                    preNotificationTime = iqamahDhuhrPreNotification
+
+                case "First Jumuah":
+                    notification = firstJumuah
+                    preNotificationTime = firstJumuahPreNotification
+
+                case "Second Jumuah":
+                    notification = secondJumuah
+                    preNotificationTime = secondJumuahPreNotification
+
+                case "Asr Adhan":
+                    notification = adhanAsr
+
+                case "Asr Iqamah":
+                    notification = iqamahAsr
+                    preNotificationTime = iqamahAsrPreNotification
+
+                case "Maghrib Adhan":
+                    notification = adhanMaghrib
+
+                case "Maghrib Iqamah":
+                    notification = iqamahMaghrib
+                    preNotificationTime = iqamahMaghribPreNotification
+
+                case "Isha Adhan":
+                    notification = adhanIsha
+
+                case "Isha Iqamah":
+                    notification = iqamahIsha
+                    preNotificationTime = iqamahIshaPreNotification
+                    if khateraIsha {
+                        scheduleKhateraNotification(for: prayerTime, minutesAfter: 30, name: "Isha Khatera")
+                    }
+
+                default:
+                    continue
                 }
-            default:
-                continue
-            }
-            
-            if notification {
-                scheduleNotification(for: prayerTime, preNotificationTime: nil)
-            }
-            if let m = preNotificationTime, m > 0 {
-                scheduleNotification(for: prayerTime, preNotificationTime: m)
+
+                if notification {
+                    scheduleNotification(for: prayerTime, preNotificationTime: nil)
+                }
+
+                if notification, let m = preNotificationTime, m > 0 {
+                    scheduleNotification(for: prayerTime, preNotificationTime: m)
+                }
             }
         }
-        
+
+        scheduleDay(prayerObject)
+
+        if let tmr = prayersICOITomorrow, !tmr.prayers.isEmpty {
+            scheduleDay(tmr)
+        }
+        if let da = prayersICOIDayAfterTomorrow, !da.prayers.isEmpty {
+            scheduleDay(da)
+        }
+
         if ratingJumuah {
             let components = DateComponents(hour: 15, minute: 0, weekday: 6)
             if let date = calendar.nextDate(after: Date(), matching: components, matchingPolicy: .nextTime) {
                 let content = UNMutableNotificationContent()
                 content.title = "Islamic Center of Irvine"
                 content.body = "Tap here if you want to rate the khutbah"
-                content.sound = UNNotificationSound.default
-                
+                content.sound = .default
+
                 let triggerComponents = calendar.dateComponents([.year, .month, .day, .hour, .minute], from: date)
                 let trigger = UNCalendarNotificationTrigger(dateMatching: triggerComponents, repeats: false)
-                
+
                 let request = UNNotificationRequest(identifier: "jumuahRating", content: content, trigger: trigger)
                 center.add(request) { error in
                     if let e = error {
@@ -863,9 +1261,14 @@ final class Settings: ObservableObject {
                 }
             }
         }
-        
-        scheduleDailyRefreshReminders(using: center, prayers: prayerTimes)
-        
+
+        var todayList = prayerObject.prayers
+        let isFridayToday = (calendar.component(.weekday, from: prayerObject.day) == 6)
+        if !isFridayToday, todayList.count >= 2 {
+            todayList.removeLast(2)
+        }
+        scheduleDailyRefreshReminders(using: center, prayers: todayList)
+
         prayersICOI?.setNotification = true
         #endif
     }
@@ -1007,6 +1410,45 @@ final class Settings: ObservableObject {
             }
         }
     }
+    
+    @AppStorage("prayersICOITomorrowData", store: UserDefaults(suiteName: "group.com.ICOI.AppGroup")!)
+    private var prayersICOITomorrowRaw: Data = Data() {
+        didSet { objectWillChange.send() }
+    }
+
+    var prayersICOITomorrow: Prayers? {
+        get {
+            guard !prayersICOITomorrowRaw.isEmpty else { return nil }
+            return try? Self.decoder.decode(Prayers.self, from: prayersICOITomorrowRaw)
+        }
+        set {
+            if let newValue, let data = try? Self.encoder.encode(newValue) {
+                prayersICOITomorrowRaw = data
+            } else {
+                prayersICOITomorrowRaw = Data()
+            }
+        }
+    }
+
+    @AppStorage("prayersICOIDayAfterTomorrowData", store: UserDefaults(suiteName: "group.com.ICOI.AppGroup")!)
+    private var prayersICOIDayAfterTomorrowRaw: Data = Data() {
+        didSet { objectWillChange.send() }
+    }
+
+    var prayersICOIDayAfterTomorrow: Prayers? {
+        get {
+            guard !prayersICOIDayAfterTomorrowRaw.isEmpty else { return nil }
+            return try? Self.decoder.decode(Prayers.self, from: prayersICOIDayAfterTomorrowRaw)
+        }
+        set {
+            if let newValue, let data = try? Self.encoder.encode(newValue) {
+                prayersICOIDayAfterTomorrowRaw = data
+            } else {
+                prayersICOIDayAfterTomorrowRaw = Data()
+            }
+        }
+    }
+
     
     @AppStorage("eventsICOIData") private var eventsICOIDataRaw: Data = Data() {
         didSet { objectWillChange.send() }
@@ -1237,6 +1679,9 @@ final class Settings: ObservableObject {
             bookmarkedAyahsData = (try? Self.encoder.encode(newValue)) ?? Data()
         }
     }
+    
+    var favoriteSurahSet: Set<Int> { Set(favoriteSurahs) }
+    var bookmarkedAyahSet: Set<String> { Set(bookmarkedAyahs.map(\.id)) }
         
     @AppStorage("showBookmarks") var showBookmarks = true
     @AppStorage("showFavorites") var showFavorites = true
