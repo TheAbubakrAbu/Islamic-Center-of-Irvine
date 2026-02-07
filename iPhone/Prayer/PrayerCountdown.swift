@@ -86,6 +86,7 @@ struct ICOIPrayerCountdown: View {
                                 #endif
                         }
                     }
+                    .multilineTextAlignment(.leading)
                     
                     Spacer()
                 }
@@ -144,6 +145,7 @@ struct ICOIPrayerCountdown: View {
                         }
                         .font(.headline)
                     }
+                    .multilineTextAlignment(.trailing)
                 }
             }
             .onAppear {

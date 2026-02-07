@@ -322,6 +322,31 @@ final class Settings: ObservableObject {
 
                 logger.debug("---- BuildDay ---- date=\(isoNow(targetDate, in: calendar.timeZone)) key=\(dayKeyInt) isFriday=\(isFridayForThatDay)")
 
+                // Build Jumuah list once so we can place it before Asr on Friday, or at end on non-Friday
+                var jumuahPrayers: [Prayer] = []
+                if let events = events {
+                    let jumuahEvents = events
+                        .filter { ($0["isJuma"] as? Bool) == true }
+                        .sorted { ($0["order"] as? Int ?? 0) < ($1["order"] as? Int ?? 0) }
+                    for (index, e) in jumuahEvents.enumerated() {
+                        let timeDesc = (e["timeDesc"] as? String ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
+                        if let t = createPrayerDate(from: timeDesc, calendar: calendar, baseDay: baseDay) {
+                            jumuahPrayers.append(
+                                Prayer(
+                                    nameArabic: index == 0 ? "الجُمُعَة الأُوَل" : "الجُمُعَة الثَانِي",
+                                    nameTransliteration: "\(index == 0 ? "First" : "Second") Jumuah",
+                                    nameEnglish: "\(index == 0 ? "First" : "Second") Friday",
+                                    time: t,
+                                    image: "sun.max.fill",
+                                    rakah: 2,
+                                    sunnahBefore: 0,
+                                    sunnahAfter: 4
+                                )
+                            )
+                        }
+                    }
+                }
+
                 var out: [Prayer] = []
                 out.reserveCapacity(16)
 
@@ -360,13 +385,17 @@ final class Settings: ObservableObject {
                     logger.debug("⚠️ Missing Sunrise: \(sunriseS ?? "nil")")
                 }
 
-                // Dhuhr (adhan key is zuhr)
-                if let zuhrAdhanS, let dhuhrIqamaS,
-                   let adhanTime = createPrayerDate(from: zuhrAdhanS, calendar: calendar, baseDay: baseDay),
-                   let iqamahTime = createPrayerDate(from: dhuhrIqamaS, calendar: calendar, baseDay: baseDay) {
-                    self.appendPrayer(for: "Dhuhr", adhanTime: adhanTime, iqamahTime: iqamahTime, into: &out)
+                // Noon slot: on Friday show Jumuah (before Asr); on other days show Dhuhr
+                if isFridayForThatDay {
+                    out.append(contentsOf: jumuahPrayers)
                 } else {
-                    logger.debug("⚠️ Missing Dhuhr pair: adhan=\(zuhrAdhanS ?? "nil") iqama=\(dhuhrIqamaS ?? "nil")")
+                    if let zuhrAdhanS, let dhuhrIqamaS,
+                       let adhanTime = createPrayerDate(from: zuhrAdhanS, calendar: calendar, baseDay: baseDay),
+                       let iqamahTime = createPrayerDate(from: dhuhrIqamaS, calendar: calendar, baseDay: baseDay) {
+                        self.appendPrayer(for: "Dhuhr", adhanTime: adhanTime, iqamahTime: iqamahTime, into: &out)
+                    } else {
+                        logger.debug("⚠️ Missing Dhuhr pair: adhan=\(zuhrAdhanS ?? "nil") iqama=\(dhuhrIqamaS ?? "nil")")
+                    }
                 }
 
                 // Asr
@@ -396,35 +425,8 @@ final class Settings: ObservableObject {
                     logger.debug("⚠️ Missing Isha pair: adhan=\(ishaAdhanS ?? "nil") iqama=\(ishaIqamaS ?? "nil")")
                 }
 
-                // Jumuah events (same behavior)
-                if let events = events {
-                    let jumuahEvents = events
-                        .filter { ($0["isJuma"] as? Bool) == true }
-                        .sorted { ($0["order"] as? Int ?? 0) < ($1["order"] as? Int ?? 0) }
-
-                    for (index, e) in jumuahEvents.enumerated() {
-                        let timeDesc = (e["timeDesc"] as? String ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
-                        if let t = createPrayerDate(from: timeDesc, calendar: calendar, baseDay: baseDay) {
-                            out.append(
-                                Prayer(
-                                    nameArabic: index == 0 ? "الجُمُعَة الأُوَل" : "الجُمُعَة الثَانِي",
-                                    nameTransliteration: "\(index == 0 ? "First" : "Second") Jumuah",
-                                    nameEnglish: "\(index == 0 ? "First" : "Second") Friday",
-                                    time: t,
-                                    image: "sun.max.fill",
-                                    rakah: 2,
-                                    sunnahBefore: 0,
-                                    sunnahAfter: 4
-                                )
-                            )
-                        }
-                    }
-                }
-
-                // On NON-Fridays for that day, move Jumuah to end (your exact existing style)
+                // On non-Friday, Jumuah appears at the end (already in noon slot on Friday)
                 if !isFridayForThatDay {
-                    let jumuahPrayers = out.filter { $0.nameTransliteration.contains("Jumuah") }
-                    out.removeAll { $0.nameTransliteration.contains("Jumuah") }
                     out.append(contentsOf: jumuahPrayers)
                 }
 
@@ -521,9 +523,10 @@ final class Settings: ObservableObject {
 
                             // Completeness check (today must be good or we fallback)
                             let englishNames = prayersToday.map(\.nameEnglish)
+                            let hasNoonOrJumuah = englishNames.contains("Noon") || englishNames.contains("First Friday")
                             let hasCore =
                                 englishNames.contains("Dawn") &&
-                                englishNames.contains("Noon") &&
+                                hasNoonOrJumuah &&
                                 englishNames.contains("Afternoon") &&
                                 englishNames.contains("Sunset") &&
                                 englishNames.contains("Night")
@@ -628,6 +631,9 @@ final class Settings: ObservableObject {
                     }
 
                     if iqamaText != "—" {
+                        // Skip Dhuhr on Friday (replaced by Jumuah)
+                        if isFriday && nameCell.lowercased().contains("dhuhr") { continue }
+
                         let beginsClean = normalizeTimeText(beginsText)
                         let iqamaClean = normalizeTimeText(iqamaText)
 
@@ -653,7 +659,17 @@ final class Settings: ObservableObject {
                     }
                 }
 
-                if !isFriday {
+                if isFriday {
+                    // On Friday: put Jumuah before Asr
+                    let jumuahPrayers = prayers.filter { $0.nameTransliteration.contains("Jumuah") }
+                    prayers.removeAll { $0.nameTransliteration.contains("Jumuah") }
+                    if let asrIndex = prayers.firstIndex(where: { $0.nameTransliteration.contains("Asr") }) {
+                        prayers.insert(contentsOf: jumuahPrayers, at: asrIndex)
+                    } else {
+                        prayers.append(contentsOf: jumuahPrayers)
+                    }
+                } else {
+                    // On non-Friday: Jumuah at end
                     let jumuahPrayers = prayers.filter { $0.nameTransliteration.contains("Jumuah") }
                     prayers.removeAll { $0.nameTransliteration.contains("Jumuah") }
                     prayers.append(contentsOf: jumuahPrayers)
