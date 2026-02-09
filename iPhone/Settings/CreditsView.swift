@@ -54,8 +54,12 @@ struct CreditsView: View {
                         .foregroundColor(settings.accentColor2)
                         .font(.body)
                     
-                    Link("Credit for the Uthmani Hafs Quran font goes to Urdu Nigar", destination: URL(string: "https://urdunigaar.com/download/hafs-quran-ttf-font/")!)
-                        .foregroundColor(settings.accentColor2)
+                    Link("Credit for the Arabic text for multiple qiraat/riwayaat data goes to quran-data-kfgqpc (KFGQPC)", destination: URL(string: "https://github.com/thetruetruth/quran-data-kfgqpc")!)
+                        .foregroundColor(settings.accentColor)
+                        .font(.body)
+                    
+                    Link("Credit for the Uthmani Quran font goes to quran-data-kfgqpc (KFGQPC)", destination: URL(string: "https://github.com/thetruetruth/quran-data-kfgqpc")!)
+                        .foregroundColor(settings.accentColor)
                         .font(.body)
                     
                     Link("Credit for the Indopak Quran font goes to Urdu Nigar", destination: URL(string: "https://urdunigaar.com/download/al-mushaf-arabic-font-ttf-font-download/")!)

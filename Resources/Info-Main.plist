@@ -8,8 +8,8 @@
 	</array>
 	<key>UIAppFonts</key>
 	<array>
+		<string>Uthmani.ttf</string>
 		<string>Indopak.ttf</string>
-		<string>Hafs.ttf</string>
 	</array>
 	<key>UIBackgroundModes</key>
 	<array>
