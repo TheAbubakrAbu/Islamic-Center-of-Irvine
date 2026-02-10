@@ -161,26 +161,19 @@ struct AlIslamAppsSection: View {
                     .padding(.vertical, -11)
                     #endif
                 
-                HStack(spacing: spacing) {
-                    Card(
-                        title: "Al-Adhan",
-                        url: URL(string: "https://apps.apple.com/us/app/al-adhan-prayer-times/id6475015493")!
-                    )
-                    
-                    Card(
-                        title: "Al-Islam",
-                        url: URL(string: "https://apps.apple.com/us/app/al-islam-islamic-pillars/id6449729655")!
-                    )
-                    
-                    Card(
-                        title: "Al-Quran",
-                        url: URL(string: "https://apps.apple.com/us/app/al-quran-beginner-quran/id6474894373")!
-                    )
+                if let adhanURL = URL(string: "https://apps.apple.com/us/app/al-adhan-prayer-times/id6475015493"),
+                   let islamURL = URL(string: "https://apps.apple.com/us/app/al-islam-islamic-pillars/id6449729655"),
+                   let quranURL = URL(string: "https://apps.apple.com/us/app/al-quran-beginner-quran/id6474894373") {
+                    HStack(spacing: spacing) {
+                        Card(title: "Al-Adhan", url: adhanURL)
+                        Card(title: "Al-Islam", url: islamURL)
+                        Card(title: "Al-Quran", url: quranURL)
+                    }
+                    .frame(maxWidth: .infinity, alignment: .center)
+                    .scaledToFit()
+                    .padding(.vertical, 8)
+                    .padding(.horizontal)
                 }
-                .frame(maxWidth: .infinity, alignment: .center)
-                .scaledToFit()
-                .padding(.vertical, 8)
-                .padding(.horizontal)
             }
         }
     }

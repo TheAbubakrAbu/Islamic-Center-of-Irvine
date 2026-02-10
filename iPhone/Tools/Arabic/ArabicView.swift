@@ -145,10 +145,14 @@ struct ArabicView: View {
             StopInfoRow(title: "The Preferred Continuation", symbol: "صلى", color: settings.accentColor)
             StopInfoRow(title: "The Mandatory Continuation", symbol: "لا", color: settings.accentColor)
 
-            Link("View More: Tajweed Rules & Stopping/Pausing Signs",
-                 destination: URL(string: "https://studioarabiya.com/blog/tajweed-rules-stopping-pausing-signs/")!)
-            .font(.subheadline)
-            .foregroundColor(settings.accentColor)
+            if let url = URL(string: "https://studioarabiya.com/blog/tajweed-rules-stopping-pausing-signs/") {
+                Link(
+                    "View More: Tajweed Rules & Stopping/Pausing Signs",
+                    destination: url
+                )
+                .font(.subheadline)
+                .foregroundColor(settings.accentColor)
+            }
         }
     }
 }

@@ -132,42 +132,44 @@ struct ICOIEventsView: View {
                 #if !os(watchOS)
                 DaySelectionView(days: days, selectedDay: $selectedDay)
                 
-                Link(destination: URL(string: "https://www.icoi.net/weekly-programs/")!) {
-                    HStack {
-                        Spacer()
-                        
-                        Image(systemName: "calendar")
-                            .resizable()
-                            .aspectRatio(contentMode: .fit)
-                            .foregroundColor(.white)
-                            .frame(width: 18, height: 18)
-                            .padding(.trailing, 8)
-                        
-                        Text("View Weekly Events")
-                            .font(.subheadline)
-                            .foregroundColor(.white)
-                        
-                        Spacer()
+                if let url = URL(string: "https://www.icoi.net/weekly-programs/") {
+                    Link(destination: url) {
+                        HStack {
+                            Spacer()
+                            
+                            Image(systemName: "calendar")
+                                .resizable()
+                                .aspectRatio(contentMode: .fit)
+                                .foregroundColor(.white)
+                                .frame(width: 18, height: 18)
+                                .padding(.trailing, 8)
+                            
+                            Text("View Weekly Events")
+                                .font(.subheadline)
+                                .foregroundColor(.white)
+                            
+                            Spacer()
+                        }
+                        .padding(.horizontal)
+                        .padding(.vertical, 6)
+                        .frame(maxWidth: .infinity)
+                        .background(settings.accentColor)
+                        .cornerRadius(24)
+                        .padding(.horizontal, 16)
+                        .multilineTextAlignment(.center)
+                        .padding(.bottom, 4)
                     }
-                    .padding(.horizontal)
-                    .padding(.vertical, 6)
-                    .frame(maxWidth: .infinity)
-                    .background(settings.accentColor)
-                    .cornerRadius(24)
-                    .padding(.horizontal, 16)
-                    .multilineTextAlignment(.center)
+                    .contextMenu {
+                        Button(action: {
+                            settings.hapticFeedback()
+                            UIPasteboard.general.string = "https://www.icoi.net/weekly-programs/"
+                        }) {
+                            Text("Copy Link")
+                            Image(systemName: "doc.on.doc")
+                        }
+                    }
                     .padding(.bottom, 4)
                 }
-                .contextMenu {
-                    Button(action: {
-                        settings.hapticFeedback()
-                        UIPasteboard.general.string = "https://www.icoi.net/weekly-programs/"
-                    }) {
-                        Text("Copy Link")
-                        Image(systemName: "doc.on.doc")
-                    }
-                }
-                .padding(.bottom, 4)
                 #endif
             }
             .navigationTitle("ICOI Events")

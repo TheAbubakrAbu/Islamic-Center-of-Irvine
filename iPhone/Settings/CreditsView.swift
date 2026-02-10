@@ -19,22 +19,24 @@ struct CreditsView: View {
                     HStack {
                         Spacer()
                         
-                        Link("abubakrelmallah.com", destination: URL(string: "https://abubakrelmallah.com/")!)
-                            .foregroundColor(settings.accentColor2)
-                            .font(.headline)
-                            .multilineTextAlignment(.center)
-                            .padding(.vertical, 4)
-                            .padding(.bottom, 8)
-                            .contextMenu {
-                                Button(action: {
-                                    UIPasteboard.general.string = "https://abubakrelmallah.com/"
-                                }) {
-                                    HStack {
-                                        Image(systemName: "doc.on.doc")
-                                        Text("Copy Website")
+                        if let url = URL(string: "https://abubakrelmallah.com/") {
+                            Link("abubakrelmallah.com", destination: url)
+                                .foregroundColor(settings.accentColor2)
+                                .font(.headline)
+                                .multilineTextAlignment(.center)
+                                .padding(.vertical, 4)
+                                .padding(.bottom, 8)
+                                .contextMenu {
+                                    Button(action: {
+                                        UIPasteboard.general.string = "https://abubakrelmallah.com/"
+                                    }) {
+                                        HStack {
+                                            Image(systemName: "doc.on.doc")
+                                            Text("Copy Website")
+                                        }
                                     }
                                 }
-                            }
+                        }
                         
                         Spacer()
                     }
@@ -46,38 +48,75 @@ struct CreditsView: View {
                 .listRowSeparator(.hidden)
                 
                 Section(header: Text("CREDITS")) {
-                    Link("Credit for the Arabic and English transliteration of the Quran data goes to Risan Bagja Pradana", destination: URL(string: "https://github.com/risan/quran-json")!)
-                        .foregroundColor(settings.accentColor2)
-                        .font(.body)
-                    
-                    Link("Credit for the English Saheeh International translation of the Quran data goes to Global Quran", destination: URL(string: "https://globalquran.com/download/data/")!)
-                        .foregroundColor(settings.accentColor2)
-                        .font(.body)
-                    
-                    Link("Credit for the Arabic text for multiple qiraat/riwayaat data goes to quran-data-kfgqpc (KFGQPC)", destination: URL(string: "https://github.com/thetruetruth/quran-data-kfgqpc")!)
-                        .foregroundColor(settings.accentColor)
-                        .font(.body)
-                    
-                    Link("Credit for the Uthmani Quran font goes to quran-data-kfgqpc (KFGQPC)", destination: URL(string: "https://github.com/thetruetruth/quran-data-kfgqpc")!)
-                        .foregroundColor(settings.accentColor)
-                        .font(.body)
-                    
-                    Link("Credit for the Indopak Quran font goes to Urdu Nigar", destination: URL(string: "https://urdunigaar.com/download/al-mushaf-arabic-font-ttf-font-download/")!)
-                        .foregroundColor(settings.accentColor2)
-                        .font(.body)
-                    
-                    Link("Credit for the 99 Names of Allah from KabDeveloper", destination: URL(string: "https://github.com/KabDeveloper/99-Names-Of-Allah/tree/main")!)
-                        .foregroundColor(settings.accentColor2)
-                        .font(.body)
-                    
-                    Link("Credit for the Ayah Quran Recitations goes to Al Quran", destination: URL(string: "https://alquran.cloud/cdn")!)
-                        .foregroundColor(settings.accentColor2)
-                        .font(.body)
-                    
-                    Link("Credit for the Surah Quran Recitations goes to MP3 Quran", destination: URL(string: "https://mp3quran.net/eng")!)
-                        .foregroundColor(settings.accentColor2)
-                        .font(.body)
+                    Group {
+                        if let url = URL(string: "https://github.com/risan/quran-json") {
+                            Link(
+                                "Credit for the Arabic and English transliteration of the Quran data goes to Risan Bagja Pradana",
+                                destination: url
+                            )
+                            .foregroundColor(settings.accentColor2)
+                        }
+
+                        if let url = URL(string: "https://globalquran.com/download/data/") {
+                            Link(
+                                "Credit for the English Saheeh International translation of the Quran data goes to Global Quran",
+                                destination: url
+                            )
+                            .foregroundColor(settings.accentColor2)
+                        }
+
+                        if let url = URL(string: "https://github.com/thetruetruth/quran-data-kfgqpc") {
+                            Link(
+                                "Credit for the Arabic text for multiple qiraat/riwayaat data goes to quran-data-kfgqpc (KFGQPC)",
+                                destination: url
+                            )
+                            .foregroundColor(settings.accentColor)
+                        }
+
+                        if let url = URL(string: "https://github.com/thetruetruth/quran-data-kfgqpc/tree/main/qumbul/font") {
+                            Link(
+                                "Credit for the Uthmani Quran font goes to quran-data-kfgqpc (KFGQPC)",
+                                destination: url
+                            )
+                            .foregroundColor(settings.accentColor)
+                        }
+
+                        if let url = URL(string: "https://urdunigaar.com/download/al-mushaf-arabic-font-ttf-font-download/") {
+                            Link(
+                                "Credit for the Indopak Quran font goes to Urdu Nigar",
+                                destination: url
+                            )
+                            .foregroundColor(settings.accentColor2)
+                        }
+
+                        if let url = URL(string: "https://github.com/KabDeveloper/99-Names-Of-Allah/tree/main") {
+                            Link(
+                                "Credit for the 99 Names of Allah from KabDeveloper",
+                                destination: url
+                            )
+                            .foregroundColor(settings.accentColor2)
+                        }
+
+                        if let url = URL(string: "https://alquran.cloud/cdn") {
+                            Link(
+                                "Credit for the Ayah Quran Recitations goes to Al Quran",
+                                destination: url
+                            )
+                            .foregroundColor(settings.accentColor2)
+                        }
+
+                        if let url = URL(string: "https://mp3quran.net/eng") {
+                            Link(
+                                "Credit for the Surah Quran Recitations goes to MP3 Quran",
+                                destination: url
+                            )
+                            .foregroundColor(settings.accentColor2)
+                        }
+
+                    }
+                    .font(.body)
                 }
+
                 
                 Section {
                     VersionNumber()
@@ -142,8 +181,10 @@ struct AppLinkRow: View {
                 .frame(width: 50, height: 50)
                 .padding(.trailing, 8)
 
-            Link(title, destination: URL(string: url)!)
-                .font(.subheadline)
+            if let destination = URL(string: url) {
+                Link(title, destination: destination)
+                    .font(.subheadline)
+            }
         }
         .contextMenu {
             Button {

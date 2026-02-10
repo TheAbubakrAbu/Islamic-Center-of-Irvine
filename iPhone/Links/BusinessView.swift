@@ -136,9 +136,9 @@ struct ICOIBusinessView: View {
             }
             
             #if !os(watchOS)
-            createButtonForURL(url: "https://docs.google.com/forms/d/e/1FAIpQLSdSbCZt5uebhgGBiwGjhQHNVHmm9FxVAR0dX3AUO8GMMLu8OA/viewform", title: "Add your Local Business", image: "plus.square.fill.on.square.fill")
+            CreateLinkForURL(url: "https://docs.google.com/forms/d/e/1FAIpQLSdSbCZt5uebhgGBiwGjhQHNVHmm9FxVAR0dX3AUO8GMMLu8OA/viewform", title: "Add your Local Business", image: "plus.square.fill.on.square.fill")
             
-            createButtonForURL(url: "https://www.icoi.net/business-directory/", title: "View Business Directory", image: "list.bullet.rectangle.fill")
+            CreateLinkForURL(url: "https://www.icoi.net/business-directory/", title: "View Business Directory", image: "list.bullet.rectangle.fill")
             #endif
         }
     }

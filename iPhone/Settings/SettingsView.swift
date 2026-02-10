@@ -99,20 +99,22 @@ struct ICOISettingsView: View {
                         }
                     }
                     
-                    Link(destination: URL(string: "https://forms.gle/s2mp1uSr9rEXTWU29")!, label: {
-                        Label("Feedback via Google Form", systemImage: "quote.bubble.fill")
-                            .font(.subheadline)
-                            .foregroundColor(settings.accentColor2)
-                    })
-                    .contextMenu {
-                        Button(action: {
-                            settings.hapticFeedback()
-                            
-                            UIPasteboard.general.string = "https://forms.gle/s2mp1uSr9rEXTWU29"
-                        }) {
-                            HStack {
-                                Image(systemName: "doc.on.doc")
-                                Text("Copy Website")
+                    if let url = URL(string: "https://forms.gle/s2mp1uSr9rEXTWU29") {
+                        Link(destination: url) {
+                            Label("Feedback via Google Form", systemImage: "quote.bubble.fill")
+                                .font(.subheadline)
+                                .foregroundColor(settings.accentColor2)
+                        }
+                        .contextMenu {
+                            Button(action: {
+                                settings.hapticFeedback()
+                                
+                                UIPasteboard.general.string = "https://forms.gle/s2mp1uSr9rEXTWU29"
+                            }) {
+                                HStack {
+                                    Image(systemName: "doc.on.doc")
+                                    Text("Copy Website")
+                                }
                             }
                         }
                     }
