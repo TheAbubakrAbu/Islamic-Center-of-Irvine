@@ -1626,12 +1626,24 @@ final class Settings: ObservableObject {
     
     // MARK: - Quran — @AppStorage
     
-    static let randomReciterName = "Random Reciter"
-    
     @AppStorage("reciter") var reciter: String = "Muhammad Al-Minshawi (Murattal)"
 
     /// Disambiguates reciters that share the same display name (qiraah / surah base URL).
     @AppStorage("reciterId") var reciterId: String = ""
+
+    @AppStorage("favoriteReciterIDsData") private var favoriteReciterIDsData = Data()
+    var favoriteReciterIDs: [String] {
+        get {
+            (try? Self.decoder.decode([String].self, from: favoriteReciterIDsData)) ?? []
+        }
+        set {
+            let normalized = Array(NSOrderedSet(array: newValue.compactMap {
+                let trimmed = $0.trimmingCharacters(in: .whitespacesAndNewlines)
+                return trimmed.isEmpty ? nil : trimmed
+            })) as? [String] ?? []
+            favoriteReciterIDsData = (try? Self.encoder.encode(normalized)) ?? Data()
+        }
+    }
 
     @AppStorage("reciteType") var reciteType: String = "Continue to Next"
 
@@ -1662,14 +1674,6 @@ final class Settings: ObservableObject {
     @AppStorage("shareShowSurahInformation") var showSurahInformation: Bool = false
 
     @AppStorage("beginnerMode") var beginnerMode: Bool = false
-
-    enum QuranSortMode: String, CaseIterable, Identifiable {
-        case surah
-        case juz
-        case page
-
-        var id: String { rawValue }
-    }
 
     @AppStorage("quranSortMode") var quranSortModeRaw: String = QuranSortMode.surah.rawValue
 
@@ -1708,69 +1712,8 @@ final class Settings: ObservableObject {
         }
     }
 
-    enum Riwayah {
-        static let hafsTag = ""
-        static let hafsLabel = "Ḥafṣ ʿan ʿĀṣim (default)"
 
-        static let shubah = "Shuʿbah ʿan ʿĀṣim"
-        static let khalaf = "Khalaf ʿan Ḥamzah"
-        static let buzzi = "al-Bazzī ʿan Ibn Kathīr"
-        static let qunbul = "Qunbul ʿan Ibn Kathīr"
-        static let warsh = "Warsh ʿan Nāfiʿ"
-        static let qaloon = "Qālūn ʿan Nāfiʿ"
-        static let duri = "ad-Dūrī ʿan Abī ʿAmr"
-        static let susi = "as-Sūsī ʿan Abī ʿAmr"
-
-        static let warshArabic = "ورش عن نافع"
-        static let qaloonArabic = "قالون عن نافع"
-        static let duriArabic = "الدوري عن أبي عمرو"
-        static let susiArabic = "السوسي عن أبي عمرو"
-        static let buzziArabic = "البزي عن ابن كثير"
-        static let qunbulArabic = "قنبل عن ابن كثير"
-        static let shubahArabic = "شعبة عن عاصم"
-        static let khalafArabic = "خلف عن حمزة"
-
-        static let menuOptions: [(label: String, tag: String)] = [
-            (hafsLabel, hafsTag),
-            (shubah, shubah),
-            (buzzi, buzzi),
-            (qunbul, qunbul),
-            (warsh, warsh),
-            (qaloon, qaloon),
-            (duri, duri),
-            (susi, susi),
-        ]
-
-        static let arabicCaptionByTag: [String: String] = [
-            hafsTag: "حفص عن عاصم",
-            warsh: warshArabic,
-            qaloon: qaloonArabic,
-            duri: duriArabic,
-            susi: susiArabic,
-            buzzi: buzziArabic,
-            qunbul: qunbulArabic,
-            shubah: shubahArabic,
-            khalaf: khalafArabic,
-        ]
-
-        static func canonicalTag(_ stored: String) -> String {
-            let raw = stored.trimmingCharacters(in: .whitespacesAndNewlines)
-            switch raw {
-            case "", "Hafs", "Ḥafṣ ʿan ʿĀṣim", hafsLabel: return hafsTag
-            case warsh, "Warsh an Nafi", "Warsh An Nafi": return warsh
-            case qaloon, "Qaloon an Nafi", "Qaloon An Nafi": return qaloon
-            case duri, "Ad-Duri an Abi Amr": return duri
-            case susi, "As-Susi an Abi Amr": return susi
-            case buzzi, "Al-Buzzi an Ibn Kathir": return buzzi
-            case qunbul, "Qumbul ʿan Ibn Kathīr", "Qumbul an Ibn Kathir": return qunbul
-            case shubah, "Shu'bah an Asim", "Shu'bah an Aasim", "Shouba an Asim": return shubah
-            case khalaf: return khalaf
-            default: return raw
-            }
-        }
-    }
-
-    /// Which qiraah/riwayah to show for Arabic text. Empty or "Hafs" = Ḥafṣ ʿan ʿĀṣim (default). Transliteration and translations only apply to Hafs.
+    /// Which qiraah/riwayah to show for Arabic text. Empty or "Hafs" = Hafs an Asim (default). Transliteration and translations only apply to Hafs.
     @AppStorage("displayQiraah") var displayQiraah: String = ""
 
     /// When on, AyahsView shows a qiraat picker above the search bar to compare riwayat in that view.
@@ -1779,12 +1722,18 @@ final class Settings: ObservableObject {
     /// When on, ReciterListView reveals non-Hafs qiraat reciters.
     @AppStorage("showOtherQiraatReciters") var showOtherQiraatReciters: Bool = false
 
+    /// Shared expand/collapse state for qiraah details in Quran settings and reciter lists.
+    var showQiraahDetails: Bool {
+        get { showOtherQiraatReciters }
+        set { showOtherQiraatReciters = newValue }
+    }
+
     /// Pass to Ayah.displayArabic(qiraah:clean:). Nil means Hafs.
     var displayQiraahForArabic: String? {
         (displayQiraah.isEmpty || displayQiraah == "Hafs") ? nil : displayQiraah
     }
 
-    /// When false, only Arabic is shown (no transliteration or English), since those are for Ḥafṣ ʿan ʿĀṣim only.
+    /// When false, only Arabic is shown (no transliteration or English), since those are for Hafs an Asim only.
     var isHafsDisplay: Bool {
         displayQiraah.isEmpty || displayQiraah == "Hafs"
     }
@@ -1800,21 +1749,19 @@ final class Settings: ObservableObject {
     @AppStorage("showTajweedTafkhim") var showTajweedTafkhim: Bool = true
     @AppStorage("showTajweedQalqalah") var showTajweedQalqalah: Bool = true
     @AppStorage("showTajweedLamShamsiyah") var showTajweedLamShamsiyah: Bool = true
-    @AppStorage("showTajweedSukoonJazm") var showTajweedSukoonJazm: Bool = true
-    @AppStorage("showTajweedBareNuunMeem") var showTajweedIdghamBiGhunnah: Bool = true
+    @AppStorage("showTajweedSukoonJazm") var showTajweedDroppedLetter: Bool = true
+    @AppStorage("showTajweedBareNuunMeem") var showTajweedIdghamBiGhunnahLight: Bool = true
+    @AppStorage("showTajweedIdghamBiGhunnahHeavy") var showTajweedIdghamBiGhunnahHeavy: Bool = true
     @AppStorage("showTajweedIkhfaa") var showTajweedIkhfaa: Bool = true
     @AppStorage("showTajweedIqlab") var showTajweedIqlab: Bool = true
     @AppStorage("showTajweedIdghamBilaGhunnah") var showTajweedIdghamBilaGhunnah: Bool = true
     @AppStorage("showTajweedHamzatWaslSilent") var showTajweedHamzatWaslSilent: Bool = true
     @AppStorage("showTajweedMaddNatural2") var showTajweedMaddNatural2: Bool = true
+    @AppStorage("showTajweedMadd246") var showTajweedMaddAaridLisSukoon: Bool = true
     @AppStorage("showTajweedMaddNecessary6") var showTajweedMaddNecessary6: Bool = true
     @AppStorage("showTajweedMaddSeparated") var showTajweedMaddSeparated: Bool = true
     @AppStorage("showTajweedMaddConnected") var showTajweedMaddConnected: Bool = true
     @AppStorage("cleanArabicText") var cleanArabicText: Bool = false
-    @AppStorage("THEfontArabic") var fontArabic: String = "KFGQPCQUMBULUthmanicScript-Regu"
-    @AppStorage("fontArabicSize") var fontArabicSize: Double = Double(UIFont.preferredFont(forTextStyle: .body).pointSize) + 10
-
-    @AppStorage("useFontArabic") var useFontArabic = true
 
     @AppStorage("showTransliteration") var showTransliteration: Bool = false
     @AppStorage("showEnglishSaheeh") var showEnglishSaheeh: Bool = true
@@ -1835,6 +1782,10 @@ final class Settings: ObservableObject {
     @AppStorage("englishFontSize") var englishFontSize: Double = Double(UIFont.preferredFont(forTextStyle: .body).pointSize)
 
     // MARK: - Arabic letters & 99 Names
+    
+    @AppStorage("THEfontArabic") var fontArabic: String = "KFGQPCQUMBULUthmanicScript-Regu"
+    @AppStorage("fontArabicSize") var fontArabicSize: Double = Double(UIFont.preferredFont(forTextStyle: .title1).pointSize)
+    @AppStorage("useFontArabic") var useFontArabic = true
 
     @AppStorage("favoriteLetterData") private var favoriteLetterData = Data()
     var favoriteLetters: [LetterData] {
@@ -1845,8 +1796,46 @@ final class Settings: ObservableObject {
             favoriteLetterData = (try? Self.encoder.encode(newValue)) ?? Data()
         }
     }
+    
+    func toggleLetterFavorite(letterData: LetterData) {
+        withAnimation {
+            if isLetterFavorite(letterData: letterData) {
+                favoriteLetters.removeAll(where: { $0.id == letterData.id })
+            } else {
+                favoriteLetters.append(letterData)
+            }
+        }
+    }
+
+    func isLetterFavorite(letterData: LetterData) -> Bool {
+        favoriteLetters.contains { $0.id == letterData.id }
+    }
+    
+    @AppStorage("favoriteNameNumbersData") private var favoriteNameNumbersData = Data()
+    var favoriteNameNumbers: [Int] {
+        get {
+            (try? Self.decoder.decode([Int].self, from: favoriteNameNumbersData)) ?? []
+        }
+        set {
+            favoriteNameNumbersData = (try? Self.encoder.encode(newValue)) ?? Data()
+        }
+    }
 
     @AppStorage("showDescription") var showDescription = false
+
+    func toggleNameFavorite(number: Int) {
+        withAnimation {
+            if isNameFavorite(number: number) {
+                favoriteNameNumbers.removeAll(where: { $0 == number })
+            } else {
+                favoriteNameNumbers.append(number)
+            }
+        }
+    }
+
+    func isNameFavorite(number: Int) -> Bool {
+        favoriteNameNumbers.contains(number)
+    }
     
     // MARK: - App-wide appearance & misc @AppStorage
 
@@ -1898,19 +1887,5 @@ final class Settings: ObservableObject {
         default:
             return "system"
         }
-    }
-
-    func toggleLetterFavorite(letterData: LetterData) {
-        withAnimation {
-            if isLetterFavorite(letterData: letterData) {
-                favoriteLetters.removeAll(where: { $0.id == letterData.id })
-            } else {
-                favoriteLetters.append(letterData)
-            }
-        }
-    }
-
-    func isLetterFavorite(letterData: LetterData) -> Bool {
-        favoriteLetters.contains { $0.id == letterData.id }
     }
 }
