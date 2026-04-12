@@ -77,7 +77,7 @@ struct PrayersProvider: TimelineProvider {
         let times = prayers.map(updateAdhanAndIqamah)
         return PrayersEntry(
             date: fallbackDate,
-            color1: settings.accentColor,
+            color1: settings.accentColor.color,
             color2: settings.accentColor2,
             prayers: p,
             currentPrayer: current,

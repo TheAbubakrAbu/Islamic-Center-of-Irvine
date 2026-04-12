@@ -5,6 +5,10 @@ import WidgetKit
 import UserNotifications
 import SwiftSoup
 
+struct AccentColor {
+    let color: Color
+}
+
 let logger = Logger(subsystem: "com.Quran.Elmallah.Islamic-Pillars.Islamic-Center-of-Irvine", category: "ICOI")
 
 final class Settings: ObservableObject {
@@ -23,15 +27,7 @@ final class Settings: ObservableObject {
     }()
     
     private init() {
-        if self.reciter.starts(with: "ar") {
-            if let match = reciters.first(where: { $0.ayahIdentifier == self.reciter }) {
-                self.reciter = match.name
-            } else {
-                self.reciter = "Muhammad Al-Minshawi (Murattal)"
-            }
-        } else if self.reciter.isEmpty {
-            self.reciter = "Muhammad Al-Minshawi (Murattal)"
-        }
+        runQuranStartupMigrations()
     }
     
     func updateCurrentAndNextPrayer() {
@@ -1392,19 +1388,6 @@ final class Settings: ObservableObject {
         #endif
     }
     
-    func hapticFeedback() {
-        #if os(iOS)
-        if hapticOn { UIImpactFeedbackGenerator(style: .light).impactOccurred() }
-        #endif
-        
-        #if os(watchOS)
-        if hapticOn { WKInterfaceDevice.current().play(.click) }
-        #endif
-    }
-    
-    let accentColor: Color = Color(red: 175 / 255, green: 28 / 255, blue: 51 / 255)
-    let accentColor2: Color = Color(red: 255 / 255, green: 140 / 255, blue: 140 / 255)
-    
     @AppStorage("hijriDateArabic") var hijriDateArabic: String = ""
     @AppStorage("hijriDateEnglish") var hijriDateEnglish: String = ""
     
@@ -1501,7 +1484,6 @@ final class Settings: ObservableObject {
             }
         }
     }
-
     
     @AppStorage("currentPrayerICOIData") var currentPrayerICOIData: Data?
     @Published var currentPrayerICOI: Prayer? {
@@ -1514,40 +1496,6 @@ final class Settings: ObservableObject {
     @Published var nextPrayerICOI: Prayer? {
         didSet {
             nextPrayerICOIData = try? Self.encoder.encode(nextPrayerICOI)
-        }
-    }
-        
-    @AppStorage("defaultView") var defaultView: Bool = true
-    
-    @AppStorage("colorSchemeString") var colorSchemeString: String = "system"
-    var colorScheme: ColorScheme? {
-        get {
-            return colorSchemeFromString(colorSchemeString)
-        }
-        set {
-            colorSchemeString = colorSchemeToString(newValue)
-        }
-    }
-    
-    func colorSchemeFromString(_ colorScheme: String) -> ColorScheme? {
-        switch colorScheme {
-        case "light":
-            return .light
-        case "dark":
-            return .dark
-        default:
-            return nil
-        }
-    }
-
-    func colorSchemeToString(_ colorScheme: ColorScheme?) -> String {
-        switch colorScheme {
-        case .light:
-            return "light"
-        case .dark:
-            return "dark"
-        default:
-            return "system"
         }
     }
 
@@ -1647,111 +1595,6 @@ final class Settings: ObservableObject {
         didSet { fetchPrayerTimes(notification: true) }
     }
     
-    @AppStorage("beginnerMode") var beginnerMode: Bool = false
-    
-    @AppStorage("lastReadSurah") var lastReadSurah: Int = 0
-    @AppStorage("lastReadAyah") var lastReadAyah: Int = 0
-    
-    @AppStorage("lastListenedSurahData") private var lastListenedSurahData: Data?
-    var lastListenedSurah: LastListenedSurah? {
-        get {
-            guard let data = lastListenedSurahData else { return nil }
-            do {
-                return try Self.decoder.decode(LastListenedSurah.self, from: data)
-            } catch {
-                logger.debug("Failed to decode last listened surah: \(error)")
-                return nil
-            }
-        }
-        set {
-            if let newValue = newValue {
-                do {
-                    lastListenedSurahData = try Self.encoder.encode(newValue)
-                } catch {
-                    logger.debug("Failed to encode last listened surah: \(error)")
-                }
-            } else {
-                lastListenedSurahData = nil
-            }
-        }
-    }
-    
-    @AppStorage("favoriteSurahsData") private var favoriteSurahsData = Data()
-    var favoriteSurahs: [Int] {
-        get {
-            (try? Self.decoder.decode([Int].self, from: favoriteSurahsData)) ?? []
-        }
-        set {
-            favoriteSurahsData = (try? Self.encoder.encode(newValue)) ?? Data()
-        }
-    }
-    
-    @AppStorage("bookmarkedAyahsData") private var bookmarkedAyahsData = Data()
-    var bookmarkedAyahs: [BookmarkedAyah] {
-        get {
-            (try? Self.decoder.decode([BookmarkedAyah].self, from: bookmarkedAyahsData)) ?? []
-        }
-        set {
-            bookmarkedAyahsData = (try? Self.encoder.encode(newValue)) ?? Data()
-        }
-    }
-    
-    var favoriteSurahSet: Set<Int> { Set(favoriteSurahs) }
-    var bookmarkedAyahSet: Set<String> { Set(bookmarkedAyahs.map(\.id)) }
-        
-    @AppStorage("showBookmarks") var showBookmarks = true
-    @AppStorage("showFavorites") var showFavorites = true
-    
-    @AppStorage("shareShowAyahInformation") var showAyahInformation: Bool = true
-    @AppStorage("shareShowSurahInformation") var showSurahInformation: Bool = false
-
-    @AppStorage("favoriteLetterData") private var favoriteLetterData = Data()
-    var favoriteLetters: [LetterData] {
-        get {
-            (try? Self.decoder.decode([LetterData].self, from: favoriteLetterData)) ?? []
-        }
-        set {
-            favoriteLetterData = (try? Self.encoder.encode(newValue)) ?? Data()
-        }
-    }
-    
-    @AppStorage("hapticOn") var hapticOn: Bool = true
-    
-    @AppStorage("groupBySurah") var groupBySurah: Bool = true
-    @AppStorage("searchForSurahs") var searchForSurahs: Bool = true
-    
-    @AppStorage("reciter") var reciter: String = "Muhammad Al-Minshawi (Murattal)"
-    @AppStorage("reciteType") var reciteType = "Continue to Next"
-    
-    /// Which qiraah/riwayah to show for Arabic text. Empty or "Hafs" = Hafs an Asim (default). Transliteration and translations only apply to Hafs.
-    @AppStorage("displayQiraah") var displayQiraah: String = ""
-
-    /// When on, AyahsView shows a qiraat picker above the search bar to compare riwayat in that view.
-    @AppStorage("qiraatComparisonMode") var qiraatComparisonMode: Bool = false
-
-    /// Pass to Ayah.displayArabic(qiraah:clean:). Nil means Hafs.
-    var displayQiraahForArabic: String? {
-        (displayQiraah.isEmpty || displayQiraah == "Hafs") ? nil : displayQiraah
-    }
-
-    /// When false, only Arabic is shown (no transliteration or English), since those are for Hafs an Asim only.
-    var isHafsDisplay: Bool {
-        displayQiraah.isEmpty || displayQiraah == "Hafs"
-    }
-
-    @AppStorage("showArabicText") var showArabicText: Bool = true
-    @AppStorage("cleanArabicText") var cleanArabicText: Bool = false
-    @AppStorage("THEfontArabic") var fontArabic: String = "KFGQPCQUMBULUthmanicScript-Regu"
-    @AppStorage("fontArabicSize") var fontArabicSize: Double = Double(UIFont.preferredFont(forTextStyle: .body).pointSize) + 10
-
-    @AppStorage("useFontArabic") var useFontArabic = true
-    
-    @AppStorage("showTransliteration") var showTransliteration: Bool = true
-    @AppStorage("showEnglishSaheeh") var showEnglishSaheeh: Bool = true
-    @AppStorage("showEnglishMustafa") var showEnglishMustafa: Bool = false
-    
-    @AppStorage("englishFontSize") var englishFontSize: Double = Double(UIFont.preferredFont(forTextStyle: .body).pointSize)
-    
     var hijriCalendar: Calendar = {
         var calendar = Calendar(identifier: .islamicUmmAlQura)
         calendar.locale = Locale(identifier: "ar")
@@ -1778,6 +1621,285 @@ final class Settings: ObservableObject {
         ]
     }
     
+    let accentColor = AccentColor(color: Color(red: 175 / 255, green: 28 / 255, blue: 51 / 255))
+    let accentColor2: Color = Color(red: 255 / 255, green: 140 / 255, blue: 140 / 255)
+    
+    // MARK: - Quran — @AppStorage
+    
+    static let randomReciterName = "Random Reciter"
+    
+    @AppStorage("reciter") var reciter: String = "Muhammad Al-Minshawi (Murattal)"
+
+    /// Disambiguates reciters that share the same display name (qiraah / surah base URL).
+    @AppStorage("reciterId") var reciterId: String = ""
+
+    @AppStorage("reciteType") var reciteType: String = "Continue to Next"
+
+    @AppStorage("favoriteSurahsData") private var favoriteSurahsData = Data()
+    var favoriteSurahs: [Int] {
+        get {
+            (try? Self.decoder.decode([Int].self, from: favoriteSurahsData)) ?? []
+        }
+        set {
+            favoriteSurahsData = (try? Self.encoder.encode(newValue)) ?? Data()
+        }
+    }
+
+    @AppStorage("bookmarkedAyahsData") private var bookmarkedAyahsData = Data()
+    var bookmarkedAyahs: [BookmarkedAyah] {
+        get {
+            (try? Self.decoder.decode([BookmarkedAyah].self, from: bookmarkedAyahsData)) ?? []
+        }
+        set {
+            bookmarkedAyahsData = (try? Self.encoder.encode(newValue)) ?? Data()
+        }
+    }
+
+    @AppStorage("showBookmarks") var showBookmarks = true
+    @AppStorage("showFavorites") var showFavorites = true
+
+    @AppStorage("shareShowAyahInformation") var showAyahInformation: Bool = true
+    @AppStorage("shareShowSurahInformation") var showSurahInformation: Bool = false
+
+    @AppStorage("beginnerMode") var beginnerMode: Bool = false
+
+    enum QuranSortMode: String, CaseIterable, Identifiable {
+        case surah
+        case juz
+        case page
+
+        var id: String { rawValue }
+    }
+
+    @AppStorage("quranSortMode") var quranSortModeRaw: String = QuranSortMode.surah.rawValue
+
+    var quranSortMode: QuranSortMode {
+        get { QuranSortMode(rawValue: quranSortModeRaw) ?? .surah }
+        set { quranSortModeRaw = newValue.rawValue }
+    }
+
+    var groupBySurah: Bool { quranSortMode == .surah }
+    @AppStorage("searchForSurahs") var searchForSurahs: Bool = true
+
+    @AppStorage("lastReadSurah") var lastReadSurah: Int = 0
+    @AppStorage("lastReadAyah") var lastReadAyah: Int = 0
+
+    @AppStorage("lastListenedSurahData") private var lastListenedSurahData: Data?
+    var lastListenedSurah: LastListenedSurah? {
+        get {
+            guard let data = lastListenedSurahData else { return nil }
+            do {
+                return try Self.decoder.decode(LastListenedSurah.self, from: data)
+            } catch {
+                logger.debug("Failed to decode last listened surah: \(error)")
+                return nil
+            }
+        }
+        set {
+            if let newValue = newValue {
+                do {
+                    lastListenedSurahData = try Self.encoder.encode(newValue)
+                } catch {
+                    logger.debug("Failed to encode last listened surah: \(error)")
+                }
+            } else {
+                lastListenedSurahData = nil
+            }
+        }
+    }
+
+    enum Riwayah {
+        static let hafsTag = ""
+        static let hafsLabel = "Ḥafṣ ʿan ʿĀṣim (default)"
+
+        static let shubah = "Shuʿbah ʿan ʿĀṣim"
+        static let khalaf = "Khalaf ʿan Ḥamzah"
+        static let buzzi = "al-Bazzī ʿan Ibn Kathīr"
+        static let qunbul = "Qunbul ʿan Ibn Kathīr"
+        static let warsh = "Warsh ʿan Nāfiʿ"
+        static let qaloon = "Qālūn ʿan Nāfiʿ"
+        static let duri = "ad-Dūrī ʿan Abī ʿAmr"
+        static let susi = "as-Sūsī ʿan Abī ʿAmr"
+
+        static let warshArabic = "ورش عن نافع"
+        static let qaloonArabic = "قالون عن نافع"
+        static let duriArabic = "الدوري عن أبي عمرو"
+        static let susiArabic = "السوسي عن أبي عمرو"
+        static let buzziArabic = "البزي عن ابن كثير"
+        static let qunbulArabic = "قنبل عن ابن كثير"
+        static let shubahArabic = "شعبة عن عاصم"
+        static let khalafArabic = "خلف عن حمزة"
+
+        static let menuOptions: [(label: String, tag: String)] = [
+            (hafsLabel, hafsTag),
+            (shubah, shubah),
+            (buzzi, buzzi),
+            (qunbul, qunbul),
+            (warsh, warsh),
+            (qaloon, qaloon),
+            (duri, duri),
+            (susi, susi),
+        ]
+
+        static let arabicCaptionByTag: [String: String] = [
+            hafsTag: "حفص عن عاصم",
+            warsh: warshArabic,
+            qaloon: qaloonArabic,
+            duri: duriArabic,
+            susi: susiArabic,
+            buzzi: buzziArabic,
+            qunbul: qunbulArabic,
+            shubah: shubahArabic,
+            khalaf: khalafArabic,
+        ]
+
+        static func canonicalTag(_ stored: String) -> String {
+            let raw = stored.trimmingCharacters(in: .whitespacesAndNewlines)
+            switch raw {
+            case "", "Hafs", "Ḥafṣ ʿan ʿĀṣim", hafsLabel: return hafsTag
+            case warsh, "Warsh an Nafi", "Warsh An Nafi": return warsh
+            case qaloon, "Qaloon an Nafi", "Qaloon An Nafi": return qaloon
+            case duri, "Ad-Duri an Abi Amr": return duri
+            case susi, "As-Susi an Abi Amr": return susi
+            case buzzi, "Al-Buzzi an Ibn Kathir": return buzzi
+            case qunbul, "Qumbul ʿan Ibn Kathīr", "Qumbul an Ibn Kathir": return qunbul
+            case shubah, "Shu'bah an Asim", "Shu'bah an Aasim", "Shouba an Asim": return shubah
+            case khalaf: return khalaf
+            default: return raw
+            }
+        }
+    }
+
+    /// Which qiraah/riwayah to show for Arabic text. Empty or "Hafs" = Ḥafṣ ʿan ʿĀṣim (default). Transliteration and translations only apply to Hafs.
+    @AppStorage("displayQiraah") var displayQiraah: String = ""
+
+    /// When on, AyahsView shows a qiraat picker above the search bar to compare riwayat in that view.
+    @AppStorage("qiraatComparisonMode") var qiraatComparisonMode: Bool = false
+
+    /// When on, ReciterListView reveals non-Hafs qiraat reciters.
+    @AppStorage("showOtherQiraatReciters") var showOtherQiraatReciters: Bool = false
+
+    /// Pass to Ayah.displayArabic(qiraah:clean:). Nil means Hafs.
+    var displayQiraahForArabic: String? {
+        (displayQiraah.isEmpty || displayQiraah == "Hafs") ? nil : displayQiraah
+    }
+
+    /// When false, only Arabic is shown (no transliteration or English), since those are for Ḥafṣ ʿan ʿĀṣim only.
+    var isHafsDisplay: Bool {
+        displayQiraah.isEmpty || displayQiraah == "Hafs"
+    }
+
+    /// Arabic riwayah line for settings section headers (matches on-screen Arabic text riwayah).
+    var displayQiraahArabicCaption: String {
+        let key = Self.normalizeLegacyRiwayahTag(displayQiraah)
+        return Self.Riwayah.arabicCaptionByTag[key] ?? Self.Riwayah.arabicCaptionByTag[Self.Riwayah.hafsTag]!
+    }
+
+    @AppStorage("showArabicText") var showArabicText: Bool = true
+    @AppStorage("showTajweedColors") var showTajweedColors: Bool = false
+    @AppStorage("showTajweedTafkhim") var showTajweedTafkhim: Bool = true
+    @AppStorage("showTajweedQalqalah") var showTajweedQalqalah: Bool = true
+    @AppStorage("showTajweedLamShamsiyah") var showTajweedLamShamsiyah: Bool = true
+    @AppStorage("showTajweedSukoonJazm") var showTajweedSukoonJazm: Bool = true
+    @AppStorage("showTajweedBareNuunMeem") var showTajweedIdghamBiGhunnah: Bool = true
+    @AppStorage("showTajweedIkhfaa") var showTajweedIkhfaa: Bool = true
+    @AppStorage("showTajweedIqlab") var showTajweedIqlab: Bool = true
+    @AppStorage("showTajweedIdghamBilaGhunnah") var showTajweedIdghamBilaGhunnah: Bool = true
+    @AppStorage("showTajweedHamzatWaslSilent") var showTajweedHamzatWaslSilent: Bool = true
+    @AppStorage("showTajweedMaddNatural2") var showTajweedMaddNatural2: Bool = true
+    @AppStorage("showTajweedMaddNecessary6") var showTajweedMaddNecessary6: Bool = true
+    @AppStorage("showTajweedMaddSeparated") var showTajweedMaddSeparated: Bool = true
+    @AppStorage("showTajweedMaddConnected") var showTajweedMaddConnected: Bool = true
+    @AppStorage("cleanArabicText") var cleanArabicText: Bool = false
+    @AppStorage("THEfontArabic") var fontArabic: String = "KFGQPCQUMBULUthmanicScript-Regu"
+    @AppStorage("fontArabicSize") var fontArabicSize: Double = Double(UIFont.preferredFont(forTextStyle: .body).pointSize) + 10
+
+    @AppStorage("useFontArabic") var useFontArabic = true
+
+    @AppStorage("showTransliteration") var showTransliteration: Bool = false
+    @AppStorage("showEnglishSaheeh") var showEnglishSaheeh: Bool = true
+    @AppStorage("showEnglishMustafa") var showEnglishMustafa: Bool = false
+    @AppStorage("showPageJuzDividers") var showPageJuzDividers: Bool = true
+    @AppStorage("showPageJuzOverlay") var showPageJuzOverlay: Bool = false
+
+    @AppStorage("quranSearchHistoryData") private var quranSearchHistoryData = Data()
+    var quranSearchHistory: [String] {
+        get {
+            (try? Self.decoder.decode([String].self, from: quranSearchHistoryData)) ?? []
+        }
+        set {
+            quranSearchHistoryData = (try? Self.encoder.encode(Array(newValue.prefix(10)))) ?? Data()
+        }
+    }
+
+    @AppStorage("englishFontSize") var englishFontSize: Double = Double(UIFont.preferredFont(forTextStyle: .body).pointSize)
+
+    // MARK: - Arabic letters & 99 Names
+
+    @AppStorage("favoriteLetterData") private var favoriteLetterData = Data()
+    var favoriteLetters: [LetterData] {
+        get {
+            (try? Self.decoder.decode([LetterData].self, from: favoriteLetterData)) ?? []
+        }
+        set {
+            favoriteLetterData = (try? Self.encoder.encode(newValue)) ?? Data()
+        }
+    }
+
+    @AppStorage("showDescription") var showDescription = false
+    
+    // MARK: - App-wide appearance & misc @AppStorage
+
+    @AppStorage("THEfirstLaunch") var firstLaunch = true
+
+    @AppStorage("hapticOn") var hapticOn: Bool = true
+
+    @AppStorage("defaultView") var defaultView: Bool = true
+
+    @AppStorage("colorSchemeString") var colorSchemeString: String = "system"
+    var colorScheme: ColorScheme? {
+        get {
+            colorSchemeFromString(colorSchemeString)
+        }
+        set {
+            colorSchemeString = colorSchemeToString(newValue)
+        }
+    }
+
+    // MARK: - Global helpers (not Quran- or Adhan-specific)
+
+    func hapticFeedback() {
+        #if os(iOS)
+        if hapticOn { UIImpactFeedbackGenerator(style: .light).impactOccurred() }
+        #endif
+
+        #if os(watchOS)
+        if hapticOn { WKInterfaceDevice.current().play(.click) }
+        #endif
+    }
+
+    func colorSchemeFromString(_ colorScheme: String) -> ColorScheme? {
+        switch colorScheme {
+        case "light":
+            return .light
+        case "dark":
+            return .dark
+        default:
+            return nil
+        }
+    }
+
+    func colorSchemeToString(_ colorScheme: ColorScheme?) -> String {
+        switch colorScheme {
+        case .light:
+            return "light"
+        case .dark:
+            return "dark"
+        default:
+            return "system"
+        }
+    }
+
     func toggleLetterFavorite(letterData: LetterData) {
         withAnimation {
             if isLetterFavorite(letterData: letterData) {
@@ -1789,6 +1911,6 @@ final class Settings: ObservableObject {
     }
 
     func isLetterFavorite(letterData: LetterData) -> Bool {
-        return favoriteLetters.contains(where: {$0.id == letterData.id})
+        favoriteLetters.contains { $0.id == letterData.id }
     }
 }

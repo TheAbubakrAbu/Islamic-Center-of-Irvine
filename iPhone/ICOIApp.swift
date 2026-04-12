@@ -79,10 +79,10 @@ struct IslamicCenterofIrvineApp: App {
                                     .padding(.bottom, 9)
                             }
                         }
-                            .tabItem {
-                                Image(systemName: "gearshape.fill")
-                                Text("Settings")
-                            }
+                        .tabItem {
+                            Image(systemName: "gearshape.fill")
+                            Text("Settings")
+                        }
                     }
                 }
             }
@@ -90,8 +90,8 @@ struct IslamicCenterofIrvineApp: App {
             .environmentObject(quranPlayer)
             .environmentObject(namesData)
             .environmentObject(settings)
-            .accentColor(settings.accentColor)
-            .tint(settings.accentColor)
+            .accentColor(settings.accentColor.color)
+            .tint(settings.accentColor.color)
             .preferredColorScheme(settings.colorScheme)
             .transition(.opacity)
             .animation(.easeInOut, value: isLaunching)

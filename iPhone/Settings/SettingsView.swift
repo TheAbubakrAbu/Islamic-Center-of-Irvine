@@ -21,68 +21,136 @@ struct ICOISettingsView: View {
     }
     
     var body: some View {
-        NavigationView {
-            List {
-                #if !os(watchOS)
-                Section(header: Text("NOTIFICATIONS")) {
-                    NavigationLink(destination: NotificationView()) {
-                        Label("Notification Settings", systemImage: "bell.badge")
-                    }
-                }
-                #endif
+        navigationContainer
+    }
 
-                Section(header: Text("AL-QURAN")) {
-                    NavigationLink(destination:
+    private var navigationContainer: some View {
+        Group {
+            #if os(iOS)
+            if #available(iOS 16.0, *) {
+                if UIDevice.current.userInterfaceIdiom == .pad {
+                    NavigationSplitView {
+                        settingsList
+                    } detail: {
                         SettingsQuranView(showEdits: true)
-                    ) {
-                        Label("Quran Settings", systemImage: "character.book.closed.ar")
                     }
-                    .accentColor(settings.accentColor)
-                }
-                
-                Section(header: Text("LAST UPDATED")) {
-                    SyncButton(title: "Prayers:", lastUpdated: settings.prayersICOI?.day, syncAction: {
-                        settings.fetchPrayerTimes(force: true)
-                    })
-                    
-                    SyncButton(title: "Businesses:", lastUpdated: settings.businessesICOI?.day, syncAction: {
-                        settings.fetchBusinesses(force: true)
-                    })
-                    
-                    Text("Syncing is available every 5 minutes.\n\nAll updates for prayers, events, and businesses occur automatically when you launch the app for the first time each day.")
-                        .font(.caption)
-                        .foregroundColor(.secondary)
-                }
-                
-                Section(header: Text("APPEARANCE")) {
-                    SettingsAppearanceView()
-                }
-                
-                Section(header: Text("CREDITS AND FEEDBACK")) {
-                    #if !os(watchOS)
-                    Button(action: {
-                        settings.hapticFeedback()
-                        
-                        showingCredits = true
-                    }) {
-                        Label("View Credits", systemImage: "scroll.fill")
-                            .font(.subheadline)
-                            .foregroundColor(settings.accentColor)
+                } else {
+                    NavigationStack {
+                        settingsList
                     }
-                    .sheet(isPresented: $showingCredits) {
-                        CreditsView()
-                    }
+                }
+            } else {
+                NavigationView {
+                    settingsList
+                }
+                .navigationViewStyle(.stack)
+            }
+            #else
+            NavigationView {
+                settingsList
+            }
+            .navigationViewStyle(.stack)
+            #endif
+        }
+    }
 
+    private var settingsList: some View {
+        List {
+            #if !os(watchOS)
+            Section(header: Text("NOTIFICATIONS")) {
+                NavigationLink(destination: NotificationView()) {
+                    Label(
+                        title: { Text("Notification Settings") },
+                        icon: {
+                            Image(systemName: "bell.badge")
+                                .foregroundColor(settings.accentColor.color)
+                        }
+                    )
+                    .padding(.vertical, 4)
+                    .accentColor(settings.accentColor.color)
+                }
+            }
+            #endif
+
+            Section(header: Text("AL-QURAN")) {
+                NavigationLink(destination:
+                    SettingsQuranView(showEdits: true)
+                ) {
+                    Label(
+                        title: { Text("Quran Settings") },
+                        icon: {
+                            Image(systemName: "character.book.closed.ar")
+                                .foregroundColor(settings.accentColor.color)
+                        }
+                    )
+                    .padding(.vertical, 4)
+                    .accentColor(settings.accentColor.color)
+                }
+                .accentColor(settings.accentColor.color)
+            }
+            
+            Section(header: Text("LAST UPDATED")) {
+                SyncButton(title: "Prayers:", lastUpdated: settings.prayersICOI?.day, syncAction: {
+                    settings.fetchPrayerTimes(force: true)
+                })
+                
+                SyncButton(title: "Businesses:", lastUpdated: settings.businessesICOI?.day, syncAction: {
+                    settings.fetchBusinesses(force: true)
+                })
+                
+                Text("Syncing is available every 5 minutes.\n\nAll updates for prayers, events, and businesses occur automatically when you launch the app for the first time each day.")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+            }
+            
+            Section(header: Text("APPEARANCE")) {
+                SettingsAppearanceView()
+            }
+            
+            Section(header: Text("CREDITS AND FEEDBACK")) {
+                #if !os(watchOS)
+                Button(action: {
+                    settings.hapticFeedback()
+                    
+                    showingCredits = true
+                }) {
+                    Label("View Credits", systemImage: "scroll.fill")
+                        .font(.subheadline)
+                        .foregroundColor(settings.accentColor.color)
+                }
+                .sheet(isPresented: $showingCredits) {
+                    CreditsView()
+                }
+
+                Button(action: {
+                    settings.hapticFeedback()
+                    
+                    withAnimation(.smooth()) {
+                        if let url = URL(string: "itms-apps://itunes.apple.com/app/id6463835936?action=write-review") {
+                            UIApplication.shared.open(url)
+                        }
+                    }
+                }) {
+                    Label("Leave a Review", systemImage: "star.bubble.fill")
+                        .font(.subheadline)
+                        .foregroundColor(settings.accentColor2)
+                }
+                .contextMenu {
                     Button(action: {
                         settings.hapticFeedback()
                         
-                        withAnimation(.smooth()) {
-                            if let url = URL(string: "itms-apps://itunes.apple.com/app/id6463835936?action=write-review") {
-                                UIApplication.shared.open(url)
-                            }
-                        }
+                        UIPasteboard.general.string = "itms-apps://itunes.apple.com/app/id6463835936?action=write-review"
                     }) {
-                        Label("Leave a Review", systemImage: "star.bubble.fill")
+                        HStack {
+                            Image(systemName: "doc.on.doc")
+                            Text("Copy Website")
+                        }
+                    }
+                }
+                
+                if let url = URL(string: "https://forms.gle/s2mp1uSr9rEXTWU29") {
+                    Link(destination: url) {
+                        Label("Feedback via Google Form", systemImage: "quote.bubble.fill")
                             .font(.subheadline)
                             .foregroundColor(settings.accentColor2)
                     }
@@ -90,7 +158,7 @@ struct ICOISettingsView: View {
                         Button(action: {
                             settings.hapticFeedback()
                             
-                            UIPasteboard.general.string = "itms-apps://itunes.apple.com/app/id6463835936?action=write-review"
+                            UIPasteboard.general.string = "https://forms.gle/s2mp1uSr9rEXTWU29"
                         }) {
                             HStack {
                                 Image(systemName: "doc.on.doc")
@@ -98,77 +166,56 @@ struct ICOISettingsView: View {
                             }
                         }
                     }
-                    
-                    if let url = URL(string: "https://forms.gle/s2mp1uSr9rEXTWU29") {
-                        Link(destination: url) {
-                            Label("Feedback via Google Form", systemImage: "quote.bubble.fill")
-                                .font(.subheadline)
-                                .foregroundColor(settings.accentColor2)
-                        }
-                        .contextMenu {
-                            Button(action: {
-                                settings.hapticFeedback()
-                                
-                                UIPasteboard.general.string = "https://forms.gle/s2mp1uSr9rEXTWU29"
-                            }) {
-                                HStack {
-                                    Image(systemName: "doc.on.doc")
-                                    Text("Copy Website")
-                                }
-                            }
-                        }
-                    }
-
-                    Button(action: {
-                        settings.hapticFeedback()
-                        
-                        withAnimation(.smooth()) {
-                            if let url = URL(string: UIApplication.openSettingsURLString) {
-                                UIApplication.shared.open(url, options: [:], completionHandler: nil)
-                            }
-                        }
-                    }) {
-                        Label("Open App Settings", systemImage: "gearshape.fill")
-                            .font(.subheadline)
-                            .foregroundColor(settings.accentColor2)
-                    }
-                    #endif
-
-                    HStack {
-                        Text("Contact: ")
-                            .font(.subheadline)
-                            .multilineTextAlignment(.leading)
-                            .frame(width: glyphWidth)
-                        
-                        Text("ammelmallah@icloud.com")
-                            .font(.subheadline)
-                            .foregroundColor(settings.accentColor)
-                            .multilineTextAlignment(.leading)
-                            .padding(.leading, -4)
-                    }
-                    #if !os(watchOS)
-                    .contextMenu {
-                        Button(action: {
-                            UIPasteboard.general.string = "ammelmallah@icloud.com"
-                        }) {
-                            HStack {
-                                Image(systemName: "doc.on.doc")
-                                Text("Copy Email")
-                            }
-                        }
-                    }
-                    #endif
-                    
-                    VersionNumber(width: glyphWidth)
-                        .font(.subheadline)
                 }
+
+                Button(action: {
+                    settings.hapticFeedback()
+                    
+                    withAnimation(.smooth()) {
+                        if let url = URL(string: UIApplication.openSettingsURLString) {
+                            UIApplication.shared.open(url, options: [:], completionHandler: nil)
+                        }
+                    }
+                }) {
+                    Label("Open App Settings", systemImage: "gearshape.fill")
+                        .font(.subheadline)
+                        .foregroundColor(settings.accentColor2)
+                }
+                #endif
+
+                HStack {
+                    Text("Contact: ")
+                        .font(.subheadline)
+                        .multilineTextAlignment(.leading)
+                        .frame(width: glyphWidth)
+                    
+                    Text("ammelmallah@icloud.com")
+                        .font(.subheadline)
+                        .foregroundColor(settings.accentColor.color)
+                        .multilineTextAlignment(.leading)
+                        .padding(.leading, -4)
+                }
+                #if !os(watchOS)
+                .contextMenu {
+                    Button(action: {
+                        UIPasteboard.general.string = "ammelmallah@icloud.com"
+                    }) {
+                        HStack {
+                            Image(systemName: "doc.on.doc")
+                            Text("Copy Email")
+                        }
+                    }
+                }
+                #endif
                 
-                AlIslamAppsSection()
+                VersionNumber(width: glyphWidth)
+                    .font(.subheadline)
             }
-            .navigationTitle("Settings")
-            .applyConditionalListStyle(defaultView: true)
+            
+            AlIslamAppsSection()
         }
-        .navigationViewStyle(.stack)
+        .navigationTitle("Settings")
+        .applyConditionalListStyle(defaultView: true)
     }
     
     private func columnWidth(for textStyle: UIFont.TextStyle, extra: CGFloat = 4, sample: String? = nil, fontName: String? = nil) -> CGFloat {
@@ -205,7 +252,7 @@ struct SyncButton: View {
             VStack(alignment: .leading) {
                 Text(title)
                     .font(.headline)
-                    .foregroundColor(settings.accentColor)
+                    .foregroundColor(settings.accentColor.color)
                 if let lastUpdated = lastUpdated {
                     Text(ICOISettingsView.dateFormatter.string(from: lastUpdated))
                         .font(.subheadline)
@@ -221,7 +268,7 @@ struct SyncButton: View {
                 .font(.subheadline)
                 .padding(8)
                 .foregroundColor(.white)
-                .background(canSync ? settings.accentColor : Color.gray)
+                .background(canSync ? settings.accentColor.color : Color.gray)
                 .cornerRadius(24)
                 .onTapGesture {
                     if canSync {
@@ -277,7 +324,7 @@ struct VersionNumber: View {
             }
             
             Text(Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "1.0.0")
-                .foregroundColor(settings.accentColor)
+                .foregroundColor(settings.accentColor.color)
                 .padding(.leading, -4)
         }
         .foregroundColor(.primary)

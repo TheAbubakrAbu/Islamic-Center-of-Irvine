@@ -4,17 +4,42 @@ struct QuranView: View {
     @EnvironmentObject var settings: Settings
     @EnvironmentObject var quranData: QuranData
     @EnvironmentObject var quranPlayer: QuranPlayer
+    @Environment(\.dismiss) private var dismiss
     
     @State private var searchText = ""
+    @State private var isQuranSearchFocused = false
     @State private var scrollToSurahID: Int = -1
     @State private var showingSettingsSheet = false
-    
+    @State private var showReciterPickerSheet = false
+    @State private var showListeningHistory = false
+    @State private var showReadingHistory = false
+    @State private var searchTextAtFocusStart = ""
+    @State private var lastSavedSearchQuery = ""
+    @State private var isListMoving = false
+    @State private var listMotionIdleTask: Task<Void, Never>?
+    @State private var showAyahSearchLearnMore = false
+
     @State private var verseHits: [VerseIndexEntry] = []
     @State private var hasMoreHits = true
     @State private var blockAyahSearchAfterZero = false
     @State private var zeroResultQueryLength = 0
+    @State private var selectedSurahID: Int? = nil
+    @State private var hasSetDefaultSelection = false
     private let hitPageSize = 5
-        
+
+    /// Computed surah ID that should be selected/highlighted based on reading history, bookmarks, favorites, or default to 1.
+    private var defaultSurahIDForSelection: Int {
+        if hasStoredLastReadAyah {
+            return settings.lastReadSurah
+        } else if let b = resolvedFirstBookmark() {
+            return b.surah.id
+        } else if let favID = settings.favoriteSurahs.sorted().first {
+            return favID
+        } else {
+            return 1
+        }
+    }
+
     private static let arFormatter: NumberFormatter = {
         let f = NumberFormatter()
         f.locale = Locale(identifier: "ar")
@@ -26,7 +51,7 @@ struct QuranView: View {
     }
     
     var lastReadSurah: Surah? {
-        quranData.quran.first(where: { $0.id == settings.lastReadSurah })
+        quranData.surah(settings.lastReadSurah)
     }
 
     var lastReadAyah: Ayah? {
@@ -39,24 +64,182 @@ struct QuranView: View {
         var ayahNumber: Int? = nil
 
         if surahAyahPair.count == 2 {
-            if let s = Int(surahAyahPair[0]), (1...114).contains(s) {
+            if let resolvedByName = quranData.resolveSurahIdentifier(surahAyahPair[0]) {
+                surahNumber = resolvedByName.id
+            } else if let s = Int(surahAyahPair[0]), (1...114).contains(s) {
                 surahNumber = s
-                ayahNumber = Int(surahAyahPair[1])
             } else if let s = arabicToEnglishNumber(surahAyahPair[0]), (1...114).contains(s) {
                 surahNumber = s
-                ayahNumber = arabicToEnglishNumber(surahAyahPair[1])
             }
+
+            ayahNumber = Int(surahAyahPair[1]) ?? arabicToEnglishNumber(surahAyahPair[1])
         }
 
         if let sNum = surahNumber,
            let aNum = ayahNumber,
-           let surah = quranData.quran.first(where: { $0.id == sNum }),
-           let ayah = surah.ayahs.first(where: { $0.id == aNum }) {
+           let surah = quranData.surah(sNum),
+           let ayah = quranData.ayah(surah: sNum, ayah: aNum) {
             return (surah, ayah)
         }
         return (nil, nil)
     }
     
+    /// Verse hits sorted by surah, then ayah (search results are always grouped by surah).
+    private var verseHitsGroupedBySurah: [(surahId: Int, hits: [VerseIndexEntry])] {
+        var grouped = [Int: [VerseIndexEntry]]()
+        var orderedSurahIDs: [Int] = []
+
+        for hit in verseHits {
+            if grouped[hit.surah] == nil {
+                grouped[hit.surah] = []
+                orderedSurahIDs.append(hit.surah)
+            }
+            grouped[hit.surah, default: []].append(hit)
+        }
+
+        return orderedSurahIDs.compactMap { sid in
+            guard let hits = grouped[sid] else { return nil }
+            return (sid, hits)
+        }
+    }
+
+    private struct PageJuzQuery {
+        let page: Int?
+        let juz: Int?
+        let isExplicitPage: Bool
+        let isExplicitJuz: Bool
+    }
+
+    private struct SearchDisplayContext {
+        let isSearching: Bool
+        let favoriteSurahs: Set<Int>
+        let bookmarkedAyahs: Set<String>
+        let pageJuzQuery: PageJuzQuery
+        let juzSurahs: [Surah]
+        let explicitPageOrJuzMode: Bool
+        let pageSearchResult: (surah: Surah, ayah: Ayah)?
+        let juzSearchResult: (surah: Surah, ayah: Ayah)?
+        let exactMatch: (surah: Surah?, ayah: Ayah?)
+        let surahCountQuery: SurahCountQuery?
+        let filteredSurahs: [Surah]
+        let canShowMoreAyahHits: Bool
+        let ayahCountDisplayText: String
+    }
+
+    private struct SurahCountQuery {
+        let ayahs: QuranData.CountFilter?
+        let pages: QuranData.CountFilter?
+
+        var hasAny: Bool { ayahs != nil || pages != nil }
+    }
+
+    private func parsePageJuzQuery(from raw: String) -> PageJuzQuery {
+        let trimmed = raw.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else {
+            return PageJuzQuery(page: nil, juz: nil, isExplicitPage: false, isExplicitJuz: false)
+        }
+
+        let lowered = trimmed.lowercased()
+
+        if lowered.hasPrefix("page ") {
+            let valueText = String(trimmed.dropFirst(5)).trimmingCharacters(in: .whitespacesAndNewlines)
+            let n = Int(valueText) ?? arabicToEnglishNumber(valueText)
+            let validPage = (n != nil && (1...630).contains(n!)) ? n : nil
+            return PageJuzQuery(page: validPage, juz: nil, isExplicitPage: true, isExplicitJuz: false)
+        }
+
+        if lowered.hasPrefix("juz ") {
+            let valueText = String(trimmed.dropFirst(4)).trimmingCharacters(in: .whitespacesAndNewlines)
+            let n = quranData.resolveJuzIdentifier(valueText) ?? Int(valueText) ?? arabicToEnglishNumber(valueText)
+            let validJuz = (n != nil && (1...30).contains(n!)) ? n : nil
+            return PageJuzQuery(page: nil, juz: validJuz, isExplicitPage: false, isExplicitJuz: true)
+        }
+
+        if let juzByName = quranData.resolveJuzIdentifier(trimmed) {
+            return PageJuzQuery(page: nil, juz: juzByName, isExplicitPage: false, isExplicitJuz: true)
+        }
+
+        let n = Int(trimmed) ?? arabicToEnglishNumber(trimmed)
+        guard let n else {
+            return PageJuzQuery(page: nil, juz: nil, isExplicitPage: false, isExplicitJuz: false)
+        }
+
+        let page = (1...630).contains(n) ? n : nil
+        let juz = (1...30).contains(n) ? n : nil
+        return PageJuzQuery(page: page, juz: juz, isExplicitPage: false, isExplicitJuz: false)
+    }
+
+    private func firstAyahResult(page: Int? = nil, juz: Int? = nil) -> (surah: Surah, ayah: Ayah)? {
+        quranData.firstAyahResult(page: page, juz: juz)
+    }
+
+    private func parseCountOperator(_ symbol: String?) -> QuranData.CountOperator {
+        switch symbol {
+        case "<": return .lessThan
+        case "<=": return .lessThanOrEqual
+        case ">": return .greaterThan
+        case ">=": return .greaterThanOrEqual
+        case "==": return .equal
+        default: return .equal
+        }
+    }
+
+    private func parseSurahCountQuery(from raw: String) -> SurahCountQuery? {
+        let pattern = #"(?:^|\s)(<=|>=|==|<|>)?\s*([0-9٠-٩]+)\s*(ayah|ayahs|aayah|aayahs|ay|page|pages|pg|pgs)\b"#
+        guard let regex = try? NSRegularExpression(pattern: pattern, options: [.caseInsensitive]) else { return nil }
+
+        let nsRange = NSRange(raw.startIndex..<raw.endIndex, in: raw)
+        let matches = regex.matches(in: raw, options: [], range: nsRange)
+        guard !matches.isEmpty else { return nil }
+
+        var ayahs: QuranData.CountFilter? = nil
+        var pages: QuranData.CountFilter? = nil
+
+        for match in matches {
+            guard let numberRange = Range(match.range(at: 2), in: raw),
+                  let unitRange = Range(match.range(at: 3), in: raw) else { continue }
+
+            let numberToken = String(raw[numberRange])
+            let unit = String(raw[unitRange]).lowercased()
+            guard let value = Int(numberToken) ?? arabicToEnglishNumber(numberToken), value >= 1 else { continue }
+
+            let opToken: String? = {
+                guard let r = Range(match.range(at: 1), in: raw) else { return nil }
+                return String(raw[r])
+            }()
+
+            let filter = QuranData.CountFilter(op: parseCountOperator(opToken), value: value)
+            if ["ayah", "ayahs", "aayah", "aayahs", "ay"].contains(unit) {
+                ayahs = filter
+            } else {
+                pages = filter
+            }
+        }
+
+        let query = SurahCountQuery(ayahs: ayahs, pages: pages)
+        return query.hasAny ? query : nil
+    }
+
+    private func filteredSurahs(for query: String, countQuery: SurahCountQuery?) -> [Surah] {
+        guard let countQuery else {
+            return quranData.filteredSurahs(query: query)
+        }
+
+        return quranData.surahsMatchingCount(ayahFilter: countQuery.ayahs, pageFilter: countQuery.pages)
+    }
+
+    private func persistQuranSearchHistoryIfNeeded(_ rawQuery: String, requireMinLength: Bool = false) {
+        let trimmed = rawQuery.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { return }
+        if requireMinLength && trimmed.count < 3 { return }
+
+        // Avoid repeatedly writing the same query while user is editing.
+        if lastSavedSearchQuery.caseInsensitiveCompare(trimmed) == .orderedSame { return }
+
+        settings.addQuranSearchHistory(trimmed)
+        lastSavedSearchQuery = trimmed
+    }
+
     enum QuranRoute: Hashable {
         case ayahs(surahID: Int, ayah: Int?)
     }
@@ -85,668 +268,1551 @@ struct QuranView: View {
         let more = page.count > limit
         return (Array(page.prefix(limit)), more)
     }
-     
+
+    private var shouldShowSearchHelpOverlay: Bool {
+        isQuranSearchFocused
+            && !isListMoving
+            && searchText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+    }
+
+    private func markListMoving() {
+        listMotionIdleTask?.cancel()
+        if !isListMoving {
+            isListMoving = true
+        }
+    }
+
+    private func markListStaticSoon() {
+        listMotionIdleTask?.cancel()
+        listMotionIdleTask = Task {
+            try? await Task.sleep(nanoseconds: 220_000_000)
+            if Task.isCancelled { return }
+            await MainActor.run {
+                isListMoving = false
+            }
+        }
+    }
+
+    @ViewBuilder
+    private var searchHelpOverlay: some View {
+        if shouldShowSearchHelpOverlay {
+            searchHelpOverlayCard
+                .transition(.move(edge: .top).combined(with: .opacity))
+                .animation(.easeInOut, value: shouldShowSearchHelpOverlay)
+        }
+    }
+
+    private var searchHelpOverlayCard: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Text("Quick Search Help")
+                .font(.subheadline.bold())
+                .foregroundStyle(settings.accentColor.color)
+
+            VStack(alignment: .leading, spacing: 4) {
+                Text("• Surah: number, Arabic, English, or transliteration")
+                Text("• Ayah: X:Y or text (Arabic/English/transliteration)")
+                Text("• Page/Juz: 'page X', 'juz X', or plain numbers")
+                Text("• Counts: '286 ayahs' or '48 pages'")
+            }
+            .font(.caption)
+            .foregroundStyle(.primary)
+
+            Button {
+                settings.hapticFeedback()
+                withAnimation {
+                    showAyahSearchLearnMore.toggle()
+                }
+            } label: {
+                Label(showAyahSearchLearnMore ? "Hide Ayah Search Guide" : "Ayah Search Guide", systemImage: "text.magnifyingglass")
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(settings.accentColor.color)
+            }
+            .buttonStyle(.plain)
+
+            if showAyahSearchLearnMore {
+                VStack(alignment: .leading, spacing: 6) {
+                    Text("Boolean operators: & (AND), | (OR), ! (NOT)")
+                    Text("Use #Arabic for normalized letters + matching tashkeel")
+                    Text("Use #English for exact phrase (case-insensitive)")
+                    Text("Use ^term for starts-with and term% for ends-with")
+                    Text("Count filters: 'X ayahs/pages', '<X', '>X', '<=X', '>=X', '==X'")
+                    Text("Juz names work too: Arabic or transliteration (example: Alif Lam Meem)")
+                    Text("Example: ^Allah & mercy%")
+                }
+                .font(.caption2)
+                .foregroundStyle(.secondary)
+            }
+        }
+        .padding(14)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .conditionalGlassEffect(rectangle: true)
+        .padding(.horizontal, 16)
+        .padding(.top, 8)
+    }
+
+    private var loadingFallbackView: some View {
+        VStack(spacing: 12) {
+            ProgressView()
+            Text("Loading Quran...")
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+    }
+
     var body: some View {
+        navigationContainer
+        .confirmationDialog(
+            quranPlayer.playbackAlertTitle,
+            isPresented: $quranPlayer.showInternetAlert,
+            titleVisibility: .visible
+        ) { Button("OK") { } } message: {
+            Text(quranPlayer.playbackAlertMessage)
+        }
+    }
+    
+    private var navigationContainer: some View {
         Group {
             #if os(iOS)
             if #available(iOS 16.0, *) {
                 if useStackOnThisDevice {
-                    NavigationStack(path: $path) {
-                        content
-                            .navigationDestination(for: QuranRoute.self) { route in
-                                switch route {
-                                case let .ayahs(surahID, ayah):
-                                    if let s = quranData.quran.first(where: { $0.id == surahID }) {
-                                        AyahsView(surah: s, ayah: ayah)
-                                    } else {
-                                        AyahsView(surah: quranData.quran[0])
-                                    }
-                                }
-                            }
-                    }
+                    stackNavigation
                 } else {
-                    NavigationView {
-                        content
-                        detailFallback
-                    }
-                    .navigationViewStyle(.columns)
+                    splitNavigation
                 }
+            } else if UIDevice.current.userInterfaceIdiom == .pad {
+                legacyPadNavigation
             } else {
-                if UIDevice.current.userInterfaceIdiom == .pad {
-                    NavigationView {
-                        content
-                        detailFallback
-                    }
-                    .navigationViewStyle(.columns)
-                } else {
-                    NavigationView { content }
-                }
+                legacyPhoneNavigation
             }
             #else
             NavigationView { content }
             #endif
         }
-        .confirmationDialog(
-            "Internet Connection Error",
-            isPresented: $quranPlayer.showInternetAlert,
-            titleVisibility: .visible
-        ) { Button("OK", role: .cancel) { } } message: {
-            Text("Unable to load the recitation due to an internet connection issue. Please check your connection and try again.")
+    }
+
+    @available(iOS 16.0, *)
+    private var stackNavigation: some View {
+        NavigationStack(path: $path) {
+            content
+                .navigationDestination(for: QuranRoute.self) { route in
+                    routeDestination(route)
+                }
+        }
+    }
+
+    @available(iOS 16.0, *)
+    private var splitNavigation: some View {
+        NavigationSplitView {
+            contentForSplitView
+                .onAppear {
+                    if !hasSetDefaultSelection {
+                        setDefaultSelection()
+                        hasSetDefaultSelection = true
+                    }
+                }
+        } detail: {
+            detailContent
+                .animation(.easeInOut(duration: 0.3), value: selectedSurahID)
+        }
+    }
+
+    private var contentForSplitView: some View {
+        #if os(iOS)
+        ScrollViewReader { scrollProxy in
+            let context = searchDisplayContext
+
+            List(selection: $selectedSurahID) {
+                primaryHistorySections(context: context)
+                bookmarkSection(context: context)
+                favoriteSection(context: context)
+                if context.explicitPageOrJuzMode && context.isSearching {
+                    pageSearchSection(context: context)
+                    juzSearchSection(context: context)
+                }
+                surahContentSections(context: context)
+                searchResultSections(context: context)
+            }
+            .applyConditionalListStyle(defaultView: settings.defaultView)
+            .compactListSectionSpacing()
+            .listSectionIndexVisibilityWhenAvailable(visible: settings.quranSortMode == .juz && searchText.isEmpty)
+            .animation(.easeInOut(duration: 0.22), value: settings.quranSortMode)
+            .onChange(of: scrollToSurahID) { id in
+                guard id > 0 else { return }
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                    withAnimation {
+                        scrollProxy.scrollTo("surah_\(id)", anchor: .top)
+                    }
+                }
+            }
+            .task {
+                if !hasSetDefaultSelection {
+                    selectedSurahID = defaultSurahIDForSelection
+                    hasSetDefaultSelection = true
+                }
+            }
+        }
+        .navigationTitle("Al-Quran")
+        .toolbar {
+            ToolbarItem(placement: .navigationBarTrailing) {
+                settingsButton
+            }
+        }
+        .sheet(isPresented: $showingSettingsSheet) {
+            NavigationView { SettingsQuranView(showEdits: false, presentedAsSheet: true) }
+        }
+        .sheet(isPresented: $showReciterPickerSheet) {
+            NavigationView {
+                ReciterListView(dismissAfterSelectingReciter: true, autoScrollToInitialSelection: false)
+                    .environmentObject(settings)
+                    .toolbar {
+                        ToolbarItem(placement: .navigationBarTrailing) {
+                            Button("Done") {
+                                showReciterPickerSheet = false
+                            }
+                        }
+                    }
+            }
+            .navigationViewStyle(.stack)
+            .modifier(QuranReciterPickerSheetPresentationModifier())
+        }
+        .onDisappear {
+            withAnimation {
+                persistQuranSearchHistoryIfNeeded(searchText)
+            }
+        }
+        .onChange(of: settings.displayQiraah) { _ in
+            if !searchText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                handleAyahSearchChange(searchText)
+            }
+        }
+        .overlay(alignment: .top) {
+            searchHelpOverlay
+        }
+        .adaptiveSafeArea(edge: .bottom) {
+            bottomControls
+        }
+        #else
+        EmptyView()
+        #endif
+    }
+
+    private var legacyPadNavigation: some View {
+        NavigationView {
+            content
+            detailFallback
+        }
+        #if os(iOS)
+        .navigationViewStyle(.columns)
+        #endif
+    }
+
+    private var legacyPhoneNavigation: some View {
+        NavigationView {
+            content
+        }
+    }
+
+    @ViewBuilder
+    private func routeDestination(_ route: QuranRoute) -> some View {
+        switch route {
+        case let .ayahs(surahID, ayah):
+            if let surah = quranData.surah(surahID) {
+                ayahsDestination(surah: surah, ayah: ayah)
+            } else {
+                loadingFallbackView
+            }
+        }
+    }
+
+    @ViewBuilder
+    private func ayahsDestination(surah: Surah, ayah: Int? = nil) -> some View {
+        if let ayah {
+            AyahsView(surah: surah, ayah: ayah)
+                .id("ayahs-\(surah.id)-\(ayah)")
+        } else {
+            AyahsView(surah: surah)
+                .id("ayahs-\(surah.id)")
         }
     }
     
     var content: some View {
-        VStack {
-            ScrollViewReader { scrollProxy in
-                List {
-                    let favoriteSurahs = Set(settings.favoriteSurahs)
-                    let bookmarkedAyahs = Set(settings.bookmarkedAyahs.map(\.id))
-                    
-                    #if !os(watchOS)
-                    if searchText.isEmpty, let surah = settings.lastListenedSurah {
-                        LastListenedSurahRow(
-                            lastListenedSurah: surah,
-                            favoriteSurahs: favoriteSurahs,
-                            searchText: $searchText,
-                            scrollToSurahID: $scrollToSurahID
-                        )
-                    }
-                    #else
-                    NowPlayingView(quranView: true)
-                    #endif
+        ScrollViewReader { scrollProxy in
+            let context = searchDisplayContext
 
-                    if searchText.isEmpty, let lastReadSurah = lastReadSurah, let lastReadAyah = lastReadAyah {
-                        LastReadAyahRow(
-                            surah: lastReadSurah,
-                            ayah: lastReadAyah,
-                            favoriteSurahs: favoriteSurahs,
-                            bookmarkedAyahs: bookmarkedAyahs,
-                            searchText: $searchText,
-                            scrollToSurahID: $scrollToSurahID
-                        )
-                    }
-                    
-                    if !settings.bookmarkedAyahs.isEmpty && searchText.isEmpty {
-                        Section(header:
-                            HStack {
-                                Text("BOOKMARKED AYAHS")
-                            
-                                Spacer()
-                            
-                                Image(systemName: settings.showBookmarks ? "chevron.down" : "chevron.up")
-                                    .foregroundColor(settings.accentColor)
-                                    .onTapGesture {
-                                        settings.hapticFeedback()
-                                        withAnimation { settings.showBookmarks.toggle() }
-                                    }
-                            }
-                        ) {
-                            if settings.showBookmarks {
-                                ForEach(settings.bookmarkedAyahs.sorted {
-                                    $0.surah == $1.surah ? ($0.ayah < $1.ayah) : ($0.surah < $1.surah)
-                                }, id: \.id) { bookmarkedAyah in
-                                    if let surah = quranData.quran.first(where: { $0.id == bookmarkedAyah.surah }),
-                                       let ayah = surah.ayahs.first(where: { $0.id == bookmarkedAyah.ayah }) {
-                                        
-                                        let noteText = bookmarkedAyah.note?.trimmingCharacters(in: .whitespacesAndNewlines)
-                                        let noteToShow = (noteText?.isEmpty == false) ? noteText : nil
-                                        
-                                        Group {
-                                            #if !os(watchOS)
-                                            Button {
-                                                push(surahID: bookmarkedAyah.surah, ayahID: bookmarkedAyah.ayah)
-                                            } label: {
-                                                NavigationLink(destination: AyahsView(surah: surah, ayah: ayah.id)) {
-                                                    SurahAyahRow(surah: surah, ayah: ayah, note: noteToShow)
-                                                }
-                                            }
-                                            #else
-                                            NavigationLink(destination: AyahsView(surah: surah, ayah: ayah.id)) {
-                                                SurahAyahRow(surah: surah, ayah: ayah, note: noteToShow)
-                                            }
-                                            #endif
-                                        }
-                                        .rightSwipeActions(
-                                            surahID: surah.id,
-                                            surahName: surah.nameTransliteration,
-                                            ayahID: ayah.id,
-                                            searchText: $searchText,
-                                            scrollToSurahID: $scrollToSurahID
-                                        )
-                                        .leftSwipeActions(
-                                            surah: surah.id,
-                                            favoriteSurahs: favoriteSurahs,
-                                            bookmarkedAyahs: bookmarkedAyahs,
-                                            bookmarkedSurah: bookmarkedAyah.surah,
-                                            bookmarkedAyah: bookmarkedAyah.ayah
-                                        )
-                                        .ayahContextMenuModifier(
-                                            surah: surah.id,
-                                            ayah: ayah.id,
-                                            favoriteSurahs: favoriteSurahs,
-                                            bookmarkedAyahs: bookmarkedAyahs,
-                                            searchText: $searchText,
-                                            scrollToSurahID: $scrollToSurahID
-                                        )
-                                    }
-                                }
-                            }
-                        }
-                    }
-                    
-                    if !settings.favoriteSurahs.isEmpty && searchText.isEmpty {
-                        Section(header:
-                            HStack {
-                                Text("FAVORITE SURAHS")
-                            
-                                Spacer()
-                            
-                                Image(systemName: settings.showFavorites ? "chevron.down" : "chevron.up")
-                                    .foregroundColor(settings.accentColor)
-                                    .onTapGesture {
-                                        settings.hapticFeedback()
-                                        withAnimation { settings.showFavorites.toggle() }
-                                    }
-                            }
-                        ) {
-                            if settings.showFavorites {
-                                ForEach(settings.favoriteSurahs.sorted(), id: \.self) { surahID in
-                                    if let surah = quranData.quran.first(where: { $0.id == surahID }) {
-                                        Group {
-                                            #if !os(watchOS)
-                                            Button {
-                                                push(surahID: surahID)
-                                            } label: {
-                                                NavigationLink(destination: AyahsView(surah: surah)) {
-                                                    SurahRow(surah: surah)
-                                                }
-                                            }
-                                            #else
-                                            NavigationLink(destination: AyahsView(surah: surah)) {
-                                                SurahRow(surah: surah)
-                                            }
-                                            #endif
-                                        }
-                                        .rightSwipeActions(
-                                            surahID: surahID,
-                                            surahName: surah.nameTransliteration,
-                                            searchText: $searchText,
-                                            scrollToSurahID: $scrollToSurahID
-                                        )
-                                        .leftSwipeActions(surah: surah.id, favoriteSurahs: favoriteSurahs)
-                                        #if !os(watchOS)
-                                        .contextMenu {
-                                            SurahContextMenu(
-                                                surahID: surah.id,
-                                                surahName: surah.nameTransliteration,
-                                                favoriteSurahs: favoriteSurahs,
-                                                searchText: $searchText,
-                                                scrollToSurahID: $scrollToSurahID
-                                            )
-                                        }
-                                        #endif
-                                    }
-                                }
-                            }
-                        }
-                    }
-                    
-                    if settings.groupBySurah || (!searchText.isEmpty && settings.searchForSurahs) {
-                        let cleanedSearch = settings.cleanSearch(searchText.replacingOccurrences(of: ":", with: ""))
-                        let surahAyahPair = searchText.split(separator: ":").map(String.init)
-                        let upperQuery = searchText.uppercased()
-                        let numericQuery: Int? = {
-                            if surahAyahPair.count == 2 {
-                                return Int(surahAyahPair[0]) ?? arabicToEnglishNumber(surahAyahPair[0])
-                            } else {
-                                return Int(cleanedSearch) ?? arabicToEnglishNumber(cleanedSearch)
-                            }
-                        }()
-
-                        let filteredSurahs: [Surah] = quranData.quran.filter { surah in
-                            if let n = numericQuery, n == surah.id { return true }
-                            if searchText.isEmpty { return true }
-                            return upperQuery.contains(surah.nameEnglish.uppercased())                     ||
-                                   upperQuery.contains(surah.nameTransliteration.uppercased())             ||
-                                   settings.cleanSearch(surah.nameArabic).contains(cleanedSearch)          ||
-                                   settings.cleanSearch(surah.nameTransliteration).contains(cleanedSearch) ||
-                                   settings.cleanSearch(surah.nameEnglish).contains(cleanedSearch)         ||
-                                   settings.cleanSearch(String(surah.id)).contains(cleanedSearch)          ||
-                                   settings.cleanSearch(surah.idArabic).contains(cleanedSearch)
-                        }
-
-                        Section(header:
-                            Group {
-                                if searchText.isEmpty {
-                                    SurahsHeader()
-                                } else {
-                                    HStack {
-                                        Text("SURAH SEARCH RESULTS")
-                                        
-                                        Spacer()
-                                        
-                                        Text("\(filteredSurahs.count)")
-                                            .font(.caption.weight(.semibold))
-                                            .foregroundStyle(settings.accentColor)
-                                            .padding(.horizontal, 12)
-                                            .padding(.vertical, 6)
-                                            #if !os(watchOS)
-                                            .background(.ultraThinMaterial)
-                                            #endif
-                                            .clipShape(Capsule())
-                                    }
-                                    .padding(.vertical, 4)
-                                }
-                            }
-                        ) {
-                            ForEach(filteredSurahs, id: \.id) { surah in
-                                NavigationLink(destination: AyahsView(surah: surah)) {
-                                    SurahRow(surah: surah)
-                                }
-                                .id("surah_\(surah.id)")
-                                .onAppear {
-                                    if surah.id == scrollToSurahID {
-                                        scrollToSurahID = -1
-                                    }
-                                }
-                                .rightSwipeActions(
-                                    surahID: surah.id,
-                                    surahName: surah.nameTransliteration,
-                                    searchText: $searchText,
-                                    scrollToSurahID: $scrollToSurahID
-                                )
-                                .leftSwipeActions(surah: surah.id, favoriteSurahs: favoriteSurahs)
-                                #if !os(watchOS)
-                                .contextMenu {
-                                    SurahContextMenu(
-                                        surahID: surah.id,
-                                        surahName: surah.nameTransliteration,
-                                        favoriteSurahs: favoriteSurahs,
-                                        searchText: $searchText,
-                                        scrollToSurahID: $scrollToSurahID
-                                    )
-                                }
-                                #endif
-                                .animation(.easeInOut, value: searchText)
-                            }
-                        }
-                    } else {
-                        ForEach(QuranData.juzList, id: \.id) { juz in
-                            Section(header: JuzHeader(juz: juz)) {
-                                let surahsInRange = quranData.quran.filter {
-                                    $0.id >= juz.startSurah && $0.id <= juz.endSurah
-                                }
-                                ForEach(surahsInRange, id: \.id) { surah in
-                                    let startAyah = (surah.id == juz.startSurah) ? juz.startAyah : 1
-                                    let endAyah = (surah.id == juz.endSurah) ? juz.endAyah : surah.numberOfAyahs
-                                    let singleSurah = (juz.startSurah == surah.id && juz.endSurah == surah.id)
-                                    
-                                    Group {
-                                        if singleSurah {
-                                            if startAyah > 1 {
-                                                NavigationLink(destination: AyahsView(surah: surah, ayah: startAyah)) {
-                                                    SurahRow(surah: surah, ayah: startAyah)
-                                                }
-                                            } else {
-                                                NavigationLink(destination: AyahsView(surah: surah)) {
-                                                    SurahRow(surah: surah, ayah: startAyah)
-                                                }
-                                            }
-                                            if endAyah < surah.numberOfAyahs {
-                                                NavigationLink(destination: AyahsView(surah: surah, ayah: endAyah)) {
-                                                    SurahRow(surah: surah, ayah: endAyah, end: true)
-                                                }
-                                            } else {
-                                                NavigationLink(destination: AyahsView(surah: surah)) {
-                                                    SurahRow(surah: surah)
-                                                }
-                                            }
-                                        } else if surah.id == juz.startSurah {
-                                            if startAyah > 1 {
-                                                NavigationLink(destination: AyahsView(surah: surah, ayah: startAyah)) {
-                                                    SurahRow(surah: surah, ayah: startAyah)
-                                                }
-                                            } else {
-                                                NavigationLink(destination: AyahsView(surah: surah)) {
-                                                    SurahRow(surah: surah, ayah: startAyah)
-                                                }
-                                            }
-                                        } else if surah.id == juz.endSurah {
-                                            if surah.id == 114 {
-                                                NavigationLink(destination: AyahsView(surah: surah)) {
-                                                    SurahRow(surah: surah)
-                                                }
-                                            } else if endAyah < surah.numberOfAyahs {
-                                                NavigationLink(destination: AyahsView(surah: surah, ayah: endAyah)) {
-                                                    SurahRow(surah: surah, ayah: endAyah, end: true)
-                                                }
-                                            } else {
-                                                NavigationLink(destination: AyahsView(surah: surah)) {
-                                                    SurahRow(surah: surah)
-                                                }
-                                            }
-                                        } else {
-                                            NavigationLink(destination: AyahsView(surah: surah)) {
-                                                SurahRow(surah: surah)
-                                            }
-                                        }
-                                    }
-                                    .id("surah_\(surah.id)")
-                                    #if !os(watchOS)
-                                    .rightSwipeActions(
-                                        surahID: surah.id,
-                                        surahName: surah.nameTransliteration,
-                                        searchText: $searchText,
-                                        scrollToSurahID: $scrollToSurahID
-                                    )
-                                    .leftSwipeActions(surah: surah.id, favoriteSurahs: favoriteSurahs)
-                                    .contextMenu {
-                                        SurahContextMenu(
-                                            surahID: surah.id,
-                                            surahName: surah.nameTransliteration,
-                                            favoriteSurahs: favoriteSurahs,
-                                            searchText: $searchText,
-                                            scrollToSurahID: $scrollToSurahID
-                                        )
-                                    }
-                                    #endif
-                                }
-                            }
-                            .sectionIndexLabelWhenAvailable("\(juz.id)")
-                        }
-                    }
-                    
-                    if !searchText.isEmpty {
-                        let searchResult = getSurahAndAyah(from: searchText)
-                        let surah = searchResult.surah
-                        let ayah = searchResult.ayah
-                        
-                        let exactMatchBump = (surah != nil && ayah != nil) ? 1 : 0
-                        let canShowNext = hasMoreHits && !verseHits.isEmpty
-                        let ayahCount = verseHits.count + exactMatchBump
-                        let ayahCountStr = "\(ayahCount)\(canShowNext ? "+" : "")"
-                        
-                        Section(header:
-                            HStack {
-                                Text("AYAH SEARCH RESULTS")
-                            
-                                Spacer()
-                            
-                                Text(ayahCountStr)
-                                    .font(.caption.weight(.semibold))
-                                    .foregroundStyle(settings.accentColor)
-                                    .padding(.horizontal, 12)
-                                    .padding(.vertical, 6)
-                                    #if !os(watchOS)
-                                    .background(.ultraThinMaterial)
-                                    #endif
-                                    .clipShape(Capsule())
-                            }
-                            .padding(.vertical, 4)
-                        ) {
-                            if let surah = surah, let ayah = ayah {
-                                AyahSearchResultRow(
-                                    surah: surah,
-                                    ayah: ayah,
-                                    favoriteSurahs: favoriteSurahs,
-                                    bookmarkedAyahs: bookmarkedAyahs,
-                                    searchText: $searchText,
-                                    scrollToSurahID: $scrollToSurahID
-                                )
-                            }
-                            
-                            ForEach(verseHits) { hit in
-                                if let surah = quranData.surah(hit.surah), let ayah = quranData.ayah(surah: hit.surah, ayah: hit.ayah) {
-                                    NavigationLink {
-                                        AyahsView(surah: surah, ayah: ayah.id)
-                                    } label: {
-                                        AyahSearchRow(
-                                            surahName: surah.nameTransliteration,
-                                            surah: hit.surah,
-                                            ayah: hit.ayah,
-                                            query: searchText,
-                                            arabic: ayah.displayArabicText(surahId: hit.surah, clean: settings.cleanArabicText),
-                                            transliteration: ayah.textTransliteration,
-                                            englishSaheeh: ayah.textEnglishSaheeh,
-                                            englishMustafa: ayah.textEnglishMustafa,
-                                            favoriteSurahs: favoriteSurahs,
-                                            bookmarkedAyahs: bookmarkedAyahs,
-                                            searchText: $searchText,
-                                            scrollToSurahID: $scrollToSurahID
-                                        )
-                                    }
-                                }
-                            }
-
-                            if canShowNext {
-                                #if !os(watchOS)
-                                Menu("Load more ayah matches") {
-                                    ForEach([5, 10, 20], id: \.self) { amount in
-                                        Button("Load \(amount)") {
-                                            settings.hapticFeedback()
-                                            let (moreHits, moreAvail) = fetchHits(
-                                                query: searchText,
-                                                limit: amount,
-                                                offset: verseHits.count
-                                            )
-                                            withAnimation {
-                                                verseHits.append(contentsOf: moreHits)
-                                                hasMoreHits = moreAvail
-                                            }
-                                        }
-                                    }
-                                }
-                                .frame(maxWidth: .infinity, alignment: .center)
-                                .multilineTextAlignment(.center)
-                                #else
-                                if hasMoreHits && !verseHits.isEmpty {
-                                    Button("Load \(hitPageSize) ayah matches") {
-                                        let (moreHits, moreAvail) = fetchHits(query: searchText, limit: hitPageSize, offset: verseHits.count)
-                                        withAnimation {
-                                            verseHits.append(contentsOf: moreHits)
-                                            hasMoreHits = moreAvail
-                                        }
-                                    }
-                                    .foregroundColor(settings.accentColor)
-                                    .frame(maxWidth: .infinity, alignment: .center)
-                                    .multilineTextAlignment(.center)
-                                }
-                                #endif
-
-                                Button {
-                                    settings.hapticFeedback()
-                                    withAnimation {
-                                        verseHits = quranData.searchVersesAll(term: searchText)
-                                        hasMoreHits = false
-                                    }
-                                } label: {
-                                    Text("Load all ayah matches")
-                                        .foregroundColor(settings.accentColor)
-                                }
-                                .frame(maxWidth: .infinity, alignment: .center)
-                                .multilineTextAlignment(.center)
-                            }
-                        }
-                        .onChange(of: searchText) { txt in
-                            let q = txt.trimmingCharacters(in: .whitespacesAndNewlines)
-
-                            guard !q.isEmpty else {
-                                withAnimation {
-                                    verseHits = []
-                                    hasMoreHits = false
-                                    blockAyahSearchAfterZero = false
-                                }
-                                return
-                            }
-
-                            if blockAyahSearchAfterZero {
-                                if q.count < zeroResultQueryLength {
-                                    blockAyahSearchAfterZero = false
-                                } else if q.count > zeroResultQueryLength {
-                                    return
-                                }
-                            }
-
-                            let (first, more) = fetchHits(query: q, limit: hitPageSize, offset: 0)
-                            withAnimation {
-                                verseHits = first
-                                hasMoreHits = more
-                                if first.isEmpty {
-                                    blockAyahSearchAfterZero = true
-                                    zeroResultQueryLength = q.count
-                                } else {
-                                    blockAyahSearchAfterZero = false
-                                }
-                            }
-                        }
-                    }
+            List {
+                primaryHistorySections(context: context)
+                bookmarkSection(context: context)
+                favoriteSection(context: context)
+                if context.explicitPageOrJuzMode && context.isSearching {
+                    pageSearchSection(context: context)
+                    juzSearchSection(context: context)
                 }
-                .applyConditionalListStyle(defaultView: settings.defaultView)
-                .dismissKeyboardOnScroll()
-                .listSectionIndexVisibilityWhenAvailable(visible: !settings.groupBySurah && searchText.isEmpty)
-                #if os(watchOS)
-                .searchable(text: $searchText)
-                #endif
-                .onChange(of: scrollToSurahID) { id in
-                    if id > 0 {
-                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-                            withAnimation { scrollProxy.scrollTo("surah_\(id)", anchor: .top) }
-                        }
+                surahContentSections(context: context)
+                searchResultSections(context: context)
+            }
+            .applyConditionalListStyle(defaultView: settings.defaultView)
+            .compactListSectionSpacing()
+            .listSectionIndexVisibilityWhenAvailable(visible: settings.quranSortMode == .juz && searchText.isEmpty)
+            .animation(.easeInOut(duration: 0.22), value: settings.quranSortMode)
+            #if os(watchOS)
+            .searchable(text: $searchText)
+            #endif
+            .onChange(of: scrollToSurahID) { id in
+                guard id > 0 else { return }
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                    withAnimation {
+                        scrollProxy.scrollTo("surah_\(id)", anchor: .top)
                     }
                 }
             }
             
-            #if !os(watchOS)
-            VStack {
-                if quranPlayer.isPlaying || quranPlayer.isPaused {
-                    NowPlayingView(quranView: true, scrollDown: $scrollToSurahID, searchText: $searchText)
-                }
-                
-                Picker("Sort Type", selection: $settings.groupBySurah.animation(.easeInOut)) {
-                    Text("Sort by Surah").tag(true)
-                    Text("Sort by Juz").tag(false)
-                }
-                .pickerStyle(SegmentedPickerStyle())
-                .padding(.horizontal)
-                
-                HStack {
-                    SearchBar(text: $searchText.animation(.easeInOut))
-                        .padding(.horizontal, 8)
-                    
-                    if quranPlayer.isLoading || quranPlayer.isPlaying || quranPlayer.isPaused {
-                        Button {
-                            settings.hapticFeedback()
-                            if quranPlayer.isLoading {
-                                quranPlayer.isLoading = false
-                                quranPlayer.pause(saveInfo: false)
-                            } else {
-                                quranPlayer.stop()
-                            }
-                        } label: {
-                            if quranPlayer.isLoading {
-                                RotatingGearView().transition(.opacity)
-                            } else {
-                                Image(systemName: "xmark.circle.fill")
-                                    .resizable()
-                                    .aspectRatio(contentMode: .fit)
-                                    .frame(width: 25, height: 25)
-                                    .foregroundColor(settings.accentColor)
-                                    .transition(.opacity)
-                            }
-                        }
-                        .padding(.trailing, 28)
-                    } else {
-                        Menu {
-                            if let last = settings.lastListenedSurah, let surah = quranData.quran.first(where: { $0.id == last.surahNumber }) {
-                                Button {
-                                    settings.hapticFeedback()
-                                    quranPlayer.playSurah(
-                                        surahNumber: last.surahNumber,
-                                        surahName: last.surahName,
-                                        certainReciter: true
-                                    )
-                                } label: {
-                                    Label("Play Last Listened Surah (\(surah.nameTransliteration))", systemImage: "play.fill")
-                                }
-                            }
-                            
-                            Button {
-                                settings.hapticFeedback()
-                                if let randomSurah = quranData.quran.randomElement() {
-                                    quranPlayer.playSurah(surahNumber: randomSurah.id, surahName: randomSurah.nameTransliteration)
-                                } else {
-                                    let n = Int.random(in: 1...114)
-                                    let name = quranData.quran.first(where: { $0.id == n })?.nameTransliteration ?? "Random Surah"
-                                    quranPlayer.playSurah(surahNumber: n, surahName: name)
-                                }
-                            } label: {
-                                Label("Play Random Surah", systemImage: "shuffle")
-                            }
-                            
-                            Button {
-                                settings.hapticFeedback()
-                                
-                                if let randomSurah = quranData.quran.randomElement() {
-                                    if let randomAyah = randomSurah.ayahs.randomElement() {
-                                        quranPlayer.playAyah(
-                                            surahNumber: randomSurah.id,
-                                            ayahNumber: randomAyah.id,
-                                            continueRecitation: true
-                                        )
-                                    }
-                                }
-                            } label: {
-                                Label("Play Random Ayah", systemImage: "shuffle.circle.fill")
-                            }
-                        } label: {
-                            Image(systemName: "play.fill")
-                                .resizable()
-                                .aspectRatio(contentMode: .fit)
-                                .frame(width: 25, height: 25)
-                                .foregroundColor(settings.accentColor)
-                                .transition(.opacity)
-                        }
-                        .padding(.trailing, 28)
-                    }
-                }
-            }
-            .animation(.easeInOut, value: quranPlayer.isPlaying)
-            #endif
         }
         .navigationTitle("Al-Quran")
-        #if !os(watchOS)
+        #if os(iOS)
         .toolbar {
             ToolbarItem(placement: .navigationBarTrailing) {
-                Button {
-                    settings.hapticFeedback()
-                    showingSettingsSheet = true
-                } label: { Image(systemName: "gear") }
+                settingsButton
             }
         }
         .sheet(isPresented: $showingSettingsSheet) {
-            NavigationView { SettingsQuranView(showEdits: false) }
+            NavigationView { SettingsQuranView(showEdits: false, presentedAsSheet: true) }
+        }
+        .sheet(isPresented: $showReciterPickerSheet) {
+            NavigationView {
+                ReciterListView(dismissAfterSelectingReciter: true, autoScrollToInitialSelection: false)
+                    .environmentObject(settings)
+                    .toolbar {
+                        ToolbarItem(placement: .navigationBarTrailing) {
+                            Button("Done") {
+                                showReciterPickerSheet = false
+                            }
+                        }
+                    }
+            }
+            .navigationViewStyle(.stack)
+            .modifier(QuranReciterPickerSheetPresentationModifier())
+        }
+        .onDisappear {
+            withAnimation {
+                persistQuranSearchHistoryIfNeeded(searchText)
+            }
+        }
+        .onChange(of: settings.displayQiraah) { _ in
+            if !searchText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                handleAyahSearchChange(searchText)
+            }
+        }
+        .overlay(alignment: .top) {
+            searchHelpOverlay
+        }
+        .adaptiveSafeArea(edge: .bottom) {
+            bottomControls
         }
         #endif
     }
-    
+
+    private var settingsButton: some View {
+        Button {
+            settings.hapticFeedback()
+            showingSettingsSheet = true
+        } label: {
+            Image(systemName: "gear")
+        }
+    }
+
+    private var bottomControls: some View {
+        #if os(iOS)
+        VStack(spacing: SafeAreaInsetVStackSpacing.standard) {
+            searchHistoryChips
+            nowPlayingInset
+            sortModePicker
+            searchAndPlaybackRow
+        }
+        .padding(.horizontal, 24)
+        .padding(.bottom, 8)
+        .background(Color.white.opacity(0.00001))
+        .animation(.easeInOut, value: quranPlayer.isPlaying)
+        #else
+        EmptyView()
+        #endif
+    }
+
     @ViewBuilder
-    var detailFallback: some View {
-        if let lastSurah = lastReadSurah, let lastAyah = lastReadAyah {
-            AyahsView(surah: lastSurah, ayah: lastAyah.id)
-        } else if !settings.bookmarkedAyahs.isEmpty {
-            let first = settings.bookmarkedAyahs.sorted {
-                $0.surah == $1.surah ? ($0.ayah < $1.ayah) : ($0.surah < $1.surah)
-            }.first
-            let surah = quranData.quran.first(where: { $0.id == first?.surah })
-            let ayah = surah?.ayahs.first(where: { $0.id == first?.ayah })
-            if let s = surah, let a = ayah { AyahsView(surah: s, ayah: a.id) }
-        } else if let firstFav = settings.favoriteSurahs.sorted().first, let surah = quranData.quran.first(where: { $0.id == firstFav }) {
-            AyahsView(surah: surah)
+    private var searchHistoryChips: some View {
+        #if os(iOS)
+        if isQuranSearchFocused && !settings.quranSearchHistory.isEmpty {
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 8) {
+                    ForEach(settings.quranSearchHistory, id: \.self) { query in
+                        searchHistoryChip(query: query)
+                    }
+                }
+            }
+        }
+        #endif
+    }
+
+    private func searchHistoryChip(query: String) -> some View {
+        HStack(spacing: 4) {
+            Button {
+                settings.hapticFeedback()
+                withAnimation {
+                    searchText = query
+                    settings.addQuranSearchHistory(query)
+                    self.endEditing()
+                }
+            } label: {
+                Text(query)
+                    .font(.caption)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.8)
+                    .padding(.horizontal, 10)
+                    .padding(.vertical, 6)
+            }
+
+            Button {
+                settings.hapticFeedback()
+                settings.removeQuranSearchHistory(query)
+            } label: {
+                Image(systemName: "xmark")
+                    .font(.caption2.bold())
+                    .padding(.trailing, 8)
+            }
+        }
+        .foregroundStyle(settings.accentColor.color)
+        .conditionalGlassEffect(useColor: 0.25)
+    }
+
+    @ViewBuilder
+    private var nowPlayingInset: some View {
+        #if os(iOS)
+        if quranPlayer.isPlaying || quranPlayer.isPaused {
+            NowPlayingView(quranView: true, scrollDown: $scrollToSurahID, searchText: $searchText)
+        }
+        #endif
+    }
+
+    private var sortModePicker: some View {
+        #if os(iOS)
+        Picker("Sort Type", selection: Binding(
+            get: { settings.quranSortMode },
+            set: { newMode in
+                withAnimation(.easeInOut(duration: 0.22)) {
+                    settings.quranSortMode = newMode
+                }
+            }
+        ).animation(.easeInOut)) {
+            Text("Surah").tag(Settings.QuranSortMode.surah)
+            Text("Juz").tag(Settings.QuranSortMode.juz)
+            Text("Revelation").tag(Settings.QuranSortMode.revelation)
+        }
+        .pickerStyle(SegmentedPickerStyle())
+        .conditionalGlassEffect()
+        #else
+        EmptyView()
+        #endif
+    }
+
+    private var searchAndPlaybackRow: some View {
+        #if os(iOS)
+        HStack(spacing: 0) {
+            quranSearchBar
+
+            playbackMenuButton
+                .frame(width: 27, height: 27)
+                .padding()
+                .conditionalGlassEffect()
+                .padding(.bottom, 2)
+        }
+        .padding(.leading, -8)
+        .padding(.top, UIDevice.current.userInterfaceIdiom == .pad ? 0 : -8)
+        #else
+        EmptyView()
+        #endif
+    }
+
+    private var quranSearchBar: some View {
+        #if os(iOS)
+        SearchBar(
+            text: $searchText.animation(.easeInOut),
+            onSearchButtonClicked: {
+                self.endEditing()
+            },
+            onFocusChanged: { focused in
+                withAnimation {
+                    isQuranSearchFocused = focused
+                }
+                if focused {
+                    searchTextAtFocusStart = searchText
+                }
+                if !focused {
+                    if searchTextAtFocusStart.caseInsensitiveCompare(searchText) != .orderedSame {
+                        persistQuranSearchHistoryIfNeeded(searchText, requireMinLength: true)
+                    }
+                }
+            }
+        )
+        #else
+        EmptyView()
+        #endif
+    }
+
+    private var playbackMenuButton: some View {
+        #if os(iOS)
+        VStack {
+            if quranPlayer.isLoading || quranPlayer.isPlaying || quranPlayer.isPaused {
+                Button {
+                    settings.hapticFeedback()
+                    if quranPlayer.isLoading {
+                        quranPlayer.isLoading = false
+                        quranPlayer.pause(saveInfo: false)
+                    } else {
+                        quranPlayer.stop()
+                    }
+                } label: {
+                    if quranPlayer.isLoading {
+                        RotatingGearView().transition(.opacity)
+                    } else {
+                        Image(systemName: "xmark.circle.fill")
+                            .resizable()
+                            .aspectRatio(contentMode: .fit)
+                            .foregroundColor(settings.accentColor.color)
+                            .transition(.opacity)
+                    }
+                }
+            } else {
+                Menu {
+                    playbackMenuContent
+                } label: {
+                    Image(systemName: "play.fill")
+                        .resizable()
+                        .aspectRatio(contentMode: .fit)
+                        .foregroundColor(settings.accentColor.color)
+                        .transition(.opacity)
+                }
+            }
+        }
+        #else
+        EmptyView()
+        #endif
+    }
+
+    @ViewBuilder
+    private var playbackMenuContent: some View {
+        #if os(iOS)
+        if let last = settings.lastListenedSurah,
+              let surah = quranData.surah(last.surahNumber) {
+            Button {
+                settings.hapticFeedback()
+                quranPlayer.playSurah(
+                    surahNumber: last.surahNumber,
+                    surahName: last.surahName,
+                    certainReciter: true
+                )
+            } label: {
+                Label("Play Last Listened Surah (\(surah.nameTransliteration))", systemImage: "play.fill")
+            }
+        }
+
+        Button {
+            settings.hapticFeedback()
+            if let randomSurah = quranData.quran.randomElement() {
+                quranPlayer.playSurah(surahNumber: randomSurah.id, surahName: randomSurah.nameTransliteration)
+            } else {
+                let randomID = Int.random(in: 1...114)
+                let surahName = quranData.surah(randomID)?.nameTransliteration ?? "Random Surah"
+                quranPlayer.playSurah(surahNumber: randomID, surahName: surahName)
+            }
+        } label: {
+            Label("Play Random Surah", systemImage: "shuffle")
+        }
+
+        Button {
+            settings.hapticFeedback()
+            if let randomSurah = quranData.quran.randomElement(),
+               let randomAyah = randomSurah.ayahs.randomElement() {
+                quranPlayer.playAyah(
+                    surahNumber: randomSurah.id,
+                    ayahNumber: randomAyah.id,
+                    continueRecitation: true
+                )
+            }
+        } label: {
+            Label("Play Random Ayah", systemImage: "shuffle.circle")
+        }
+        
+        Button {
+            settings.hapticFeedback()
+            showReciterPickerSheet = true
+        } label: {
+            Label("Choose Reciter", systemImage: "headphones")
+        }
+        #endif
+    }
+
+    @ViewBuilder
+    private func primaryHistorySections(context: SearchDisplayContext) -> some View {
+        #if os(iOS)
+        if context.isSearching == false, let surah = settings.lastListenedSurah {
+            LastListenedSurahRow(
+                lastListenedSurah: surah,
+                favoriteSurahs: context.favoriteSurahs,
+                searchText: $searchText,
+                scrollToSurahID: $scrollToSurahID,
+                showListeningHistory: $showListeningHistory
+            )
+        }
+        #else
+        NowPlayingView(quranView: true)
+        #endif
+
+        if context.isSearching == false,
+           let lastReadSurah,
+           let lastReadAyah {
+            LastReadAyahRow(
+                surah: lastReadSurah,
+                ayah: lastReadAyah,
+                favoriteSurahs: context.favoriteSurahs,
+                bookmarkedAyahs: context.bookmarkedAyahs,
+                searchText: $searchText,
+                scrollToSurahID: $scrollToSurahID,
+                showReadingHistory: $showReadingHistory
+            )
+        }
+    }
+
+    @ViewBuilder
+    private func bookmarkSection(context: SearchDisplayContext) -> some View {
+        if !settings.bookmarkedAyahs.isEmpty && !context.isSearching {
+            Section(header: bookmarkHeader) {
+                if settings.showBookmarks {
+                    ForEach(settings.bookmarkedAyahs.sorted {
+                        $0.surah == $1.surah ? ($0.ayah < $1.ayah) : ($0.surah < $1.surah)
+                    }, id: \.id) { bookmarkedAyah in
+                        bookmarkRow(bookmarkedAyah, context: context)
+                    }
+                }
+            }
+        }
+    }
+
+    private var bookmarkHeader: some View {
+        HStack {
+            Text("BOOKMARKED AYAHS")
+
+            Spacer()
+            
+            Image(systemName: settings.showBookmarks ? "chevron.down.circle" : "chevron.up.circle")
+                .foregroundColor(settings.accentColor.color)
+                .padding(4)
+                .conditionalGlassEffect()
+                .onTapGesture {
+                    settings.hapticFeedback()
+                    withAnimation { settings.showBookmarks.toggle() }
+                }
+        }
+    }
+
+    @ViewBuilder
+    private func bookmarkRow(_ bookmarkedAyah: BookmarkedAyah, context: SearchDisplayContext) -> some View {
+          if let surah = quranData.surah(bookmarkedAyah.surah),
+              let ayah = quranData.ayah(surah: bookmarkedAyah.surah, ayah: bookmarkedAyah.ayah) {
+            let noteText = bookmarkedAyah.note?.trimmingCharacters(in: .whitespacesAndNewlines)
+            let noteToShow = (noteText?.isEmpty == false) ? noteText : nil
+
+            Group {
+                NavigationLink(destination: ayahsDestination(surah: surah, ayah: ayah.id)) {
+                    SurahAyahRow(surah: surah, ayah: ayah, note: noteToShow)
+                }
+                .tag(surah.id)
+            }
+            .rightSwipeActions(
+                surahID: surah.id,
+                surahName: surah.nameTransliteration,
+                ayahID: ayah.id,
+                searchText: $searchText,
+                scrollToSurahID: $scrollToSurahID
+            )
+            .leftSwipeActions(
+                surah: surah.id,
+                favoriteSurahs: context.favoriteSurahs,
+                bookmarkedAyahs: context.bookmarkedAyahs,
+                bookmarkedSurah: bookmarkedAyah.surah,
+                bookmarkedAyah: bookmarkedAyah.ayah
+            )
+            .ayahContextMenuModifier(
+                surah: surah.id,
+                ayah: ayah.id,
+                favoriteSurahs: context.favoriteSurahs,
+                bookmarkedAyahs: context.bookmarkedAyahs,
+                searchText: $searchText,
+                scrollToSurahID: $scrollToSurahID
+            )
+        }
+    }
+
+    @ViewBuilder
+    private func favoriteSection(context: SearchDisplayContext) -> some View {
+        if !settings.favoriteSurahs.isEmpty && !context.isSearching {
+            Section(header: favoriteHeader) {
+                if settings.showFavorites {
+                    ForEach(settings.favoriteSurahs.sorted(), id: \.self) { surahID in
+                        favoriteRow(surahID: surahID, context: context)
+                    }
+                }
+            }
+        }
+    }
+
+    private var favoriteHeader: some View {
+        HStack {
+            Text("FAVORITE SURAHS")
+
+            Spacer()
+
+            Image(systemName: settings.showFavorites ? "chevron.down.circle" : "chevron.up.circle")
+                .foregroundColor(settings.accentColor.color)
+                .padding(4)
+                .conditionalGlassEffect()
+                .onTapGesture {
+                    settings.hapticFeedback()
+                    withAnimation { settings.showFavorites.toggle() }
+                }
+        }
+    }
+
+    @ViewBuilder
+    private func favoriteRow(surahID: Int, context: SearchDisplayContext) -> some View {
+        if let surah = quranData.surah(surahID) {
+            Group {
+                NavigationLink(destination: ayahsDestination(surah: surah)) {
+                    SurahRow(surah: surah, isFavorite: context.favoriteSurahs.contains(surah.id))
+                }
+                .tag(surah.id)
+            }
+            .rightSwipeActions(
+                surahID: surahID,
+                surahName: surah.nameTransliteration,
+                searchText: $searchText,
+                scrollToSurahID: $scrollToSurahID
+            )
+            .leftSwipeActions(surah: surah.id, favoriteSurahs: context.favoriteSurahs)
+            #if os(iOS)
+            .contextMenu {
+                SurahContextMenu(
+                    surahID: surah.id,
+                    surahName: surah.nameTransliteration,
+                    favoriteSurahs: context.favoriteSurahs,
+                    searchText: $searchText,
+                    scrollToSurahID: $scrollToSurahID
+                )
+            }
+            #endif
+        }
+    }
+
+    @ViewBuilder
+    private func surahContentSections(context: SearchDisplayContext) -> some View {
+        // Full browse list only when browsing. Never stack it under explicit page/juz queries.
+        if context.explicitPageOrJuzMode && context.isSearching {
+            EmptyView()
+        } else if context.isSearching {
+            if settings.searchForSurahs {
+                surahSearchSection(context: context)
+            }
         } else {
-            AyahsView(surah: quranData.quran[0])
+            switch settings.quranSortMode {
+            case .surah:
+                surahBrowseSection(context: context, showsRevelationOrder: false)
+            case .juz:
+                juzSections(context: context)
+            case .page:
+                pageSections(context: context)
+            case .revelation:
+                surahBrowseSection(context: context, showsRevelationOrder: true)
+            }
+        }
+    }
+
+    @ViewBuilder
+    private func surahBrowseSection(context: SearchDisplayContext, showsRevelationOrder: Bool) -> some View {
+        let browsedSurahs = showsRevelationOrder
+            ? quranData.quran.sorted {
+                let left = $0.revelationOrder ?? Int.max
+                let right = $1.revelationOrder ?? Int.max
+                if left == right { return $0.id < $1.id }
+                return left < right
+            }
+            : quranData.quran
+
+        Section(header: surahBrowseHeader(showsRevelationOrder: showsRevelationOrder)) { }
+            .padding(.bottom, -12)
+
+        ForEach(browsedSurahs, id: \.id) { surah in
+            Section {
+                surahRow(surah: surah, context: context, showsRevelationOrder: showsRevelationOrder)
+            }
+        }
+    }
+
+    @ViewBuilder
+    private func surahBrowseHeader(showsRevelationOrder: Bool) -> some View {
+        if showsRevelationOrder {
+            SurahsHeader(text: "REVELATION ORDER")
+        } else {
+            SurahsHeader()
+        }
+    }
+
+    private func surahSearchSection(context: SearchDisplayContext) -> some View {
+        Group {
+            Section(header: surahSectionHeader(context: context)) { }
+                .padding(.bottom, -12)
+            
+            ForEach(context.filteredSurahs, id: \.id) { surah in
+                Section {
+                    NavigationLink(destination: ayahsDestination(surah: surah)) {
+                        surahSearchRow(surah: surah, context: context)
+                    }
+                    .tag(surah.id)
+                    .id("surah_\(surah.id)")
+                    .onAppear {
+                        if surah.id == scrollToSurahID {
+                            withAnimation {
+                                scrollToSurahID = -1
+                            }
+                        }
+                    }
+                    .rightSwipeActions(
+                        surahID: surah.id,
+                        surahName: surah.nameTransliteration,
+                        searchText: $searchText,
+                        scrollToSurahID: $scrollToSurahID
+                    )
+                    .leftSwipeActions(surah: surah.id, favoriteSurahs: context.favoriteSurahs)
+                    #if os(iOS)
+                    .contextMenu {
+                        SurahContextMenu(
+                            surahID: surah.id,
+                            surahName: surah.nameTransliteration,
+                            favoriteSurahs: context.favoriteSurahs,
+                            searchText: $searchText,
+                            scrollToSurahID: $scrollToSurahID
+                        )
+                    }
+                    #endif
+                    .animation(.easeInOut, value: searchText)
+                }
+            }
+        }
+    }
+
+    @ViewBuilder
+    private func surahSearchRow(surah: Surah, context: SearchDisplayContext) -> some View {
+        if settings.quranSortMode == .revelation {
+            HStack(spacing: 10) {
+                revelationOrderBadge(surah.revelationOrder ?? 0)
+
+                SurahRow(surah: surah, isFavorite: context.favoriteSurahs.contains(surah.id))
+            }
+        } else {
+            SurahRow(surah: surah, isFavorite: context.favoriteSurahs.contains(surah.id))
+        }
+    }
+    
+    private var revelationBadgeWidth: CGFloat {
+        let font = UIFont.preferredFont(forTextStyle: .caption1)
+        let text = "#114" as NSString
+        let size = text.size(withAttributes: [.font: font])
+        return size.width + 8
+    }
+
+    private func revelationOrderBadge(_ order: Int) -> some View {
+        Text("#\(order)")
+            .font(.caption.weight(.semibold))
+            .monospacedDigit()
+            .foregroundStyle(settings.accentColor.color)
+            .frame(width: revelationBadgeWidth, alignment: .center)
+            .accessibilityLabel("Revelation order \(order)")
+    }
+
+    @ViewBuilder
+    private func surahSectionHeader(context: SearchDisplayContext) -> some View {
+        if context.isSearching {
+            HStack {
+                Text("SURAH SEARCH RESULTS")
+
+                Spacer()
+
+                Text("\(context.filteredSurahs.count)")
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(settings.accentColor.color)
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 6)
+                    .conditionalGlassEffect()
+                    .padding(.vertical, -16)
+            }
+        } else {
+            SurahsHeader()
+        }
+    }
+
+    @ViewBuilder
+    private func juzSections(context: SearchDisplayContext) -> some View {
+        ForEach(quranData.juzSections) { sectionData in
+            let juz = sectionData.juz
+            Section(header: JuzHeader(juz: juz)) {
+                ForEach(sectionData.rows) { row in
+                    preprocessedJuzRow(row: row, context: context)
+                }
+            }
+            .sectionIndexLabelWhenAvailable("\(juz.id)")
+        }
+    }
+
+    @ViewBuilder
+    private func preprocessedJuzRow(row: QuranData.JuzSectionData.Row, context: SearchDisplayContext) -> some View {
+        if let surah = quranData.surah(row.surahID) {
+            let destination: AnyView = {
+                switch row.kind {
+                case .plain:
+                    return AnyView(ayahsDestination(surah: surah))
+                case .start(let ayah):
+                    if ayah > 1 {
+                        return AnyView(ayahsDestination(surah: surah, ayah: ayah))
+                    }
+                    return AnyView(ayahsDestination(surah: surah))
+                case .end(let ayah):
+                    if ayah < surah.numberOfAyahs {
+                        return AnyView(ayahsDestination(surah: surah, ayah: ayah))
+                    }
+                    return AnyView(ayahsDestination(surah: surah))
+                }
+            }()
+
+            NavigationLink(destination: destination) {
+                switch row.kind {
+                case .plain:
+                    SurahRow(surah: surah, isFavorite: context.favoriteSurahs.contains(surah.id))
+                case .start(let ayah):
+                    SurahRow(surah: surah, ayah: ayah, isFavorite: context.favoriteSurahs.contains(surah.id))
+                case .end(let ayah):
+                    SurahRow(surah: surah, ayah: ayah, end: true, isFavorite: context.favoriteSurahs.contains(surah.id))
+                }
+            }
+            .tag(surah.id)
+            #if os(iOS)
+            .rightSwipeActions(
+                surahID: surah.id,
+                surahName: surah.nameTransliteration,
+                searchText: $searchText,
+                scrollToSurahID: $scrollToSurahID
+            )
+            .leftSwipeActions(surah: surah.id, favoriteSurahs: context.favoriteSurahs)
+            .contextMenu {
+                SurahContextMenu(
+                    surahID: surah.id,
+                    surahName: surah.nameTransliteration,
+                    favoriteSurahs: context.favoriteSurahs,
+                    searchText: $searchText,
+                    scrollToSurahID: $scrollToSurahID
+                )
+            }
+            #endif
+        }
+    }
+
+    @ViewBuilder
+    private func pageSections(context: SearchDisplayContext) -> some View {
+        ForEach(quranData.pageSections) { pageGroup in
+            Section(header: PageHeader(page: pageGroup.page)) {
+                ForEach(pageGroup.surahIDs, id: \.self) { surahID in
+                    if let surah = quranData.surah(surahID) {
+                        surahRow(surah: surah, context: context)
+                    }
+                }
+            }
+            .sectionIndexLabelWhenAvailable("\(pageGroup.surahIDs.first ?? pageGroup.page)")
+        }
+    }
+
+    @ViewBuilder
+    private func revelationSections(context: SearchDisplayContext) -> some View {
+        Section(header: SurahsHeader(text: "REVELATION ORDER")) {
+            ForEach(quranData.revelationOrderSurahIDs, id: \.self) { surahID in
+                if let surah = quranData.surah(surahID) {
+                    NavigationLink(destination: ayahsDestination(surah: surah)) {
+                        HStack(spacing: 10) {
+                            revelationOrderBadge(surah.revelationOrder ?? 0)
+                            
+                            SurahRow(surah: surah, isFavorite: context.favoriteSurahs.contains(surah.id))
+                        }
+                    }
+                    .tag(surah.id)
+                    .id("surah_\(surah.id)")
+                    #if os(iOS)
+                    .rightSwipeActions(
+                        surahID: surah.id,
+                        surahName: surah.nameTransliteration,
+                        searchText: $searchText,
+                        scrollToSurahID: $scrollToSurahID
+                    )
+                    .leftSwipeActions(surah: surah.id, favoriteSurahs: context.favoriteSurahs)
+                    .contextMenu {
+                        SurahContextMenu(
+                            surahID: surah.id,
+                            surahName: surah.nameTransliteration,
+                            favoriteSurahs: context.favoriteSurahs,
+                            searchText: $searchText,
+                            scrollToSurahID: $scrollToSurahID
+                        )
+                    }
+                    #endif
+                }
+            }
+        }
+    }
+
+    @ViewBuilder
+    private func surahRow(surah: Surah, context: SearchDisplayContext, showsRevelationOrder: Bool = false) -> some View {
+        NavigationLink(destination: ayahsDestination(surah: surah)) {
+            if showsRevelationOrder {
+                HStack(spacing: 10) {
+                    revelationOrderBadge(surah.revelationOrder ?? 0)
+
+                    SurahRow(surah: surah, isFavorite: context.favoriteSurahs.contains(surah.id))
+                }
+            } else {
+                SurahRow(surah: surah, isFavorite: context.favoriteSurahs.contains(surah.id))
+            }
+        }
+        .tag(surah.id)
+        .id("surah_\(surah.id)")
+        #if os(iOS)
+        .rightSwipeActions(
+            surahID: surah.id,
+            surahName: surah.nameTransliteration,
+            searchText: $searchText,
+            scrollToSurahID: $scrollToSurahID
+        )
+        .leftSwipeActions(surah: surah.id, favoriteSurahs: context.favoriteSurahs)
+        .contextMenu {
+            SurahContextMenu(
+                surahID: surah.id,
+                surahName: surah.nameTransliteration,
+                favoriteSurahs: context.favoriteSurahs,
+                searchText: $searchText,
+                scrollToSurahID: $scrollToSurahID
+            )
+        }
+        #endif
+    }
+
+    @ViewBuilder
+    private func searchResultSections(context: SearchDisplayContext) -> some View {
+        if context.isSearching {
+            // Page/juz rows for explicit queries are inserted above surahContentSections.
+            if !context.explicitPageOrJuzMode {
+                pageSearchSection(context: context)
+                juzSearchSection(context: context)
+            }
+
+            if !context.explicitPageOrJuzMode, context.surahCountQuery == nil {
+                ayahSearchSection(context: context)
+                    .onChange(of: searchText) { txt in
+                        handleAyahSearchChange(txt)
+                    }
+            }
+        }
+    }
+
+    @ViewBuilder
+    private func pageSearchSection(context: SearchDisplayContext) -> some View {
+        if let page = context.pageJuzQuery.page,
+           let pageResult = context.pageSearchResult {
+            Section(header: pageSearchHeader(title: "PAGE SEARCH RESULT", valueText: "Page \(page)")) {
+                AyahSearchResultRow(
+                    surah: pageResult.surah,
+                    ayah: pageResult.ayah,
+                    favoriteSurahs: context.favoriteSurahs,
+                    bookmarkedAyahs: context.bookmarkedAyahs,
+                    searchText: $searchText,
+                    scrollToSurahID: $scrollToSurahID,
+                    disableTajweedColors: true
+                )
+            }
+        }
+    }
+
+    @ViewBuilder
+    private func juzSearchSection(context: SearchDisplayContext) -> some View {
+        if let juz = context.pageJuzQuery.juz {
+            Section(header: pageSearchHeader(title: "JUZ SEARCH RESULT", valueText: "Juz \(juz) • \(context.juzSurahs.count) Surahs")) {
+                if let juzResult = context.juzSearchResult {
+                    AyahSearchResultRow(
+                        surah: juzResult.surah,
+                        ayah: juzResult.ayah,
+                        favoriteSurahs: context.favoriteSurahs,
+                        bookmarkedAyahs: context.bookmarkedAyahs,
+                        searchText: $searchText,
+                        scrollToSurahID: $scrollToSurahID,
+                        disableTajweedColors: true
+                    )
+                }
+
+                ForEach(context.juzSurahs, id: \.id) { surah in
+                    surahRow(surah: surah, context: context)
+                }
+            }
+        }
+    }
+
+    private func pageSearchHeader(title: String, valueText: String) -> some View {
+        HStack {
+            Text(title)
+
+            Spacer()
+
+            Text(valueText)
+                .font(.caption.weight(.semibold))
+                .monospacedDigit()
+                .foregroundStyle(settings.accentColor.color)
+                .padding(.horizontal, 12)
+                .padding(.vertical, 6)
+                .conditionalGlassEffect()
+                .padding(.vertical, -16)
+        }
+    }
+
+    @ViewBuilder
+    private func ayahSearchSection(context: SearchDisplayContext) -> some View {
+        let bestHits = bestAyahHitsForCurrentQuery()
+
+        if !bestHits.isEmpty {
+            Section(header: bestAyahHeader(count: bestHits.count)) {
+                ForEach(bestHits) { hit in
+                    ayahHitRow(hit: hit, context: context)
+                }
+            }
+        }
+
+        Section(header: ayahSearchHeader(context: context)) {
+            ayahExactMatchRows(context: context)
+        }
+        
+        ForEach(verseHitsGroupedBySurah, id: \.surahId) { group in
+            Section {
+                ForEach(group.hits) { hit in
+                    ayahHitRow(hit: hit, context: context)
+                }
+            } header: {
+                surahSearchSectionHeader(surahId: group.surahId)
+            }
+        }
+        Section {
+            ayahLoadMoreControls(context: context)
+        }
+    }
+
+    private func bestAyahHeader(count: Int) -> some View {
+        HStack {
+            Text("TOP AYAH RESULTS")
+
+            Spacer()
+
+            Text(String(count))
+                .font(.caption.weight(.semibold))
+                .monospacedDigit()
+                .foregroundStyle(settings.accentColor.color)
+                .padding(.horizontal, 12)
+                .padding(.vertical, 6)
+                .conditionalGlassEffect()
+                .padding(.vertical, -16)
+        }
+    }
+
+    private func bestAyahHitsForCurrentQuery(maxResults: Int = 3) -> [VerseIndexEntry] {
+        let trimmed = searchText.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard trimmed.count >= 4, !verseHits.isEmpty else { return [] }
+
+        let normalizedQuery = normalizedBestMatchText(trimmed)
+        guard !normalizedQuery.isEmpty else { return [] }
+
+        let queryTokens = normalizedQuery
+            .split(separator: " ")
+            .map(String.init)
+            .filter { !$0.isEmpty }
+
+        guard !queryTokens.isEmpty else { return [] }
+
+        typealias RankedHit = (hit: VerseIndexEntry, score: Int)
+        var ranked: [RankedHit] = []
+        ranked.reserveCapacity(verseHits.count)
+
+        for hit in verseHits {
+            guard let ayah = quranData.ayah(surah: hit.surah, ayah: hit.ayah) else { continue }
+
+            let arabic = normalizedBestMatchText(ayah.displayArabicText(surahId: hit.surah, clean: settings.cleanArabicText))
+            let tr = normalizedBestMatchText(ayah.textTransliteration)
+            let en1 = normalizedBestMatchText(ayah.textEnglishSaheeh)
+            let en2 = normalizedBestMatchText(ayah.textEnglishMustafa)
+            let sources = [arabic, tr, en1, en2]
+
+            var score = 0
+
+            if sources.contains(where: { $0 == normalizedQuery }) {
+                score += 260
+            }
+
+            if sources.contains(where: { $0.hasPrefix(normalizedQuery) }) {
+                score += 180
+            } else if sources.contains(where: { $0.contains(normalizedQuery) }) {
+                score += 120
+            }
+
+            let tokenHits = queryTokens.filter { token in
+                sources.contains(where: { $0.contains(token) })
+            }.count
+
+            score += tokenHits * 24
+
+            if tokenHits == queryTokens.count {
+                score += 60
+            }
+
+            if score > 0 {
+                ranked.append((hit: hit, score: score))
+            }
+        }
+
+        guard !ranked.isEmpty else { return [] }
+
+        ranked.sort {
+            if $0.score != $1.score { return $0.score > $1.score }
+            if $0.hit.surah != $1.hit.surah { return $0.hit.surah < $1.hit.surah }
+            return $0.hit.ayah < $1.hit.ayah
+        }
+
+        let topScore = ranked[0].score
+        let secondScore = ranked.count > 1 ? ranked[1].score : 0
+        let isClearlyBetter = topScore >= 220 || (ranked.count > 1 && (topScore - secondScore) >= 40)
+        guard isClearlyBetter else { return [] }
+
+        let minAcceptedScore = max(150, topScore - 55)
+        var selected: [VerseIndexEntry] = []
+        var seen = Set<String>()
+
+        for candidate in ranked where candidate.score >= minAcceptedScore {
+            let key = "\(candidate.hit.surah)-\(candidate.hit.ayah)"
+            if seen.insert(key).inserted {
+                selected.append(candidate.hit)
+            }
+            if selected.count >= maxResults { break }
+        }
+
+        return selected
+    }
+
+    private func normalizedBestMatchText(_ text: String) -> String {
+        settings.cleanSearch(text, whitespace: true)
+            .removingArabicDiacriticsAndSigns
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+
+    @ViewBuilder
+    private func surahSearchSectionHeader(surahId: Int) -> some View {
+        if let s = quranData.surah(surahId) {
+            let latinHeader1 = "\(s.id). \(s.nameTransliteration)".uppercased()
+            
+            let latinHeader2 = "(\(s.nameEnglish)) —".uppercased()
+            
+            HStack(spacing: 6) {
+                Text(latinHeader1)
+                
+                Text(latinHeader2)
+                    .font(.caption)
+                
+                Text(s.nameArabic)
+                    .font(.caption)
+            }
+        } else {
+            Text("SURAH \(surahId)")
+        }
+    }
+
+    @ViewBuilder
+    private func ayahExactMatchRows(context: SearchDisplayContext) -> some View {
+        if let surah = context.exactMatch.surah,
+           let ayah = context.exactMatch.ayah {
+            AyahSearchResultRow(
+                surah: surah,
+                ayah: ayah,
+                favoriteSurahs: context.favoriteSurahs,
+                bookmarkedAyahs: context.bookmarkedAyahs,
+                searchText: $searchText,
+                scrollToSurahID: $scrollToSurahID,
+                disableTajweedColors: true
+            )
+        }
+    }
+
+    private func ayahSearchHeader(context: SearchDisplayContext) -> some View {
+        HStack {
+            Text("AYAH SEARCH RESULTS")
+
+            Spacer()
+
+            Text(context.ayahCountDisplayText)
+                .font(.caption.weight(.semibold))
+                .monospacedDigit()
+                .foregroundStyle(settings.accentColor.color)
+                .padding(.horizontal, 12)
+                .padding(.vertical, 6)
+                .conditionalGlassEffect()
+                .padding(.vertical, -16)
+        }
+    }
+
+    @ViewBuilder
+    private func ayahHitRow(hit: VerseIndexEntry, context: SearchDisplayContext) -> some View {
+        if let surah = quranData.surah(hit.surah),
+           let ayah = quranData.ayah(surah: hit.surah, ayah: hit.ayah) {
+            NavigationLink {
+                ayahsDestination(surah: surah, ayah: ayah.id)
+            } label: {
+                AyahSearchRow(
+                    surahName: surah.nameTransliteration,
+                    surah: hit.surah,
+                    ayah: hit.ayah,
+                    query: searchText,
+                    arabic: ayah.displayArabicText(surahId: hit.surah, clean: settings.cleanArabicText),
+                    transliteration: ayah.textTransliteration,
+                    englishSaheeh: ayah.textEnglishSaheeh,
+                    englishMustafa: ayah.textEnglishMustafa,
+                    favoriteSurahs: context.favoriteSurahs,
+                    bookmarkedAyahs: context.bookmarkedAyahs,
+                    searchText: $searchText,
+                    scrollToSurahID: $scrollToSurahID,
+                    qiraahRefreshKey: settings.displayQiraah,
+                    compact: true,
+                    disableTajweedColors: true
+                )
+                .id("ayah-results-\(surah.id)-\(ayah.id)")
+                .animation(.easeInOut, value: verseHits.count)
+            }
+        }
+    }
+
+    @ViewBuilder
+    private func ayahLoadMoreControls(context: SearchDisplayContext) -> some View {
+        if context.canShowMoreAyahHits {
+            #if os(iOS)
+            Menu("Load more ayah matches") {
+                ForEach([5, 10, 20], id: \.self) { amount in
+                    Button {
+                        settings.hapticFeedback()
+                        let (moreHits, moreAvail) = fetchHits(
+                            query: searchText,
+                            limit: amount,
+                            offset: verseHits.count
+                        )
+                        withAnimation {
+                            verseHits.append(contentsOf: moreHits)
+                            hasMoreHits = moreAvail
+                        }
+                    } label: {
+                        Label("Load \(amount)", systemImage: "\(amount).circle")
+                    }
+                }
+            }
+            .frame(maxWidth: .infinity, alignment: .center)
+            .padding(8)
+            .conditionalGlassEffect()
+            .lineLimit(1)
+            .minimumScaleFactor(0.5)
+            .listRowSeparator(.hidden, edges: .bottom)
+            .padding(.bottom, -8)
+            #else
+            Button("Load \(hitPageSize) ayah matches") {
+                let (moreHits, moreAvail) = fetchHits(query: searchText, limit: hitPageSize, offset: verseHits.count)
+                withAnimation {
+                    verseHits.append(contentsOf: moreHits)
+                    hasMoreHits = moreAvail
+                }
+            }
+            .foregroundColor(settings.accentColor.color)
+            .frame(maxWidth: .infinity, alignment: .center)
+            .padding(8)
+            .conditionalGlassEffect()
+            .lineLimit(1)
+            .minimumScaleFactor(0.5)
+            #endif
+            
+            Button {
+                settings.hapticFeedback()
+                withAnimation {
+                    verseHits = quranData.searchVersesAll(term: searchText)
+                    hasMoreHits = false
+                }
+            } label: {
+                Text("Load all ayah matches")
+            }
+            .foregroundColor(settings.accentColor.color)
+            .frame(maxWidth: .infinity, alignment: .center)
+            .padding(8)
+            .conditionalGlassEffect()
+            .multilineTextAlignment(.center)
+            .lineLimit(1)
+            .minimumScaleFactor(0.5)
+            #if os(iOS)
+            .padding(.top, -8)
+            .listRowSeparator(.hidden)
+            #endif
+        }
+    }
+
+    private func handleAyahSearchChange(_ txt: String) {
+        let query = txt.trimmingCharacters(in: .whitespacesAndNewlines)
+
+        if parseSurahCountQuery(from: query) != nil {
+            withAnimation {
+                verseHits = []
+                hasMoreHits = false
+                blockAyahSearchAfterZero = false
+            }
+            return
+        }
+
+        guard !query.isEmpty else {
+            withAnimation {
+                verseHits = []
+                hasMoreHits = false
+                blockAyahSearchAfterZero = false
+            }
+            return
+        }
+
+        if blockAyahSearchAfterZero {
+            if query.count < zeroResultQueryLength {
+                blockAyahSearchAfterZero = false
+            } else if query.count > zeroResultQueryLength {
+                return
+            }
+        }
+
+        let (first, more) = fetchHits(query: query, limit: hitPageSize, offset: 0)
+        withAnimation {
+            verseHits = first
+            hasMoreHits = more
+            if first.isEmpty {
+                blockAyahSearchAfterZero = true
+                zeroResultQueryLength = query.count
+            } else {
+                blockAyahSearchAfterZero = false
+            }
+        }
+    }
+
+    private var searchDisplayContext: SearchDisplayContext {
+        let pageJuzQuery = parsePageJuzQuery(from: searchText)
+        let exactMatch = getSurahAndAyah(from: searchText)
+        let surahCountQuery = parseSurahCountQuery(from: searchText)
+        let filteredSurahs = filteredSurahs(for: searchText, countQuery: surahCountQuery)
+
+        return SearchDisplayContext(
+            isSearching: !searchText.isEmpty,
+            favoriteSurahs: Set(settings.favoriteSurahs),
+            bookmarkedAyahs: Set(settings.bookmarkedAyahs.map(\.id)),
+            pageJuzQuery: pageJuzQuery,
+            juzSurahs: quranData.surahs(inJuz: pageJuzQuery.juz),
+            explicitPageOrJuzMode: pageJuzQuery.isExplicitPage || pageJuzQuery.isExplicitJuz,
+            pageSearchResult: firstAyahResult(page: pageJuzQuery.page),
+            juzSearchResult: firstAyahResult(juz: pageJuzQuery.juz),
+            exactMatch: exactMatch,
+            surahCountQuery: surahCountQuery,
+            filteredSurahs: filteredSurahs,
+            canShowMoreAyahHits: hasMoreHits && !verseHits.isEmpty,
+            ayahCountDisplayText: {
+                let exactMatchBump = (exactMatch.surah != nil && exactMatch.ayah != nil) ? 1 : 0
+                let ayahCount = verseHits.count + exactMatchBump
+                return "\(ayahCount)\((hasMoreHits && !verseHits.isEmpty) ? "+" : "")"
+            }()
+        )
+    }
+    
+    /// First bookmark that resolves against loaded Quran data (surah then ayah order).
+    private func resolvedFirstBookmark() -> (surah: Surah, ayah: Ayah)? {
+        let sorted = settings.bookmarkedAyahs.sorted {
+            $0.surah == $1.surah ? ($0.ayah < $1.ayah) : ($0.surah < $1.surah)
+        }
+        for b in sorted {
+            if let surah = quranData.surah(b.surah),
+               let ayah = quranData.ayah(surah: b.surah, ayah: b.ayah) {
+                return (surah, ayah)
+            }
+        }
+        return nil
+    }
+
+    private var hasStoredLastReadAyah: Bool {
+        settings.lastReadSurah >= 1 && settings.lastReadAyah >= 1
+    }
+
+    private func setDefaultSelection() {
+        let id = defaultSurahIDForSelection
+        selectedSurahID = id
+        if searchText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+            scrollToSurahID = id
+        }
+    }
+
+    private var detailContent: some View {
+        Group {
+            if let surahID = selectedSurahID, let surah = quranData.surah(surahID) {
+                if hasStoredLastReadAyah, let lastRead = lastReadAyah, lastRead.id > 0, settings.lastReadSurah == surahID {
+                    ayahsDestination(surah: surah, ayah: lastRead.id)
+                } else {
+                    ayahsDestination(surah: surah)
+                }
+            } else {
+                detailFallback
+            }
+        }
+    }
+
+    private var detailFallback: some View {
+        Group {
+            if hasStoredLastReadAyah, let s = lastReadSurah, let a = lastReadAyah {
+                ayahsDestination(surah: s, ayah: a.id)
+            } else if let b = resolvedFirstBookmark() {
+                ayahsDestination(surah: b.surah, ayah: b.ayah.id)
+            } else if let favID = settings.favoriteSurahs.sorted().first,
+                      let s = quranData.surah(favID) {
+                ayahsDestination(surah: s)
+            } else if let s = quranData.surah(1) {
+                ayahsDestination(surah: s)
+            } else {
+                Color.clear
+            }
+        }
+    }
+
+}
+
+#if os(iOS)
+private struct QuranReciterPickerSheetPresentationModifier: ViewModifier {
+    func body(content: Content) -> some View {
+        if #available(iOS 16.0, *) {
+            content
+                .presentationDetents([.medium, .large])
+                .presentationDragIndicator(.visible)
+        } else {
+            content
         }
     }
 }
+#endif
 
 // MARK: - iOS 26+ Section index for Juz fast-scroll
 private extension View {
@@ -762,7 +1828,7 @@ private extension View {
     @ViewBuilder
     func listSectionIndexVisibilityWhenAvailable(visible: Bool) -> some View {
         if #available(iOS 26.0, watchOS 26.0, *) {
-            listSectionIndexVisibility(.visible)
+            listSectionIndexVisibility(visible ? .visible : .hidden)
         } else {
             self
         }
@@ -770,8 +1836,7 @@ private extension View {
 }
 
 #Preview {
-    QuranView()
-        .environmentObject(Settings.shared)
-        .environmentObject(QuranData.shared)
-        .environmentObject(QuranPlayer.shared)
+    AlIslamPreviewContainer(embedInNavigation: false) {
+        QuranView()
+    }
 }

@@ -60,7 +60,7 @@ struct ICOILinksView: View {
                                     .resizable()
                                     .aspectRatio(contentMode: .fit)
                                     .frame(width: 18, height: 18)
-                                    .foregroundColor(settings.accentColor)
+                                    .foregroundColor(settings.accentColor.color)
                                     .padding(.trailing, 8)
 
                                 Text("2 Truman, Irvine, CA 92620")
@@ -86,7 +86,7 @@ struct ICOILinksView: View {
                                     .resizable()
                                     .aspectRatio(contentMode: .fit)
                                     .frame(width: 18, height: 18)
-                                    .foregroundColor(settings.accentColor)
+                                    .foregroundColor(settings.accentColor.color)
                                     .padding(.trailing, 8)
 
                                 Text("Give Now. Power Your Masjid.")
@@ -112,7 +112,7 @@ struct ICOILinksView: View {
                                     .resizable()
                                     .aspectRatio(contentMode: .fit)
                                     .frame(width: 18, height: 18)
-                                    .foregroundColor(settings.accentColor)
+                                    .foregroundColor(settings.accentColor.color)
                                     .padding(.trailing, 8)
 
                                 Text("Give Zakat/Sadaqah")
@@ -140,7 +140,7 @@ struct ICOILinksView: View {
                                     .resizable()
                                     .aspectRatio(contentMode: .fit)
                                     .frame(width: 18, height: 18)
-                                    .foregroundColor(settings.accentColor)
+                                    .foregroundColor(settings.accentColor.color)
                                     .padding(.trailing, 8)
 
                                 Text("Visit the Village")
@@ -166,7 +166,7 @@ struct ICOILinksView: View {
                                     .resizable()
                                     .aspectRatio(contentMode: .fit)
                                     .frame(width: 18, height: 18)
-                                    .foregroundColor(settings.accentColor)
+                                    .foregroundColor(settings.accentColor.color)
                                     .padding(.trailing, 8)
 
                                 Text("5530 Trabuco, Irvine, CA 92620")
@@ -198,12 +198,12 @@ struct ICOILinksView: View {
                                 .resizable()
                                 .aspectRatio(contentMode: .fit)
                                 .frame(width: 18, height: 18)
-                                .foregroundColor(settings.accentColor)
+                                .foregroundColor(settings.accentColor.color)
                                 .padding(.trailing, 10)
 
                             Text("Call (949) 786-ICOI")
                                 .font(.subheadline)
-                                .foregroundColor(settings.accentColor)
+                                .foregroundColor(settings.accentColor.color)
                         }
                     }
                     .contextMenu {
@@ -231,12 +231,12 @@ struct ICOILinksView: View {
                                 .resizable()
                                 .aspectRatio(contentMode: .fit)
                                 .frame(width: 18, height: 18)
-                                .foregroundColor(settings.accentColor)
+                                .foregroundColor(settings.accentColor.color)
                                 .padding(.trailing, 10)
 
                             Text("Email office@icoi.net")
                                 .font(.subheadline)
-                                .foregroundColor(settings.accentColor)
+                                .foregroundColor(settings.accentColor.color)
                         }
                     }
                     .contextMenu {

@@ -134,12 +134,12 @@ struct ICOIPrayerList: View {
                     let isShurooq = (shortenedTransliteration1 == "Shurooq")
                     let isJumuahTitle = (shortenedTransliteration3 == "Jumuah")
                     let isDimmedJumuah = (!isFridayForThatDay && isJumuahTitle)
-                    let iconColor: Color = isShurooq ? .primary : (isDimmedJumuah ? .secondary : settings.accentColor)
+                    let iconColor: Color = isShurooq ? .primary : (isDimmedJumuah ? .secondary : settings.accentColor.color)
                     let titleColor: Color = isDimmedJumuah ? .secondary : .primary
                     
                     ZStack {
                         RoundedRectangle(cornerRadius: 24)
-                            .fill(isHighlighted ? settings.accentColor.opacity(0.25) : .clear)
+                            .fill(isHighlighted ? settings.accentColor.color.opacity(0.25) : .clear)
                             .padding(.horizontal, -12)
                             #if !os(watchOS)
                             .padding(.vertical, -11)
@@ -261,7 +261,7 @@ struct ICOIPrayerList: View {
                             #endif
                         }
                         .padding(.vertical, 4)
-                        .foregroundColor(isShurooq ? .primary : settings.accentColor)
+                        .foregroundColor(isShurooq ? .primary : settings.accentColor.color)
                     }
                 }
                 

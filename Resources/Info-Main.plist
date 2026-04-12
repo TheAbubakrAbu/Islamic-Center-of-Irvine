@@ -2,6 +2,8 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
+	<key>ITSAppUsesNonExemptEncryption</key>
+	<false/>
 	<key>BGTaskSchedulerPermittedIdentifiers</key>
 	<array>
 		<string>com.Quran.Elmallah.Islamic-Pillars.Islamic-Center-of-Irvine.fetchPrayerTimes</string>
@@ -16,6 +18,7 @@
 		<string>fetch</string>
 		<string>audio</string>
 		<string>processing</string>
+		<string>fetch</string>
 	</array>
 	<key>NSPhotoLibraryAddUsageDescription</key>
 	<string>Used to save wallpapers you choose to your Photo Library.</string>

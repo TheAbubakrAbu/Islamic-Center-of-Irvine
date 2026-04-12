@@ -50,81 +50,51 @@ struct ICOIPrayerCountdown: View {
     
     var body: some View {
         if let currentPrayer = settings.currentPrayerICOI, let nextPrayer = settings.nextPrayerICOI {
-            Section(header: Text("CURRENT PRAYER")) {
+            Section(header:
                 HStack {
-                    VStack(alignment: .leading) {
-                        HStack {
-                            Image(systemName: currentPrayer.image)
-                            
-                            Text(currentPrayer.nameTransliteration)
-                        }
-                        #if !os(watchOS)
-                        .font(.title)
-                        #else
-                        .font(.title3)
-                        #endif
-                        .foregroundColor(currentPrayer.nameTransliteration == "Shurooq" ? .primary : settings.accentColor)
-                        
-                        Text(currentPrayer.nameArabic)
-                            #if !os(watchOS)
-                            .font(.title2)
-                            #else
-                            .font(.title3)
-                            #endif
-                            .foregroundColor(currentPrayer.nameTransliteration == "Shurooq" ? .primary.opacity(0.7) : settings.accentColor.opacity(0.7))
-                        
-                        Text("Started at \(currentPrayer.time, style: .time)")
-                            .font(.headline)
-                        
-                        if currentPrayer.nameTransliteration == "Shurooq" {
-                            Text("Shurooq is not a prayer, but marks the end of Fajr")
-                                .foregroundColor(.secondary)
-                                #if !os(watchOS)
-                                .font(.caption)
-                                #else
-                                .font(.caption2)
-                                #endif
-                        }
-                    }
-                    .multilineTextAlignment(.leading)
-                    
+                    Text("CURRENT")
+                
                     Spacer()
+                
+                    Text("UPCOMING")
                 }
-            }
-            
-            Section(header: Text("UPCOMING PRAYER")) {
-                HStack {
-                    VStack(alignment: .trailing) {
-                        HStack {
-                            Text(nextPrayer.nameTransliteration)
-                            
-                            Image(systemName: nextPrayer.image)
-                        }
-                        #if !os(watchOS)
-                        .font(.title)
-                        #else
-                        .font(.title3)
-                        #endif
-                        .foregroundColor(nextPrayer.nameTransliteration == "Shurooq" ? .primary : settings.accentColor)
-                        
-                        Text(nextPrayer.nameArabic)
-                            #if !os(watchOS)
-                            .font(.title2)
-                            #else
+            ) {
+                VStack {
+                    HStack {
+                        VStack(alignment: .leading) {
+                            HStack {
+                                Image(systemName: currentPrayer.image)
+                                
+                                Text(currentPrayer.nameTransliteration)
+                            }
                             .font(.title3)
-                            #endif
-                            .foregroundColor(nextPrayer.nameTransliteration == "Shurooq" ? .primary.opacity(0.7) : settings.accentColor.opacity(0.7))
-                        
-                        if nextPrayer.nameTransliteration == "Shurooq" {
-                            Text("Shurooq is not a prayer, but marks the end of Fajr")
-                                .foregroundColor(.secondary)
-                                #if !os(watchOS)
-                                .font(.caption)
-                                #else
-                                .font(.caption2)
-                                #endif
+                            .foregroundColor(currentPrayer.nameTransliteration == "Shurooq" ? .primary : settings.accentColor.color)
+                            
+                            Text("Started at \(currentPrayer.time, style: .time)")
+                                .font(.headline)
                         }
+                        .frame(maxWidth: .infinity, alignment: .leading)
                         
+                        Divider()
+                            .background(settings.accentColor.color)
+                            .padding(.horizontal, 2)
+                        
+                        VStack(alignment: .trailing) {
+                            HStack {
+                                Text(nextPrayer.nameTransliteration)
+                                
+                                Image(systemName: nextPrayer.image)
+                            }
+                            .font(.title3)
+                            .foregroundColor(nextPrayer.nameTransliteration == "Shurooq" ? .primary : settings.accentColor.color)
+                            
+                            Text("Starts at \(nextPrayer.time, style: .time)")
+                                .font(.headline)
+                        }
+                        .frame(maxWidth: .infinity, alignment: .trailing)
+                    }
+                    
+                    VStack(alignment: .leading) {
                         ProgressView(value: progressToNextPrayer, total: 1)
                             .onReceive(timer) { _ in
                                 let newProgress = calculateProgress()
@@ -136,17 +106,13 @@ struct ICOIPrayerCountdown: View {
                             }
                             .padding(.top, -4)
                         
-                        HStack(alignment: .center) {
-                            Text("Time Left: \(nextPrayer.time, style: .timer)")
-                            
-                            Spacer()
-                            
-                            Text("Starts at \(nextPrayer.time, style: .time)")
-                        }
-                        .font(.headline)
+                        Text("Time Left: \(nextPrayer.time, style: .timer)")
+                            .font(.headline)
                     }
-                    .multilineTextAlignment(.trailing)
+                    .frame(maxWidth: .infinity, alignment: .leading)
                 }
+                .lineLimit(1)
+                .minimumScaleFactor(0.5)
             }
             .onAppear {
                 setupTimer()

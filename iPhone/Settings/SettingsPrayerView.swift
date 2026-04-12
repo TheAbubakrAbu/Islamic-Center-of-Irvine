@@ -119,7 +119,7 @@ struct NotificationView: View {
                         .font(.subheadline)
                     Text("\(settings.iqamahFajrPreNotification) minute\(settings.iqamahFajrPreNotification != 1 ? "s" : "")")
                         .font(.subheadline)
-                        .foregroundColor(settings.accentColor)
+                        .foregroundColor(settings.accentColor.color)
                 }
             }
             
@@ -205,7 +205,7 @@ struct PrayerSettingsSection: View {
                     
                     Text("\(iqamahPreNotification) minute\(iqamahPreNotification != 1 ? "s" : "")")
                         .font(.subheadline)
-                        .foregroundColor(settings.accentColor)
+                        .foregroundColor(settings.accentColor.color)
                 }
             
                 Toggle("Second Jumuah Notification", isOn: $iqamahTime.animation(.easeInOut))
@@ -217,7 +217,7 @@ struct PrayerSettingsSection: View {
                     
                     Text("\(jumuahPreNotification) minute\(jumuahPreNotification != 1 ? "s" : "")")
                         .font(.subheadline)
-                        .foregroundColor(settings.accentColor)
+                        .foregroundColor(settings.accentColor.color)
                 }
                 
                 Toggle("Jumuah Rating Notification at 3:00", isOn: $settings.ratingJumuah.animation(.easeInOut))
@@ -240,7 +240,7 @@ struct PrayerSettingsSection: View {
                     
                     Text("\(iqamahPreNotification) minute\(iqamahPreNotification != 1 ? "s" : "")")
                         .font(.subheadline)
-                        .foregroundColor(settings.accentColor)
+                        .foregroundColor(settings.accentColor.color)
                 }
             }
         }

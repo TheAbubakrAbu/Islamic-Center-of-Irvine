@@ -119,7 +119,7 @@ struct ICOIPrayerView: View {
                         }
                     }
                     .font(.footnote)
-                    .foregroundColor(settings.accentColor)
+                    .foregroundColor(settings.accentColor.color)
                     .contextMenu {
                         Button(action: {
                             settings.hapticFeedback()
@@ -150,7 +150,7 @@ struct ICOIPrayerView: View {
                     Spacer()
                 }
                 .font(.footnote)
-                .foregroundColor(settings.accentColor)
+                .foregroundColor(settings.accentColor.color)
                 #endif
                 
                 if settings.prayersICOI != nil {

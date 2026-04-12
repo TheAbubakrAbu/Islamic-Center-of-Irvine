@@ -1,9 +1,5 @@
+#if os(iOS)
 import SwiftUI
-
-/// Holds the current image generation request id so completion blocks can check against the latest (avoids applying stale images after many rapid toggles).
-private final class ShareImageGenerationId: ObservableObject {
-    var value: Int = 0
-}
 
 enum ActionMode: String {
     case text
@@ -32,7 +28,8 @@ struct ShareAyahSheet: View {
     @State private var activityItems: [Any] = []
     @State private var showingActivityView = false
     @State private var includeNote: Bool = false
-    @StateObject private var imageGenerationIdHolder = ShareImageGenerationId()
+    @State private var isGeneratingImage = false
+    @State private var isSharing = false
     private static let shareImageQueue = DispatchQueue(label: "app.shareAyah.imageGeneration", qos: .userInitiated)
     
     private func fetchNote() -> String? {
@@ -56,7 +53,7 @@ struct ShareAyahSheet: View {
     private var ayah: Ayah? { surah?.ayahs.first(where: { $0.id == ayahNumber }) }
     
     private var shareText: String {
-        guard let surah = surah, let ayah = ayah else { return "Loading…" }
+        guard let surah = surah, let ayah = ayah else { return "" }
 
         var s = ""
 
@@ -138,14 +135,14 @@ struct ShareAyahSheet: View {
         }
 
         // Qiraah type (optional) — one line: Riwayah: English - Arabic
-        if shareSettings.includeQiraah {
+        if settings.showQiraahDetails && shareSettings.includeQiraah {
             let labels = Self.qiraahLabels(displayQiraah: settings.displayQiraah)
             appendBlock(label: nil, text: "Riwayah: \(labels.english) – \(labels.arabic)")
         }
 
         if settings.showSurahInformation {
-            if shareSettings.includeQiraah, !s.isEmpty { s += "\n" } else { sepIfNeeded() }
-            s += "\(surah.numberOfAyahs) Ayahs – \(surah.type.capitalized) \(surah.type == "meccan" ? "🕋" : "🕌")"
+            if settings.showQiraahDetails && shareSettings.includeQiraah, !s.isEmpty { s += "\n" } else { sepIfNeeded() }
+            s += "\(surah.ayahCountLabel()) – \(surah.pageCountLabel) – \(surah.type.capitalized) \(surah.type == "makkan" ? "🕋" : "🕌")"
         }
 
         return s
@@ -159,18 +156,18 @@ struct ShareAyahSheet: View {
 
     /// Returns (English, Arabic) display names for the given displayQiraah tag.
     private static func qiraahLabels(displayQiraah: String) -> (english: String, arabic: String) {
-        let key = displayQiraah.isEmpty ? "" : displayQiraah
+        let key = Settings.normalizeLegacyRiwayahTag(displayQiraah.isEmpty ? "" : displayQiraah)
         let map: [(tag: String, en: String, ar: String)] = [
-            ("", "Hafs an Asim (default)", "حَفْص عَنْ عَاصِم"),
-            ("Warsh an Nafi", "Warsh an Nafi", "وَرْش عَنْ نَافِع"),
-            ("Qaloon an Nafi", "Qaloon an Nafi", "قَالُون عَنْ نَافِع"),
-            ("Ad-Duri an Abi Amr", "Ad-Duri an Abi Amr", "الدُّورِي عَنْ أَبِي عَمْرٍو"),
-            ("Al-Buzzi an Ibn Kathir", "Al-Buzzi an Ibn Kathir", "البَزِّي عَنْ ابْنِ كَثِيرٍ"),
-            ("Qunbul an Ibn Kathir", "Qunbul an Ibn Kathir", "قُنْبُل عَنْ ابْنِ كَثِيرٍ"),
-            ("Shu'bah an Asim", "Shu'bah an Asim", "شُعْبَة عَنْ عَاصِم"),
-            ("As-Susi an Abi Amr", "As-Susi an Abi Amr", "السُّوسِي عَنْ أَبِي عَمْرٍو")
+            (Settings.Riwayah.hafsTag, Settings.Riwayah.hafsLabel, "حَفص عَن عَاصِم"),
+            (Settings.Riwayah.warsh, Settings.Riwayah.warsh, "وَرش عَن نَافِع"),
+            (Settings.Riwayah.qaloon, Settings.Riwayah.qaloon, "قَالُون عَن نَافِع"),
+            (Settings.Riwayah.duri, Settings.Riwayah.duri, "الدُّورِي عَن أَبِي عَمرٍو"),
+            (Settings.Riwayah.buzzi, Settings.Riwayah.buzzi, "البَزِّي عَن ابنِ كَثِيرٍ"),
+            (Settings.Riwayah.qunbul, Settings.Riwayah.qunbul, "قُنبُل عَن ابنِ كَثِيرٍ"),
+            (Settings.Riwayah.shubah, Settings.Riwayah.shubah, "شُعبَة عَن عَاصِم"),
+            (Settings.Riwayah.susi, Settings.Riwayah.susi, "السُّوسِي عَن أَبِي عَمرٍو")
         ]
-        
+
         return map.first(where: { $0.tag == key }).map { ($0.en, $0.ar) } ?? (map[0].en, map[0].ar)
     }
 
@@ -179,7 +176,7 @@ struct ShareAyahSheet: View {
             VStack {
                 Spacer()
                 
-                Group {
+                ZStack {
                     if actionMode == .image {
                         if let img = generatedImage {
                             Image(uiImage: img)
@@ -188,6 +185,9 @@ struct ShareAyahSheet: View {
                                 .cornerRadius(24)
                                 .padding(.horizontal, 16)
                                 .contextMenu { copyMenu(image: img) }
+                                .transition(.opacity.combined(with: .scale(scale: 0.98)))
+                        } else {
+                            EmptyView()
                         }
                     } else {
                         Text(shareText)
@@ -200,8 +200,12 @@ struct ShareAyahSheet: View {
                             .contextMenu { copyMenu(image: generatedImage) }
                             .lineLimit(nil)
                             .minimumScaleFactor(0.1)
+                            .transition(.opacity.combined(with: .scale(scale: 0.98)))
                     }
                 }
+                .scaleEffect(isSharing ? 0.98 : 1)
+                .animation(.easeInOut, value: actionMode)
+                .animation(.easeInOut, value: isSharing)
                 
                 Spacer()
 
@@ -221,13 +225,13 @@ struct ShareAyahSheet: View {
 
                         if noteText != nil {
                             Toggle("Include Note", isOn: $includeNote.animation(.easeInOut))
-                                .tint(settings.accentColor)
+                                .tint(settings.accentColor.color)
                                 .scaleEffect(0.8)
                                 .padding(.horizontal, -24)
                                 .padding(.vertical, 2)
                         }
                         
-                        if shareSettings.arabic {
+                        if shareSettings.arabic && actionMode == .image {
                             Picker("Arabic Font", selection: Binding(
                                 get: { shareSettings.shareArabicFont.isEmpty ? (settings.fontArabic) : shareSettings.shareArabicFont },
                                 set: { val in
@@ -251,32 +255,35 @@ struct ShareAyahSheet: View {
                             .padding(.vertical, 2)
 
                             Toggle("Clean Arabic Text (No Tashkeel)", isOn: $shareSettings.cleanArabic.animation(.easeInOut))
-                                .tint(settings.accentColor)
+                                .tint(settings.accentColor.color)
                                 .scaleEffect(0.8)
                                 .padding(.horizontal, -24)
                                 .padding(.vertical, 2)
                         }
 
                         Toggle("Show Ayah Information", isOn: $settings.showAyahInformation.animation(.easeInOut))
-                            .tint(settings.accentColor)
+                            .tint(settings.accentColor.color)
                             .scaleEffect(0.8)
                             .padding(.horizontal, -24)
                             .padding(.vertical, 2)
 
                         Toggle("Show Surah Information", isOn: $settings.showSurahInformation.animation(.easeInOut))
-                            .tint(settings.accentColor)
+                            .tint(settings.accentColor.color)
                             .scaleEffect(0.8)
                             .padding(.horizontal, -24)
                             .padding(.vertical, 2)
 
-                        Toggle("Include Riwayah/Qiraah type", isOn: Binding(
-                            get: { shareSettings.includeQiraah },
-                            set: { shareIncludeRiwayah = $0; shareSettings = ShareSettings(arabic: shareSettings.arabic, transliteration: shareSettings.transliteration, englishSaheeh: shareSettings.englishSaheeh, englishMustafa: shareSettings.englishMustafa, includeQiraah: $0, shareArabicFont: shareSettings.shareArabicFont, cleanArabic: shareSettings.cleanArabic) }
-                        ).animation(.easeInOut))
-                            .tint(settings.accentColor)
+                        if settings.showQiraahDetails {
+                            Toggle("Show Riwayah/Qiraah", isOn: Binding(
+                                get: { shareSettings.includeQiraah },
+                                set: { shareIncludeRiwayah = $0; shareSettings = ShareSettings(arabic: shareSettings.arabic, transliteration: shareSettings.transliteration, englishSaheeh: shareSettings.englishSaheeh, englishMustafa: shareSettings.englishMustafa, includeQiraah: $0, shareArabicFont: shareSettings.shareArabicFont, cleanArabic: shareSettings.cleanArabic) }
+                            )
+                                .animation(.easeInOut))
+                            .tint(settings.accentColor.color)
                             .scaleEffect(0.8)
                             .padding(.horizontal, -24)
                             .padding(.vertical, 2)
+                        }
                     }
                 }
                 .frame(maxHeight: 200)
@@ -290,8 +297,13 @@ struct ShareAyahSheet: View {
                 .padding(.vertical, 4)
                 
                 HStack(spacing: 12) {
-                    actionButton("Copy")   { performCopyOrGenerate() }
-                    actionButton("Share")  { performShareOrGenerate() }
+                    actionButton("Copy") {
+                        performCopyOrGenerate()
+                    }
+                    
+                    actionButton("Share", isAnimating: isSharing)  {
+                        performShareOrGenerate()
+                    }
                 }
                 .padding(.horizontal, 16)
                 .padding(.bottom)
@@ -307,7 +319,7 @@ struct ShareAyahSheet: View {
             .navigationTitle("Preview")
             .navigationBarTitleDisplayMode(.inline)
         }
-        .accentColor(settings.accentColor)
+        .accentColor(settings.accentColor.color)
         .onAppear {
             guard !didInit else { return }
             didInit = true
@@ -319,7 +331,7 @@ struct ShareAyahSheet: View {
                     transliteration: settings.isHafsDisplay ? settings.showTransliteration : false,
                     englishSaheeh: settings.isHafsDisplay ? settings.showEnglishSaheeh : false,
                     englishMustafa: settings.isHafsDisplay ? settings.showEnglishMustafa : false,
-                    includeQiraah: shareIncludeRiwayah,
+                    includeQiraah: settings.showQiraahDetails ? shareIncludeRiwayah : false,
                     shareArabicFont: font,
                     cleanArabic: settings.cleanArabicText
                 )
@@ -331,6 +343,7 @@ struct ShareAyahSheet: View {
 
         .onChange(of: actionMode) { newValue in
             storedActionModeRaw = newValue.rawValue
+            isGeneratingImage = false
             if newValue == .image && generatedImage == nil {
                 generatePreviewImage()
             }
@@ -340,6 +353,21 @@ struct ShareAyahSheet: View {
         .onChange(of: settings.showAyahInformation) { _ in generatePreviewImage() }
         .onChange(of: includeNote) { _ in generatePreviewImage() }
         .onChange(of: shareIncludeRiwayah) { _ in generatePreviewImage() }
+        .onChange(of: settings.showQiraahDetails) { show in
+            if !show {
+                shareIncludeRiwayah = false
+                shareSettings = ShareSettings(
+                    arabic: shareSettings.arabic,
+                    transliteration: shareSettings.transliteration,
+                    englishSaheeh: shareSettings.englishSaheeh,
+                    englishMustafa: shareSettings.englishMustafa,
+                    includeQiraah: false,
+                    shareArabicFont: shareSettings.shareArabicFont,
+                    cleanArabic: shareSettings.cleanArabic
+                )
+            }
+            generatePreviewImage()
+        }
         .onChange(of: showingActivityView) { if !$0 { presentationMode.wrappedValue.dismiss() } }
     }
     
@@ -348,35 +376,63 @@ struct ShareAyahSheet: View {
         Toggle(isOn: binding.animation(.easeInOut)) {
             Text(title).foregroundColor(.primary)
         }
-        .tint(settings.accentColor)
+        .tint(settings.accentColor.color)
         .disabled(disabled)
         .padding(.horizontal, 20)
         .padding(.vertical, 4)
     }
     
-    private func actionButton(_ title: String, action: @escaping () -> Void) -> some View {
-        Button(action: {
-            settings.hapticFeedback(); action()
-        }) {
+    private func actionButton(_ title: String, isAnimating: Bool = false, action: @escaping () -> Void) -> some View {
+        Button {
+            settings.hapticFeedback()
+            action()
+        } label: {
             Text(title)
                 .frame(maxWidth: .infinity)
                 .padding()
-                .background(settings.accentColor)
-                .cornerRadius(24)
                 .foregroundColor(.primary)
+                .scaleEffect(isAnimating ? 0.96 : 1)
         }
+        .conditionalGlassEffect(useColor: 0.25)
     }
     
     private func copyMenu(image: UIImage?) -> some View {
         Group {
             Button { UIPasteboard.general.string = shareText }  label: { Label("Copy Text", systemImage: "doc.on.doc") }
-            Button {
-                if let img = image { UIPasteboard.general.image = img }
-            } label: { Label("Copy Image", systemImage: "doc.on.doc.fill") }
+            if let image {
+                Button {
+                    UIPasteboard.general.image = image
+                } label: { Label("Copy Image", systemImage: "doc.on.doc.fill") }
+            }
         }
     }
+
+    private func animateShare(completion: @escaping () -> Void) {
+        withAnimation(.spring(response: 0.2, dampingFraction: 0.7)) {
+            isSharing = true
+        }
+
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.12) {
+            completion()
+
+            withAnimation(.easeOut(duration: 0.18)) {
+                isSharing = false
+            }
+        }
+    }
+
+    private func presentShareSheet(with items: [Any]) {
+        animateShare {
+            activityItems = items
+            showingActivityView = true
+        }
+    }
+
+
     
     private func performCopyOrGenerate() {
+        settings.hapticFeedback()
+        
         switch actionMode {
         case .text:
             UIPasteboard.general.string = shareText
@@ -386,7 +442,10 @@ struct ShareAyahSheet: View {
                 UIPasteboard.general.image = img
                 presentationMode.wrappedValue.dismiss()
             } else {
-                generatePreviewImage()
+                generatePreviewImage { img in
+                    UIPasteboard.general.image = img
+                    presentationMode.wrappedValue.dismiss()
+                }
             }
         }
     }
@@ -394,29 +453,32 @@ struct ShareAyahSheet: View {
     private func performShareOrGenerate() {
         switch actionMode {
         case .text:
-            activityItems = [shareText]; showingActivityView = true
+            presentShareSheet(with: [shareText])
         case .image:
             if let img = generatedImage {
-                activityItems = [img]; showingActivityView = true
+                presentShareSheet(with: [img])
             } else {
-                generatePreviewImage()
+                generatePreviewImage { img in
+                    presentShareSheet(with: [img])
+                }
             }
         }
     }
     
-    private func generatePreviewImage() {
-        imageGenerationIdHolder.value += 1
-        let requestId = imageGenerationIdHolder.value
-        let idHolder = imageGenerationIdHolder
+    private func generatePreviewImage(completion: @escaping (UIImage) -> Void = { _ in }) {
+        DispatchQueue.main.async {
+            self.isGeneratingImage = true
+        }
         Self.shareImageQueue.async { [self] in
             let img: UIImage = autoreleasepool { self.drawImage() }
             DispatchQueue.main.async {
-                guard idHolder.value == requestId else { return }
-                withAnimation(.easeInOut) {
+                withAnimation {
                     self.generatedImage = img
+                    self.isGeneratingImage = false
                     if self.actionMode == .image {
                         self.activityItems = [img]
                     }
+                    completion(img)
                 }
             }
         }
@@ -432,7 +494,7 @@ struct ShareAyahSheet: View {
         
         let textColor      = UIColor.white
         let secondaryColor = UIColor.secondaryLabel
-        let accent         = settings.accentColor.uiColor
+        let accent         = settings.accentColor.color.uiColor
         
         // --- Layout constants
         let padding: CGFloat = 20, spacing: CGFloat = 8, extraSpacing: CGFloat = 30
@@ -536,12 +598,12 @@ struct ShareAyahSheet: View {
         }
         if settings.showSurahInformation {
             if shareSettings.includeQiraah { append("\n", bodyAttr) } else { sepIfNeeded() }
-            append("\(surah.numberOfAyahs) Ayahs – \(surah.type.capitalized) \(surah.type == "meccan" ? "🕋" : "🕌")", captionCentAttr)
+            append("\(surah.ayahCountLabel()) – \(surah.pageCountLabel) – \(surah.type.capitalized) \(surah.type == "makkan" ? "🕋" : "🕌")", captionCentAttr)
         }
         // --- Watermark
         let wmString = "Islamic Center of Irvine"
         let wmText = NSAttributedString(string: wmString, attributes: centAccent)
-        var logo = UIImage(named: "Al-Islam")
+        var logo = UIImage(named: "ICOI")
         
         var wmTextSize = wmText.size()
         var logoSize = CGSize(width: wmTextSize.height, height: wmTextSize.height)
@@ -595,7 +657,7 @@ extension ShareAyahSheet {
     static func copyAyahToPasteboard(surahNumber: Int, ayahNumber: Int, settings: Settings, quranData: QuranData) {
         guard let surah = quranData.quran.first(where: { $0.id == surahNumber }),
               let ayah = surah.ayahs.first(where: { $0.id == ayahNumber }) else { return }
-        let includeRiwayah = UserDefaults.standard.bool(forKey: shareIncludeRiwayahKey)
+        let includeRiwayah = settings.showQiraahDetails && UserDefaults.standard.bool(forKey: shareIncludeRiwayahKey)
         let shareFont = UserDefaults.standard.string(forKey: "shareArabicFont") ?? ""
         let shareSettings = ShareSettings(
             arabic: settings.showArabicText,
@@ -676,7 +738,7 @@ extension ShareAyahSheet {
         }
         if settings.showSurahInformation {
             if shareSettings.includeQiraah, !s.isEmpty { s += "\n" } else { sepIfNeeded() }
-            s += "\(surah.numberOfAyahs) Ayahs – \(surah.type.capitalized) \(surah.type == "meccan" ? "🕋" : "🕌")"
+            s += "\(surah.ayahCountLabel()) – \(surah.pageCountLabel) – \(surah.type.capitalized) \(surah.type == "makkan" ? "🕋" : "🕌")"
         }
         return s
     }
@@ -688,7 +750,7 @@ extension ShareAyahSheet {
         let captionFont = UIFont.preferredFont(forTextStyle: .caption2)
         let textColor = UIColor.white
         let secondaryColor = UIColor.secondaryLabel
-        let accent = settings.accentColor.uiColor
+        let accent = settings.accentColor.color.uiColor
         let padding: CGFloat = 20, spacing: CGFloat = 8, extraSpacing: CGFloat = 30
         let iPhoneCanvasCap: CGFloat = 500
         let deviceWidth = UIScreen.main.bounds.width - 50
@@ -744,11 +806,11 @@ extension ShareAyahSheet {
         }
         if settings.showSurahInformation {
             if shareSettings.includeQiraah { append("\n", bodyAttr) } else { sepIfNeeded() }
-            append("\(surah.numberOfAyahs) Ayahs – \(surah.type.capitalized) \(surah.type == "meccan" ? "🕋" : "🕌")", captionCentAttr)
+            append("\(surah.ayahCountLabel()) – \(surah.pageCountLabel) – \(surah.type.capitalized) \(surah.type == "makkan" ? "🕋" : "🕌")", captionCentAttr)
         }
-        let wmString = "Al-Islam | Islamic Pillars"
+        let wmString = "Islamic Center of Irvine"
         let wmText = NSAttributedString(string: wmString, attributes: centAccent)
-        var logo = UIImage(named: "Al-Islam")
+        var logo = UIImage(named: "ICOI")
         var wmTextSize = wmText.size()
         var logoSize = CGSize(width: wmTextSize.height, height: wmTextSize.height)
         let availWidth = maxWidth - 2 * padding
@@ -801,8 +863,8 @@ struct ActivityView: UIViewControllerRepresentable {
 extension Color { var uiColor: UIColor { UIColor(self) } }
 
 #Preview {
-    ShareAyahSheet(surahNumber: 2, ayahNumber: 5)
-        .environmentObject(Settings.shared)
-        .environmentObject(QuranData.shared)
-        .environmentObject(QuranPlayer.shared)
+    AlIslamPreviewContainer(embedInNavigation: false) {
+        ShareAyahSheet(surahNumber: 2, ayahNumber: 5)
+    }
 }
+#endif

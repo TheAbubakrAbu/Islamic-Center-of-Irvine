@@ -52,7 +52,7 @@ struct ICOIEventsView: View {
                                     VStack(alignment: .leading) {
                                         Text(event.name)
                                             .font(.headline)
-                                            .foregroundColor(settings.accentColor)
+                                            .foregroundColor(settings.accentColor.color)
                                             .padding(.bottom, 1)
                                     }
                                     .multilineTextAlignment(.leading)
@@ -63,7 +63,7 @@ struct ICOIEventsView: View {
                                         if !event.name.isEmpty {
                                             Text(event.name)
                                                 .font(.headline)
-                                                .foregroundColor(settings.accentColor)
+                                                .foregroundColor(settings.accentColor.color)
                                         }
                                         
                                         Text("\(event.date, style: .date)")
@@ -153,7 +153,7 @@ struct ICOIEventsView: View {
                         .padding(.horizontal)
                         .padding(.vertical, 6)
                         .frame(maxWidth: .infinity)
-                        .background(settings.accentColor)
+                        .background(settings.accentColor.color)
                         .cornerRadius(24)
                         .padding(.horizontal, 16)
                         .multilineTextAlignment(.center)

@@ -42,11 +42,11 @@ struct ICOIBusinessView: View {
                             if let formattedNumber = formattedNumber {
                                 Text(formattedNumber)
                                     .font(.subheadline)
-                                    .foregroundColor(settings.accentColor)
+                                    .foregroundColor(settings.accentColor.color)
                             } else {
                                 Text(business.phoneNumber)
                                     .font(.subheadline)
-                                    .foregroundColor(settings.accentColor)
+                                    .foregroundColor(settings.accentColor.color)
                             }
                         }
                         

@@ -1,146 +1,149 @@
+#if os(iOS)
 import SwiftUI
 
 struct CreditsView: View {
     @EnvironmentObject var settings: Settings
+    @Environment(\.presentationMode) private var presentationMode
     
     var body: some View {
         NavigationView {
-            List {
-                VStack(alignment: .center) {
-                    HStack {
-                        Spacer()
-                        Text("The ICOI App was created by Abubakr Elmallah (أبوبكر الملاح), who was a 17-year old high school student when this app was published on October 3, 2023.")
-                            .font(.headline)
-                            .padding(.vertical, 4)
-                            .multilineTextAlignment(.center)
-                        Spacer()
-                    }
-                    
-                    HStack {
-                        Spacer()
-                        
-                        if let url = URL(string: "https://abubakrelmallah.com/") {
-                            Link("abubakrelmallah.com", destination: url)
-                                .foregroundColor(settings.accentColor2)
-                                .font(.headline)
-                                .multilineTextAlignment(.center)
-                                .padding(.vertical, 4)
-                                .padding(.bottom, 8)
-                                .contextMenu {
-                                    Button(action: {
-                                        UIPasteboard.general.string = "https://abubakrelmallah.com/"
-                                    }) {
-                                        HStack {
-                                            Image(systemName: "doc.on.doc")
-                                            Text("Copy Website")
-                                        }
-                                    }
-                                }
-                        }
-                        
-                        Spacer()
-                    }
-                    
-                    Divider()
-                        .background(settings.accentColor)
-                        .padding(.trailing, -100)
+            creditsList
+                .safeAreaInset(edge: .bottom) {
+                    doneButton
                 }
-                .listRowSeparator(.hidden)
-                
-                Section(header: Text("CREDITS")) {
-                    Group {
-                        if let url = URL(string: "https://github.com/risan/quran-json") {
-                            Link(
-                                "Credit for the Arabic and English transliteration of the Quran data goes to Risan Bagja Pradana",
-                                destination: url
-                            )
-                            .foregroundColor(settings.accentColor2)
-                        }
-
-                        if let url = URL(string: "https://globalquran.com/download/data/") {
-                            Link(
-                                "Credit for the English Saheeh International translation of the Quran data goes to Global Quran",
-                                destination: url
-                            )
-                            .foregroundColor(settings.accentColor2)
-                        }
-
-                        if let url = URL(string: "https://github.com/thetruetruth/quran-data-kfgqpc") {
-                            Link(
-                                "Credit for the Arabic text for multiple qiraat/riwayaat data goes to quran-data-kfgqpc (KFGQPC)",
-                                destination: url
-                            )
-                            .foregroundColor(settings.accentColor)
-                        }
-
-                        if let url = URL(string: "https://github.com/thetruetruth/quran-data-kfgqpc/tree/main/qumbul/font") {
-                            Link(
-                                "Credit for the Uthmani Quran font goes to quran-data-kfgqpc (KFGQPC)",
-                                destination: url
-                            )
-                            .foregroundColor(settings.accentColor)
-                        }
-
-                        if let url = URL(string: "https://urdunigaar.com/download/al-mushaf-arabic-font-ttf-font-download/") {
-                            Link(
-                                "Credit for the Indopak Quran font goes to Urdu Nigar",
-                                destination: url
-                            )
-                            .foregroundColor(settings.accentColor2)
-                        }
-
-                        if let url = URL(string: "https://github.com/KabDeveloper/99-Names-Of-Allah/tree/main") {
-                            Link(
-                                "Credit for the 99 Names of Allah from KabDeveloper",
-                                destination: url
-                            )
-                            .foregroundColor(settings.accentColor2)
-                        }
-
-                        if let url = URL(string: "https://alquran.cloud/cdn") {
-                            Link(
-                                "Credit for the Ayah Quran Recitations goes to Al Quran",
-                                destination: url
-                            )
-                            .foregroundColor(settings.accentColor2)
-                        }
-
-                        if let url = URL(string: "https://mp3quran.net/eng") {
-                            Link(
-                                "Credit for the Surah Quran Recitations goes to MP3 Quran",
-                                destination: url
-                            )
-                            .foregroundColor(settings.accentColor2)
-                        }
-
-                    }
-                    .font(.body)
-                }
-
-                
-                Section {
-                    VersionNumber()
-                        .font(.caption)
-                }
-                
-                Section(header: Text("APPS BY ABUBAKR ELMALLAH")) {
-                    ForEach(appsByAbubakr) { app in
-                        AppLinkRow(imageName: app.imageName, title: app.title, url: app.url)
-                    }
-                }
-
-                Section(header: Text("DISCORD BOTS BY ABUBAKR ELMALLAH")) {
-                    ForEach(botsByAbubakr) { bot in
-                        AppLinkRow(imageName: bot.imageName, title: bot.title, url: bot.url)
-                    }
-                }
-            }
-            .listStyle(.plain)
-            .navigationBarTitleDisplayMode(.inline)
-            .accentColor(settings.accentColor)
-            .tint(settings.accentColor)
-            .navigationTitle("Credits")
         }
+    }
+
+    private var creditsList: some View {
+        List {
+            headerSection
+            versionSection
+            creditsLinksSection
+            appsSection
+            botsSection
+        }
+        .listStyle(.plain)
+        .navigationBarTitleDisplayMode(.inline)
+        .accentColor(settings.accentColor.color)
+        .tint(settings.accentColor.color)
+        .navigationTitle("Credits")
+    }
+
+    private var headerSection: some View {
+        VStack(alignment: .center) {
+            Text("The ICOI App was created by Abubakr Elmallah (أبوبكر الملاح), who was a 17-year old high school student when this app was published on October 3, 2023.")
+                .font(.headline)
+                .padding(.vertical, 4)
+                .multilineTextAlignment(.center)
+                .frame(maxWidth: .infinity, alignment: .center)
+
+            if let url = URL(string: "https://abubakrelmallah.com/") {
+                Link("abubakrelmallah.com", destination: url)
+                    .foregroundColor(settings.accentColor2)
+                    .font(.headline)
+                    .multilineTextAlignment(.center)
+                    .padding(.vertical, 4)
+                    .padding(.bottom, 8)
+                    .contextMenu {
+                        Button {
+                            settings.hapticFeedback()
+                            UIPasteboard.general.string = "https://abubakrelmallah.com/"
+                        } label: {
+                            HStack {
+                                Image(systemName: "doc.on.doc")
+                                Text("Copy Website")
+                            }
+                        }
+                    }
+            }
+
+            Divider()
+                .background(settings.accentColor.color)
+                .padding(.trailing, -100)
+        }
+        .listRowSeparator(.hidden)
+    }
+
+    private var versionSection: some View {
+        Section {
+            VersionNumber()
+                .font(.caption)
+        }
+    }
+
+    private var creditsLinksSection: some View {
+        Section(header: Text("CREDITS")) {
+            Group {
+                creditLink("Credit for the English transliteration of the Quran data goes to Risan Bagja Pradana", url: "https://github.com/risan/quran-json")
+                
+                creditLink("Credit for the English Saheeh International translation of the Quran data goes to Global Quran", url: "https://globalquran.com/download/data/")
+                
+                creditLink("Credit for all the Quranic Arabic text and all qiraat/riwayaat data goes to quran-data-kfgqpc (KFGQPC)", url: "https://github.com/thetruetruth/quran-data-kfgqpc")
+                
+                creditLink("Credit for the Uthmani Quran font goes to quran-data-kfgqpc (KFGQPC)", url: "https://github.com/thetruetruth/quran-data-kfgqpc/tree/main/qumbul/font")
+                
+                creditLink("Credit for the Indopak Quran font goes to Urdu Nigar", url: "https://urdunigaar.com/download/al-mushaf-arabic-font-ttf-font-download/")
+                
+                creditLink("Credit for the Surah Quran Recitations goes to MP3 Quran", url: "https://mp3quran.net/eng")
+                
+                creditLink("Credit for the Ayah Quran Recitations goes to Al Quran", url: "https://alquran.cloud/cdn")
+
+                creditLink("Credit for the Tafsir API goes to Quran API Pages", url: "https://quranapi.pages.dev/")
+                
+                creditLink("Credit for the 99 Names of Allah goes to MyIslam", url: "https://myislam.org/99-names-of-allah/")
+            }
+            .foregroundColor(settings.accentColor.color)
+            .font(.body)
+        }
+    }
+
+    private var appsSection: some View {
+        Section(header: Text("APPS BY ABUBAKR ELMALLAH")) {
+            ForEach(appsByAbubakr) { app in
+                AppLinkRow(imageName: app.imageName, title: app.title, url: app.url)
+            }
+        }
+    }
+
+    private var botsSection: some View {
+        Section(header: Text("DISCORD BOTS BY ABUBAKR ELMALLAH")) {
+            ForEach(botsByAbubakr) { bot in
+                AppLinkRow(imageName: bot.imageName, title: bot.title, url: bot.url)
+            }
+        }
+    }
+
+    @ViewBuilder
+    private func creditLink(_ title: String, url: String) -> some View {
+        if let destination = URL(string: url) {
+            Link(title, destination: destination)
+                .foregroundColor(settings.accentColor2)
+                .contextMenu {
+                    Button {
+                        settings.hapticFeedback()
+                        UIPasteboard.general.string = title
+                    } label: {
+                        Label("Copy Link", systemImage: "doc.on.doc")
+                    }
+                }
+        }
+    }
+
+    private var doneButton: some View {
+        Button {
+            settings.hapticFeedback()
+            presentationMode.wrappedValue.dismiss()
+        } label: {
+            Text("Done")
+                .font(.headline)
+                .foregroundColor(.primary)
+                .frame(maxWidth: .infinity, alignment: .center)
+                .padding()
+        }
+        .foregroundColor(settings.accentColor.color)
+        .conditionalGlassEffect(useColor: 0.25)
+        .padding(.horizontal, 24)
+        .padding(.bottom, 8)
     }
 }
 
@@ -177,7 +180,7 @@ struct AppLinkRow: View {
             Image(imageName)
                 .resizable()
                 .aspectRatio(contentMode: .fit)
-                .cornerRadius(8)
+                .cornerRadius(12)
                 .frame(width: 50, height: 50)
                 .padding(.trailing, 8)
 
@@ -188,7 +191,7 @@ struct AppLinkRow: View {
         }
         .contextMenu {
             Button {
-                if settings.hapticOn { UIImpactFeedbackGenerator(style: .light).impactOccurred() }
+                settings.hapticFeedback()
                 UIPasteboard.general.string = url
             } label: {
                 Label("Copy Website", systemImage: "doc.on.doc")
@@ -196,3 +199,10 @@ struct AppLinkRow: View {
         }
     }
 }
+
+#Preview {
+    AlIslamPreviewContainer(embedInNavigation: false) {
+        CreditsView()
+    }
+}
+#endif

@@ -1,10 +1,12 @@
+#if os(iOS)
 import UIKit
 import BackgroundTasks
 import UserNotifications
 import WidgetKit
 
 class AppDelegate: UIResponder, UIApplicationDelegate, UNUserNotificationCenterDelegate {
-    private let taskID = "com.Quran.Elmallah.Islamic-Pillars.Islamic-Center-of-Irvine.fetchPrayerTimes"
+    private let taskID = AppIdentifiers.backgroundFetchPrayerTimesTaskIdentifier
+    private let reciterDownloadsSessionID = AppIdentifiers.reciterDownloadsBackgroundSessionIdentifier
 
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey : Any]?) -> Bool {
         BGTaskScheduler.shared.register(forTaskWithIdentifier: taskID, using: nil) { task in
@@ -18,6 +20,19 @@ class AppDelegate: UIResponder, UIApplicationDelegate, UNUserNotificationCenterD
 
     func applicationDidEnterBackground(_ application: UIApplication) {
         scheduleAppRefresh()
+    }
+    
+    func application(
+        _ application: UIApplication,
+        handleEventsForBackgroundURLSession identifier: String,
+        completionHandler: @escaping () -> Void
+    ) {
+        guard identifier == reciterDownloadsSessionID else {
+            completionHandler()
+            return
+        }
+
+        ReciterDownloadManager.shared.backgroundSessionCompletionHandler(completionHandler)
     }
 
     private func scheduleAppRefresh() {
@@ -82,3 +97,4 @@ class AppDelegate: UIResponder, UIApplicationDelegate, UNUserNotificationCenterD
         completionHandler([.banner, .sound])
     }
 }
+#endif
