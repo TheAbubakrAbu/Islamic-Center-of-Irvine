@@ -22,33 +22,19 @@ struct IslamicCenterofIrvineApp: App {
                     LaunchScreen(isLaunching: $isLaunching)
                 } else {
                     TabView {
-                        VStack {
-                            ICOIPrayerView()
-                            
-                            if quranPlayer.isPlaying || quranPlayer.isPaused {
-                                NowPlayingView(quranView: false)
-                                    .animation(.easeInOut, value: quranPlayer.isPlaying)
-                                    .padding(.bottom, 9)
+                        ICOIPrayerView()
+                            .withNowPlayingInset()
+                            .tabItem {
+                                Image(systemName: "moon.stars.fill")
+                                Text("Prayers")
                             }
-                        }
-                        .tabItem {
-                            Image(systemName: "moon.stars.fill")
-                            Text("Prayers")
-                        }
                         
-                        VStack {
-                            ICOILinksView()
-                            
-                            if quranPlayer.isPlaying || quranPlayer.isPaused {
-                                NowPlayingView(quranView: false)
-                                    .animation(.easeInOut, value: quranPlayer.isPlaying)
-                                    .padding(.bottom, 9)
+                        ICOILinksView()
+                            .withNowPlayingInset()
+                            .tabItem {
+                                Image(systemName: "link")
+                                Text("Links")
                             }
-                        }
-                        .tabItem {
-                            Image(systemName: "link")
-                            Text("Links")
-                        }
                         
                         QuranView()
                             .tabItem {
@@ -56,33 +42,19 @@ struct IslamicCenterofIrvineApp: App {
                                 Text("Quran")
                             }
                         
-                        VStack {
-                            IslamView()
-                            
-                            if quranPlayer.isPlaying || quranPlayer.isPaused {
-                                NowPlayingView(quranView: false)
-                                    .animation(.easeInOut, value: quranPlayer.isPlaying)
-                                    .padding(.bottom, 9)
+                        IslamView()
+                            .withNowPlayingInset()
+                            .tabItem {
+                                Image(systemName: "ellipsis.circle.fill")
+                                Text("Tools")
                             }
-                        }
-                        .tabItem {
-                            Image(systemName: "ellipsis.circle.fill")
-                            Text("Tools")
-                        }
                         
-                        VStack {
-                            ICOISettingsView()
-                            
-                            if quranPlayer.isPlaying || quranPlayer.isPaused {
-                                NowPlayingView(quranView: false)
-                                    .animation(.easeInOut, value: quranPlayer.isPlaying)
-                                    .padding(.bottom, 9)
+                        ICOISettingsView()
+                            .withNowPlayingInset()
+                            .tabItem {
+                                Image(systemName: "gearshape.fill")
+                                Text("Settings")
                             }
-                        }
-                        .tabItem {
-                            Image(systemName: "gearshape.fill")
-                            Text("Settings")
-                        }
                     }
                 }
             }
@@ -106,5 +78,29 @@ struct IslamicCenterofIrvineApp: App {
         .onChange(of: scenePhase) { _ in
             quranPlayer.saveLastListenedSurah()
         }
+    }
+}
+
+private struct NowPlayingInsetModifier: ViewModifier {
+    @EnvironmentObject private var quranPlayer: QuranPlayer
+
+    func body(content: Content) -> some View {
+        content.safeAreaInset(edge: .bottom) {
+            VStack(spacing: SafeAreaInsetVStackSpacing.standard) {
+                if quranPlayer.isPlaying || quranPlayer.isPaused {
+                    NowPlayingView()
+                }
+            }
+            .padding(.horizontal, 24)
+            .padding(.bottom, 8)
+            .background(Color.white.opacity(0.00001))
+            .animation(.easeInOut, value: quranPlayer.isPlaying || quranPlayer.isPaused)
+        }
+    }
+}
+
+private extension View {
+    func withNowPlayingInset() -> some View {
+        modifier(NowPlayingInsetModifier())
     }
 }
