@@ -14,6 +14,8 @@ let logger = Logger(subsystem: "com.Quran.Elmallah.Islamic-Pillars.Islamic-Cente
 final class Settings: ObservableObject {
     static let shared = Settings()
     
+    @Published private(set) var isReadyForUI = false
+    
     static let encoder: JSONEncoder = {
         let enc = JSONEncoder()
         enc.dateEncodingStrategy = .millisecondsSince1970
@@ -28,6 +30,15 @@ final class Settings: ObservableObject {
     
     private init() {
         runQuranStartupMigrations()
+        isReadyForUI = true
+    }
+    
+    func waitUntilReady() async {
+        while true {
+            let isReady = await MainActor.run { self.isReadyForUI }
+            if isReady { return }
+            try? await Task.sleep(nanoseconds: 10_000_000)
+        }
     }
     
     func updateCurrentAndNextPrayer() {
@@ -1768,6 +1779,7 @@ final class Settings: ObservableObject {
     @AppStorage("showEnglishMustafa") var showEnglishMustafa: Bool = false
     @AppStorage("showPageJuzDividers") var showPageJuzDividers: Bool = true
     @AppStorage("showPageJuzOverlay") var showPageJuzOverlay: Bool = false
+    @AppStorage("showFullSurahRow") var showFullSurahRow: Bool = false
 
     @AppStorage("quranSearchHistoryData") private var quranSearchHistoryData = Data()
     var quranSearchHistory: [String] {

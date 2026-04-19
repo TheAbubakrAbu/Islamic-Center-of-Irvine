@@ -191,7 +191,7 @@ struct SplashScreen: View {
 
     private var actionButtons: some View {
         HStack {
-            /*Button {
+            Button {
                 settings.hapticFeedback()
                 withAnimation {
                     settings.firstLaunch = false
@@ -204,7 +204,7 @@ struct SplashScreen: View {
                     .frame(maxWidth: .infinity)
                     .padding(.vertical, 16)
             }
-            .conditionalGlassEffect(rectangle: true, useColor: 0.38, customTint: .green)*/
+            .conditionalGlassEffect(rectangle: true, useColor: 0.38, customTint: .green)
             
             Button {
                 settings.hapticFeedback()

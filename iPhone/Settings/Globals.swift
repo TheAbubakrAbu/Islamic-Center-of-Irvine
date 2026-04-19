@@ -1,6 +1,10 @@
 import SwiftUI
 
 enum AppIdentifiers {
+    static let appFullName = "Islamic Center of Irvine"
+    static let appName = "ICOI"
+    static let toolsView = "ICOI"
+    
     /// Shared App Group for `UserDefaults` / data (matches entitlements).
     static let appGroupSuiteName = "group.com.ICOl.AppGroup"
 
