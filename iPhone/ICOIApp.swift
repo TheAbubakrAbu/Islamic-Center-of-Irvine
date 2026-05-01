@@ -14,6 +14,7 @@ struct IslamicCenterofIrvineApp: App {
     @Environment(\.scenePhase) private var scenePhase
 
     @State private var isLaunching = true
+    @State private var showingDiscontinuationSheet = false
     
     var body: some Scene {
         WindowGroup {
@@ -67,16 +68,33 @@ struct IslamicCenterofIrvineApp: App {
             .preferredColorScheme(settings.colorScheme)
             .transition(.opacity)
             .animation(.easeInOut, value: isLaunching)
+            .sheet(isPresented: $showingDiscontinuationSheet) {
+                SplashScreen()
+                    .environmentObject(settings)
+            }
             .appReviewPrompt()
             .onAppear {
                 withAnimation {
                     settings.fetchPrayerTimes()
                     settings.fetchBusinesses()
                 }
+                presentDiscontinuationSheetIfReady()
+            }
+            .onChange(of: isLaunching) { launching in
+                guard !launching else { return }
+                presentDiscontinuationSheetIfReady()
             }
         }
         .onChange(of: scenePhase) { _ in
             quranPlayer.saveLastListenedSurah()
+        }
+    }
+
+    private func presentDiscontinuationSheetIfReady() {
+        guard !isLaunching, scenePhase == .active else { return }
+
+        DispatchQueue.main.async {
+            showingDiscontinuationSheet = true
         }
     }
 }

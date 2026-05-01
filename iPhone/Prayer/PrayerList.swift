@@ -260,7 +260,6 @@ struct ICOIPrayerList: View {
                             }
                             #endif
                         }
-                        .padding(.vertical, 4)
                         .foregroundColor(isShurooq ? .primary : settings.accentColor.color)
                     }
                 }
