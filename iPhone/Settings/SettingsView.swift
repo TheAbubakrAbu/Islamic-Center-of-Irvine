@@ -189,7 +189,7 @@ struct ICOISettingsView: View {
                         .multilineTextAlignment(.leading)
                         .frame(width: glyphWidth)
                     
-                    Text("ammelmallah@icloud.com")
+                    Text("contact@abubakrelmallah.com")
                         .font(.subheadline)
                         .foregroundColor(settings.accentColor.color)
                         .multilineTextAlignment(.leading)
@@ -198,7 +198,7 @@ struct ICOISettingsView: View {
                 #if !os(watchOS)
                 .contextMenu {
                     Button(action: {
-                        UIPasteboard.general.string = "ammelmallah@icloud.com"
+                        UIPasteboard.general.string = "contact@abubakrelmallah.com"
                     }) {
                         HStack {
                             Image(systemName: "doc.on.doc")
